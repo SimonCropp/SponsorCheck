@@ -8,7 +8,7 @@ When consumers reference the produced package, the bundled verifier runs in thei
 
 ## OSS author setup
 
-Add `SponsorCheck` as a `PrivateAssets="all"` development dependency on your library project, with one `<Platform>Account` metadatum per platform you accept sponsorship through.
+Add `SponsorCheck` as a `PrivateAssets="all"` development dependency on the library project, with one `<Platform>Account` metadatum per supported platform.
 
 <!-- snippet: ThePackage.csproj -->
 <a id='snippet-ThePackage.csproj'></a>
@@ -49,7 +49,7 @@ At least one `<Platform>Account` must be set. Credentials per platform:
 
 Use [`dotnet user-secrets`](https://learn.microsoft.com/aspnet/core/security/app-secrets) — no extra wiring. The bundler reads `SponsorCheck:<Platform>Token` keys from the secrets file at the conventional path (`%APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json` on Windows; `~/.microsoft/usersecrets/<id>/secrets.json` on Unix).
 
-Run from the directory containing your library's `.csproj`, or pass `--project <path>` explicitly — `dotnet user-secrets` resolves the project from the current directory and errors if it finds zero or multiple project files.
+Run from the directory containing the library's `.csproj`, or pass `--project <path>` explicitly — `dotnet user-secrets` resolves the project from the current directory and errors if it finds zero or multiple project files.
 
 ```pwsh
 # writes <UserSecretsId> into the csproj in cwd
@@ -61,7 +61,7 @@ dotnet user-secrets set "SponsorCheck:PolarToken" "polar_yyy"
 
 ### Multiple packable projects in one repo
 
-If your repo produces multiple NuGet packages, configure once and let MSBuild's normal cascading mechanisms apply:
+For repos that produce multiple NuGet packages, configure once and let MSBuild's normal cascading mechanisms apply:
 
 ```xml
 <!-- Directory.Packages.props — sponsor accounts in one place -->
@@ -78,7 +78,7 @@ If your repo produces multiple NuGet packages, configure once and let MSBuild's 
 </PropertyGroup>
 ```
 
-Each csproj just declares the bare reference:
+Each csproj declares the bare reference:
 
 ```xml
 <PackageReference Include="SponsorCheck" PrivateAssets="all" />
@@ -129,12 +129,12 @@ Pick exactly one mode per `<PackageReference>` (or set the metadata on the match
 <sup><a href='/IntegrationTests/Fixtures/Consumer.ValidGitHubSponsor/Consumer.ValidGitHubSponsor.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.ValidGitHubSponsor.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-If the package author accepts multiple platforms and you sponsor on one of them, supply the matching `<Platform>SponsorAccount` metadata. You may supply more than one — the verifier passes if **any** account matches the bundled list.
+When the package author accepts multiple platforms and the consumer sponsors on one of them, supply the matching `<Platform>SponsorAccount` metadata. Multiple values are allowed — the verifier passes if **any** account matches the bundled list.
 
 
 #### Recent sponsors: SponsorshipStart
 
-The bundled hash list is frozen at the package's pack date. If you started sponsoring *after* the package was released, your account can't possibly be in the list. Add `SponsorshipStart="yyyy-MM-dd"` to attest to when you started:
+The bundled hash list is frozen at the package's pack date. When sponsorship begins *after* the package was released, the account cannot possibly be in the list. Add `SponsorshipStart="yyyy-MM-dd"` to attest to the start date:
 
 ```xml
 <PackageReference Include="ThePackage" Version="1.0"
@@ -142,9 +142,18 @@ The bundled hash list is frozen at the package's pack date. If you started spons
                   SponsorshipStart="2026-04-30" />
 ```
 
-If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits a high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date, the hash check is enforced as normal — claiming to be a sponsor at release time means the account should already be in the bundled list.
+If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits an `SC008` high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date (including equal — the boundary is strict), the hash check is enforced as normal: claiming to be a sponsor at release time means the account should already be in the bundled list.
 
-`SponsorshipStart` in the future fails with SC014. Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list, `SponsorshipStart` can be dropped.
+`SponsorshipStart` in the future fails with SC014. Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
+
+
+#### Sponsorship lifecycle: what happens after sponsorship lapses
+
+The bundled hash list is frozen per package version. The verifier has no notion of "currently sponsoring" — it only checks whether the consumer's account hash was in the list at pack time, or whether the consumer has attested to a `SponsorshipStart` after that pack date. That has three practical consequences when sponsorship lapses:
+
+1. **Already-bundled versions stay buildable forever.** If the consumer's account hash was bundled into v1.1 at the time it was packed, the verifier keeps accepting it for v1.1 builds even after the consumer stops sponsoring. Versions paid for stay paid for; the OSS author has no recall mechanism short of yanking the package.
+2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with `SC004`. To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipIgnored="true"` (which emits the `SC003` warning every Release build).
+3. **`SponsorshipStart` is honor-system and never expires.** The verifier cannot tell whether the consumer is currently sponsoring; it only checks that the attested start date is `> PackDate` and `<= today`. A stale attestation left in a csproj after a lapse keeps passing the build. The only audit signal is the `SC008` message in the consumer's own build log — the OSS author never sees it. Treat `SponsorshipStart` as a self-attestation to remove the moment sponsorship stops (and the moment the consumer upgrades to a version that bundles the matching hash).
 
 
 ### Time-bounded private license
@@ -204,6 +213,7 @@ Build passes but emits `SC003` warning every Release build, telling the consumer
 | SC005 | Error | `SponsorshipLicensedUntil` has expired |
 | SC006 | Error | Conflicting metadata between PackageReference and PackageVersion |
 | SC007 | Error | `SponsorshipLicensedUntil` not in `yyyy-MM` format |
+| SC008 | Info  | `SponsorshipStart` is after pack date — verifier trusts the attestation (audit trail message) |
 | SC010 | Error | Bundled sponsor hash file is missing from the package (corrupt install) |
 | SC013 | Error | `SponsorshipStart` not in `yyyy-MM-dd` format |
 | SC014 | Error | `SponsorshipStart` is in the future |
@@ -249,7 +259,7 @@ flowchart TD
     ParseStart -->|Yes| Future{Start in<br/>future?}
     Future -->|Yes| SC014[SC014 Error<br/>future date]
     Future -->|No| AfterPack{Start &gt;<br/>PackDate?}
-    AfterPack -->|Yes| PassAttest([Build passes<br/>trust attestation])
+    AfterPack -->|Yes| PassAttest([Build passes<br/>SC008 audit message])
     AfterPack -->|No| HashFile
     HasStart -->|No| HashFile
 
@@ -267,7 +277,7 @@ The hash is **light obfuscation, not real privacy.** Anyone with a wordlist of c
 
 What hashing actually buys:
 
-1. **Private GitHub sponsors don't ship as plaintext.** GitHub Sponsors lets sponsors opt to be private. The bundler still includes them (the token-owner can see them via the API), and the resulting file lands in every consumer's `~/.nuget/packages/<id>/<ver>/build/` after restore. Hashing means a private sponsor's username isn't grep-able across every consumer's disk — you'd have to specifically guess it and recompute the hash to confirm. Plaintext would effectively dox every private sponsor to every consumer.
+1. **Private GitHub sponsors don't ship as plaintext.** GitHub Sponsors lets sponsors opt to be private. The bundler still includes them (the token-owner can see them via the API), and the resulting file lands in every consumer's `~/.nuget/packages/<id>/<ver>/build/` after restore. Hashing means a private sponsor's username is not grep-able across every consumer's disk — an attacker has to specifically guess it and recompute the hash to confirm. Plaintext would effectively dox every private sponsor to every consumer.
 2. **Friction against casual scraping.** A flat list of usernames in a published nupkg is a free dataset for anyone running `nuget restore` on public CI. Hashing doesn't stop a determined deanonymizer but does stop incidental harvesting.
 
 If a sponsor needs guarantees stronger than "annoying to reverse" — e.g. they're sponsoring under a pseudonym they're trying to keep separate from their GitHub identity — the OSS author should ask them up front and either skip the bundling entirely or accept the risk of targeted username guesses. The hash is a speed bump, not a wall.

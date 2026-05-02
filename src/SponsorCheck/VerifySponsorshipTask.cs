@@ -144,9 +144,18 @@ public static class DecisionApplier
             if (packDate is { } pd && startDate > pd)
             {
                 var attempts = string.Join(", ", s.AccountByPlatform.Select(p => $"{p.Key}={p.Value}"));
+                // Informational, not a warning: SponsorshipStart is a documented escape hatch and the consumer's build log is the only audit trail.
                 log.LogMessage(
+                    "SponsorCheck",
+                    "SC008",
+                    "",
+                    "",
+                    0,
+                    0,
+                    0,
+                    0,
                     MessageImportance.High,
-                    $"SponsorCheck: trusting unverified sponsor declaration ({attempts}) for '{s.PackageId}': SponsorshipStart={startDate:yyyy-MM-dd} is later than package release {pd:yyyy-MM-dd}, so the bundled sponsor list cannot contain this account.");
+                    $"Package '{s.PackageId}': trusting unverified sponsor declaration ({attempts}): SponsorshipStart={startDate:yyyy-MM-dd} is later than package release {pd:yyyy-MM-dd}, so the bundled sponsor list cannot contain this account.");
                 return true;
             }
         }

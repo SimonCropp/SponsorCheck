@@ -203,6 +203,41 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
+    public async Task SponsorshipStartEqualsPackDate_FallsThroughToHash()
+    {
+        var hashes = WriteHashes(("GitHubSponsors", "alice"));
+        var packDate = Path.Combine(Path.GetTempPath(), $"pd-{Guid.NewGuid():N}.txt");
+        await File.WriteAllTextAsync(packDate, "2026-04-15");
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = hashes,
+            PackDatePath = packDate,
+            GitHubFromRef = "carol",
+            SponsorshipStartFromRef = "2026-04-15"
+        };
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+    }
+
+    // Guards the contract: a hash present at pack time grandfathers the consumer for that version even after they stop sponsoring.
+    [Test]
+    public async Task LapsedSponsorAgainstAlreadyPaidVersion_StillPasses()
+    {
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(("GitHubSponsors", "bob")),
+            GitHubFromRef = "bob"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+    }
+
+    [Test]
     public async Task SponsorshipStartBeforePackDate_StillEnforcesHash()
     {
         var hashes = WriteHashes(("GitHubSponsors", "alice"));

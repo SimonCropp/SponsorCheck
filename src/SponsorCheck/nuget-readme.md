@@ -2,7 +2,7 @@
 
 Enforce the [Open Source Maintenance Fee](https://opensourcemaintenancefee.org/) at build time via NuGet — gentle nudging plus honesty rather than runtime DRM.
 
-Add as a development dependency to your library project. At pack time it fetches your sponsor list from the configured platforms (GitHub Sponsors, Open Collective, Polar), hashes the accounts, and bundles a build-time verifier into your produced NuGet package. Consumers of your package then declare one of three license modes per package: explicit ignore (with a build warning), platform sponsorship match, or time-bounded private license.
+Add as a development dependency to the library project. At pack time it fetches the author's sponsor list from the configured platforms (GitHub Sponsors, Open Collective, Polar), hashes the accounts, and bundles a build-time verifier into the produced NuGet package. Consumers of the package then declare one of three license modes per package: explicit ignore (with a build warning), platform sponsorship match, or time-bounded private license.
 
 ## OSS author setup
 

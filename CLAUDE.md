@@ -79,7 +79,7 @@ The 2024-01-01 backdate is what enables `Consumer.RecentSponsor` to test the `Sp
 
 ## Diagnostic code conventions
 
-- `SC0xx` — consumer-side (verifier). 001-007 are license-mode errors; 010 is corrupt install; 013-014 are `SponsorshipStart` errors.
+- `SC0xx` — consumer-side (verifier). 001-007 are license-mode errors; 008 is the `SponsorshipStart` trust-attestation info message; 010 is corrupt install; 013-014 are `SponsorshipStart` errors.
 - `SC1xx` — author-side (bundler). 102 = no platform metadata; 103 = required platform credential missing; 104 = user-secrets read warning.
 
 When adding a new code, update both `VerifySponsorshipTask`/`BundleSponsorListTask` AND the diagnostic codes table in `readme.md`.
