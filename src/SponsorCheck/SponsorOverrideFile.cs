@@ -1,5 +1,3 @@
-public readonly record struct SponsorEntry(string Platform, string Account);
-
 public static class SponsorOverrideFile
 {
     public static IReadOnlyList<SponsorEntry> Read(string path)

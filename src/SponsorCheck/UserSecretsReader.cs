@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 /// Reads .NET user-secrets (the file written by `dotnet user-secrets set`) at the conventional path.
 /// Returns a flat dictionary keyed by colon-separated paths (so `SponsorCheck:GitHubToken`
 /// works whether the JSON is flat or nested).

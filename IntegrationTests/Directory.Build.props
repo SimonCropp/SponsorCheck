@@ -1,3 +1,7 @@
 <Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
   <Import Project="../src/Directory.Build.props" />
 </Project>

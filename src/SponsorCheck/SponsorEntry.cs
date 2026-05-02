@@ -1,0 +1,1 @@
+﻿public readonly record struct SponsorEntry(string Platform, string Account);
