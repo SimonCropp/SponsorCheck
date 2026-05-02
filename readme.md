@@ -131,6 +131,7 @@ Pick exactly one mode per `<PackageReference>` (or set the metadata on the match
 
 If the package author accepts multiple platforms and you sponsor on one of them, supply the matching `<Platform>SponsorAccount` metadata. You may supply more than one — the verifier passes if **any** account matches the bundled list.
 
+
 #### Recent sponsors: SponsorshipStart
 
 The bundled hash list is frozen at the package's pack date. If you started sponsoring *after* the package was released, your account can't possibly be in the list. Add `SponsorshipStart="yyyy-MM-dd"` to attest to when you started:
@@ -144,6 +145,7 @@ The bundled hash list is frozen at the package's pack date. If you started spons
 If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits a high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date, the hash check is enforced as normal — claiming to be a sponsor at release time means the account should already be in the bundled list.
 
 `SponsorshipStart` in the future fails with SC014. Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list, `SponsorshipStart` can be dropped.
+
 
 ### Time-bounded private license
 
@@ -167,6 +169,7 @@ If `SponsorshipStart` is **after** the package's pack date, the verifier trusts 
 
 For private B2B licensing arrangements outside of the platforms. Format is `yyyy-MM`; the license is valid through the end of that month UTC.
 
+
 ### Explicit ignore (escape hatch)
 
 <!-- snippet: Consumer.IgnoredLicense.csproj -->
@@ -189,6 +192,7 @@ For private B2B licensing arrangements outside of the platforms. Format is `yyyy
 
 Build passes but emits `SC003` warning every Release build, telling the consumer they are not honoring the maintenance fee.
 
+
 ## Diagnostic codes
 
 | Code | Severity | Meaning |
@@ -205,13 +209,14 @@ Build passes but emits `SC003` warning every Release build, telling the consumer
 | SC014 | Error | `SponsorshipStart` is in the future |
 | SC102 | Error | OSS author has no `<Platform>Account` metadata on SponsorCheck |
 
+
 ## How it works
 
 The bundler runs at the OSS author's pack time (Release config, `IsPackable=true`). It:
 
 1. Reads `<Platform>Account` metadata from the SponsorCheck `PackageReference` / `PackageVersion`.
 2. For each enabled platform, calls the platform's API (or reads `SponsorListOverride` if set) to get the list of sponsor accounts.
-3. Hashes each as `lowercase_hex(SHA256(utf8("{platform-id}:{lowercase(account)}")))`. Platform-id prefix prevents cross-platform spoofing.
+3. Hashes each as the first 12 hex chars (48 bits) of `SHA256(utf8("{platform-id}:{lowercase(account)}"))`. Platform-id prefix prevents cross-platform spoofing.
 4. Writes the sorted, deduped hashes to `build/SponsorCheck.SponsorHashes.txt` and a verifier `.targets` file to `build/<ThePackageId>.targets` inside the produced nupkg, plus the verifier task DLL under `tasks/`.
 
 The verifier runs in consumer projects (Release config) and:
@@ -220,10 +225,54 @@ The verifier runs in consumer projects (Release config) and:
 2. Merges metadata across both. Reads license-mode declarations (`SponsorshipIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
 3. Applies the appropriate decision: ignored (warn), sponsor (check hash list), license (check expiry), or fail with the relevant SC code.
 
+```mermaid
+flowchart TD
+    Start([Consumer Release build]) --> Merge[Merge metadata from<br/>PackageReference + PackageVersion]
+    Merge --> Conflict{Ref vs Ver<br/>disagree?}
+    Conflict -->|Yes| SC006[SC006 Error<br/>conflicting metadata]
+    Conflict -->|No| Modes{License modes declared?<br/>Ignored / LicensedUntil / SponsorAccount}
+    Modes -->|none| SC001[SC001 Error<br/>no license mode]
+    Modes -->|more than one| SC002[SC002 Error<br/>mutually exclusive]
+    Modes -->|exactly one| Which{Which mode?}
+
+    Which -->|SponsorshipIgnored=true| SC003[SC003 Warning<br/>build passes]
+
+    Which -->|SponsorshipLicensedUntil| ParseYM{Valid<br/>yyyy-MM?}
+    ParseYM -->|No| SC007[SC007 Error<br/>bad format]
+    ParseYM -->|Yes| Expired{End of month<br/>in the past?}
+    Expired -->|Yes| SC005[SC005 Error<br/>expired]
+    Expired -->|No| PassLicense([Build passes])
+
+    Which -->|Platform SponsorAccount| HasStart{SponsorshipStart<br/>set?}
+    HasStart -->|Yes| ParseStart{Valid<br/>yyyy-MM-dd?}
+    ParseStart -->|No| SC013[SC013 Error<br/>bad format]
+    ParseStart -->|Yes| Future{Start in<br/>future?}
+    Future -->|Yes| SC014[SC014 Error<br/>future date]
+    Future -->|No| AfterPack{Start &gt;<br/>PackDate?}
+    AfterPack -->|Yes| PassAttest([Build passes<br/>trust attestation])
+    AfterPack -->|No| HashFile
+    HasStart -->|No| HashFile
+
+    HashFile{Bundled hash<br/>file present?}
+    HashFile -->|No| SC010[SC010 Error<br/>corrupt install]
+    HashFile -->|Yes| Match{Any supplied account<br/>hash in list?}
+    Match -->|Yes| PassSponsor([Build passes])
+    Match -->|No| SC004[SC004 Error<br/>no match]
+```
+
 
 ## Hashing — what it protects
 
-The hash list is **light obfuscation**, not real privacy. Anyone with a wordlist of GitHub usernames can reverse-engineer the published hashes by recomputing `SHA256("{platform-id}:{lowercase(login)}")` for each candidate. Sponsorship is publicly visible on the platforms anyway when sponsors choose so. The hash format is enough to prevent casual scraping and to keep plaintext logins out of every consumer's bin folder.
+The hash is **light obfuscation, not real privacy.** Anyone with a wordlist of candidate usernames can reverse-engineer the published hashes by recomputing `SHA256("{platform-id}:{lowercase(login)}")` for each candidate and truncating to 12 hex chars. The hash isn't a security boundary either — `SponsorshipIgnored="true"` is the documented bypass, so anyone wanting to free-ride doesn't need to forge a match.
+
+What hashing actually buys:
+
+1. **Private GitHub sponsors don't ship as plaintext.** GitHub Sponsors lets sponsors opt to be private. The bundler still includes them (the token-owner can see them via the API), and the resulting file lands in every consumer's `~/.nuget/packages/<id>/<ver>/build/` after restore. Hashing means a private sponsor's username isn't grep-able across every consumer's disk — you'd have to specifically guess it and recompute the hash to confirm. Plaintext would effectively dox every private sponsor to every consumer.
+2. **Friction against casual scraping.** A flat list of usernames in a published nupkg is a free dataset for anyone running `nuget restore` on public CI. Hashing doesn't stop a determined deanonymizer but does stop incidental harvesting.
+
+If a sponsor needs guarantees stronger than "annoying to reverse" — e.g. they're sponsoring under a pseudonym they're trying to keep separate from their GitHub identity — the OSS author should ask them up front and either skip the bundling entirely or accept the risk of targeted username guesses. The hash is a speed bump, not a wall.
+
+Hash length is truncated to 48 bits (12 hex chars) because the only correctness requirement is "accidental collisions are implausible" — a non-sponsor's hash falsely matching the bundled list is ≈ 1 in tens of billions even at 100k sponsors. Preimage resistance is unnecessary given `SponsorshipIgnored`.
 
 
 ## Project layout

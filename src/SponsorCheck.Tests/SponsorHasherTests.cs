@@ -38,11 +38,11 @@ public class SponsorHasherTests
     }
 
     [Test]
-    public async Task IsLowercaseHex64Chars()
+    public async Task IsLowercaseHex12Chars()
     {
         var hash = SponsorHasher.Hash("GitHubSponsors", "alice");
-        await Assert.That(hash.Length).IsEqualTo(64);
-        await Assert.That(hash).Matches("^[0-9a-f]{64}$");
+        await Assert.That(hash.Length).IsEqualTo(12);
+        await Assert.That(hash).Matches("^[0-9a-f]{12}$");
     }
 
     [Test]

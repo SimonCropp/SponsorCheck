@@ -1,5 +1,9 @@
 public static class SponsorHasher
 {
+    // 48-bit truncation. SponsorshipIgnored is the bypass; the hash only needs
+    // to make accidental collisions vanishingly unlikely, not resist preimage attacks.
+    const int HashByteLength = 6;
+
     public static string Hash(string platformId, string account)
     {
         if (string.IsNullOrWhiteSpace(platformId))
@@ -16,10 +20,10 @@ public static class SponsorHasher
         var bytes = Encoding.UTF8.GetBytes(input);
         using var sha = SHA256.Create();
         var digest = sha.ComputeHash(bytes);
-        var sb = new StringBuilder(digest.Length * 2);
-        foreach (var b in digest)
+        var sb = new StringBuilder(HashByteLength * 2);
+        for (var i = 0; i < HashByteLength; i++)
         {
-            sb.Append(b.ToString("x2"));
+            sb.Append(digest[i].ToString("x2"));
         }
 
         return sb.ToString();
