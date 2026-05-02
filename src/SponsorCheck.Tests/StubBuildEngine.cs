@@ -14,6 +14,6 @@ public sealed class StubBuildEngine : IBuildEngine
     public void LogMessageEvent(BuildMessageEventArgs e) => Messages.Add(e);
     public void LogCustomEvent(CustomBuildEventArgs e) { }
 
-    public bool BuildProjectFile(string projectFileName, string[] targetNames, System.Collections.IDictionary globalProperties, System.Collections.IDictionary targetOutputs) =>
+    public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) =>
         throw new NotSupportedException();
 }

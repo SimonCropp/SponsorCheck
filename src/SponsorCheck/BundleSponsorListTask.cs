@@ -117,7 +117,7 @@ public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
         {
             var platform = PlatformRegistry.Get(pair.Key);
             var token = TokenFor(pair.Key);
-            var accounts = await platform.FetchSponsorAccounts(pair.Value, token, Log, CancellationToken.None)
+            var accounts = await platform.FetchSponsorAccounts(pair.Value, token, Log, Cancel.None)
                 .ConfigureAwait(false);
             foreach (var account in accounts)
             {
@@ -143,7 +143,7 @@ public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
 
         try
         {
-            var secrets = UserSecretsReader.Read(UserSecretsId!);
+            var secrets = UserSecretsReader.Read(UserSecretsId);
             if (secrets.Count > 0)
             {
                 Log.LogMessage(MessageImportance.Low, $"SponsorCheck: loaded {secrets.Count} user-secrets from id '{UserSecretsId}'.");
@@ -199,7 +199,7 @@ public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
         var dir = Path.GetDirectoryName(filePath);
         if (!string.IsNullOrEmpty(dir))
         {
-            Directory.CreateDirectory(dir!);
+            Directory.CreateDirectory(dir);
         }
     }
 }

@@ -13,7 +13,7 @@ public sealed class PolarPlatform : ISponsorshipPlatform
         string ownerAccount,
         string? token,
         TaskLoggingHelper log,
-        CancellationToken cancellation)
+        Cancel cancel)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -31,7 +31,7 @@ public sealed class PolarPlatform : ISponsorshipPlatform
             var url = $"{BaseUrl}subscriptions/?organization_slug={Uri.EscapeDataString(ownerAccount)}&active=true&limit={limit}&page={page}";
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            using var response = await client.SendAsync(request, cancellation).ConfigureAwait(false);
+            using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);
             var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {

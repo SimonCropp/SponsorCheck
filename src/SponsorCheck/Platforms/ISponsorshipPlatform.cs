@@ -6,5 +6,5 @@ public interface ISponsorshipPlatform
         string ownerAccount,
         string? token,
         TaskLoggingHelper log,
-        CancellationToken cancellation);
+        Cancel cancel);
 }

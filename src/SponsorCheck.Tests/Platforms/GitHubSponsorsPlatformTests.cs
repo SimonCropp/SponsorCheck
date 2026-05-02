@@ -17,7 +17,7 @@ public class GitHubSponsorsPlatformTests
 
         var log = new TaskLoggingHelperFor(new StubBuildEngine());
         var platform = new GitHubSponsorsPlatform();
-        var sponsors = await platform.FetchSponsorAccounts("SimonCropp", token, log, CancellationToken.None);
+        var sponsors = await platform.FetchSponsorAccounts("SimonCropp", token, log, Cancel.None);
         await Assert.That(sponsors).IsNotNull();
     }
 
@@ -200,14 +200,14 @@ public class GitHubSponsorsPlatformTests
         using var client = new HttpClient(new StubHandler(json));
         var platform = new GitHubSponsorsPlatform(client);
         var log = new TaskLoggingHelperFor(new StubBuildEngine());
-        var sponsors = await platform.FetchSponsorAccounts("alice-the-user", token: "fake", log, CancellationToken.None);
+        var sponsors = await platform.FetchSponsorAccounts("alice-the-user", token: "fake", log, Cancel.None);
         await Assert.That(sponsors).Contains("alice");
         await Assert.That(sponsors).Contains("acmecorp");
     }
 
     sealed class StubHandler(string body) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(body, Encoding.UTF8, "application/json")

@@ -1,7 +1,7 @@
 public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlatform
 {
     const string endpoint = "https://api.opencollective.com/graphql/v2";
-    const string Query = """
+    const string query = """
         query($slug: String!, $offset: Int!) {
           account(slug: $slug) {
             members(role: BACKER, limit: 100, offset: $offset) {
@@ -20,14 +20,14 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
         string ownerAccount,
         string? token,
         TaskLoggingHelper log,
-        CancellationToken cancellation)
+        Cancel cancel)
     {
         var slugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var offset = 0;
         var resolved = false;
         while (true)
         {
-            var json = await Post(ownerAccount, offset, token, cancellation).ConfigureAwait(false);
+            var json = await Post(ownerAccount, offset, token, cancel).ConfigureAwait(false);
             var page = ParseResponse(json);
             if (!page.AccountExists)
             {
@@ -56,14 +56,14 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
         return [.. slugs];
     }
 
-    async Task<string> Post(string slug, int offset, string? token, CancellationToken cancellation)
+    async Task<string> Post(string slug, int offset, string? token, Cancel cancel)
     {
         var variables = new Dictionary<string, object?>
         {
             ["slug"] = slug,
             ["offset"] = offset
         };
-        var payload = JsonSerializer.Serialize(new { query = Query, variables });
+        var payload = JsonSerializer.Serialize(new { query = query, variables });
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
@@ -73,7 +73,7 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
             request.Headers.Add("Personal-Token", token);
         }
 
-        using var response = await client.SendAsync(request, cancellation).ConfigureAwait(false);
+        using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);
         var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {

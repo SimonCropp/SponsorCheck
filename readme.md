@@ -220,15 +220,18 @@ The verifier runs in consumer projects (Release config) and:
 2. Merges metadata across both. Reads license-mode declarations (`SponsorshipIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
 3. Applies the appropriate decision: ignored (warn), sponsor (check hash list), license (check expiry), or fail with the relevant SC code.
 
+
 ## Hashing — what it protects
 
 The hash list is **light obfuscation**, not real privacy. Anyone with a wordlist of GitHub usernames can reverse-engineer the published hashes by recomputing `SHA256("{platform-id}:{lowercase(login)}")` for each candidate. Sponsorship is publicly visible on the platforms anyway when sponsors choose so. The hash format is enough to prevent casual scraping and to keep plaintext logins out of every consumer's bin folder.
+
 
 ## Project layout
 
 - `src/SponsorCheck` — the multi-targeted (netstandard2.0;net472) MSBuild task assembly plus the package's bundler `.targets` and embedded verifier template; produces the `SponsorCheck` nupkg
 - `src/SponsorCheck.Tests` — TUnit + Verify unit tests for pure helpers and tasks
 - `IntegrationTests/IntegrationTests` — end-to-end tests that pack ThePackage with the just-built SponsorCheck and build consumer fixtures (C#, F#, VB) against it
+
 
 ## Build & test
 
@@ -239,6 +242,7 @@ dotnet build IntegrationTests --configuration Release
 dotnet run  --project IntegrationTests/IntegrationTests --configuration Release --no-build
 ```
 
-## License
 
-MIT — see [license.txt](license.txt).
+## Icon
+
+https://thenounproject.com/icon/optical-illusion-344030/

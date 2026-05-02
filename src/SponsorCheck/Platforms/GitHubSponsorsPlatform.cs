@@ -33,7 +33,7 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
         string ownerAccount,
         string? token,
         TaskLoggingHelper log,
-        CancellationToken cancellation)
+        Cancel cancel)
     {
         var logins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string? userCursor = null;
@@ -44,7 +44,7 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
 
         while (!(userDone && orgDone))
         {
-            var json = await Post(ownerAccount, userDone ? null : userCursor, orgDone ? null : orgCursor, token, cancellation).ConfigureAwait(false);
+            var json = await Post(ownerAccount, userDone ? null : userCursor, orgDone ? null : orgCursor, token, cancel).ConfigureAwait(false);
             var page = ParseResponse(json);
             if (page.UserExists || page.OrgExists)
             {
@@ -100,7 +100,7 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
         return [.. logins];
     }
 
-    async Task<string> Post(string login, string? userCursor, string? orgCursor, string? token, CancellationToken cancellation)
+    async Task<string> Post(string login, string? userCursor, string? orgCursor, string? token, Cancel cancel)
     {
         var variables = new Dictionary<string, object?>
         {
@@ -122,7 +122,7 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
-        using var response = await client.SendAsync(request, cancellation).ConfigureAwait(false);
+        using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);
         var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {

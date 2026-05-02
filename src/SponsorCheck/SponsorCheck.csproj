@@ -5,20 +5,17 @@
     <DevelopmentDependency>true</DevelopmentDependency>
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <PackageId>SponsorCheck</PackageId>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageTags>opensource;maintenance;fee;sponsors;build;msbuild;github;opencollective;polar</PackageTags>
     <PackageReadmeFile>nuget-readme.md</PackageReadmeFile>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>
     <UserSecretsId>0b81e813-4e7d-40f9-810b-9bd2cddd69e4</UserSecretsId>
-    <RootNamespace>SponsorCheck.Tasks</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="Runtime" />
     <PackageReference Include="Microsoft.Build.Framework"      PrivateAssets="all" ExcludeAssets="Runtime" />
+    <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="Polyfill" PrivateAssets="all" />
   </ItemGroup>

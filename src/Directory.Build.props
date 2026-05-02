@@ -9,12 +9,11 @@
     <Authors>Simon Cropp</Authors>
     <Copyright>Copyright Simon Cropp</Copyright>
     <PackageProjectUrl>https://github.com/SimonCropp/SponsorCheck</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\nugets</PackageOutputPath>
     <ResolveAssemblyReferencesSilent>true</ResolveAssemblyReferencesSilent>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
-    <Nullable>enable</Nullable>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 </Project>

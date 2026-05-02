@@ -15,7 +15,7 @@ public class OpenCollectivePlatformTests
 
         var log = new TaskLoggingHelperFor(new StubBuildEngine());
         var platform = new OpenCollectivePlatform();
-        var sponsors = await platform.FetchSponsorAccounts("webpack", token, log, CancellationToken.None);
+        var sponsors = await platform.FetchSponsorAccounts("webpack", token, log, Cancel.None);
         await Assert.That(sponsors).IsNotNull();
     }
 
