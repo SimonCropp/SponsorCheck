@@ -1,0 +1,73 @@
+<Project>
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU5100</NoWarn>
+    <_EOSS_TasksDir>$(MSBuildThisFileDirectory)..\tasks\</_EOSS_TasksDir>
+    <_EOSS_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_EOSS_TasksDir)netstandard2.0\EnforceOssSponsorship.Tasks.dll</_EOSS_TasksAssembly>
+    <_EOSS_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_EOSS_TasksDir)net472\EnforceOssSponsorship.Tasks.dll</_EOSS_TasksAssembly>
+    <_EOSS_VerifierTemplate>$(MSBuildThisFileDirectory)ConsumerVerifier.targets</_EOSS_VerifierTemplate>
+  </PropertyGroup>
+
+  <UsingTask TaskName="EnforceOssSponsorship.Tasks.BundleSponsorListTask"
+             AssemblyFile="$(_EOSS_TasksAssembly)" />
+
+  <Target Name="_EOSS_ValidatePrivateAssets"
+          Condition="'$(Configuration)' == 'Release' and '$(IsPackable)' == 'true'">
+    <ItemGroup>
+      <_EOSS_Self Include="@(PackageReference)" Condition="'%(Identity)' == 'EnforceOssSponsorship'" />
+    </ItemGroup>
+    <Error Condition="'@(_EOSS_Self)' != '' and '%(_EOSS_Self.PrivateAssets)' != 'all'"
+           Code="EOSS101"
+           Text="EnforceOssSponsorship: PackageReference must set PrivateAssets=&quot;all&quot; so it does not leak as a runtime dependency of your produced package." />
+  </Target>
+
+  <Target Name="_EOSS_BundleSponsorList"
+          DependsOnTargets="_EOSS_ValidatePrivateAssets"
+          BeforeTargets="_GetPackageFiles;GenerateNuspec"
+          Condition="'$(Configuration)' == 'Release' and '$(IsPackable)' == 'true'">
+    <PropertyGroup>
+      <_EOSS_HashListPath>$(IntermediateOutputPath)EOSS\SponsorHashes.txt</_EOSS_HashListPath>
+      <_EOSS_GeneratedTargetsPath>$(IntermediateOutputPath)EOSS\$(PackageId).targets</_EOSS_GeneratedTargetsPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_EOSS_Self    Include="@(PackageReference)" Condition="'%(Identity)' == 'EnforceOssSponsorship'" />
+      <_EOSS_SelfVer Include="@(PackageVersion)"   Condition="'%(Identity)' == 'EnforceOssSponsorship'" />
+    </ItemGroup>
+
+    <BundleSponsorListTask
+        GitHubSponsorsAccountFromRef="%(_EOSS_Self.GitHubSponsorsAccount)"
+        GitHubSponsorsAccountFromVer="%(_EOSS_SelfVer.GitHubSponsorsAccount)"
+        OpenCollectiveAccountFromRef="%(_EOSS_Self.OpenCollectiveAccount)"
+        OpenCollectiveAccountFromVer="%(_EOSS_SelfVer.OpenCollectiveAccount)"
+        PolarAccountFromRef="%(_EOSS_Self.PolarAccount)"
+        PolarAccountFromVer="%(_EOSS_SelfVer.PolarAccount)"
+        GitHubSponsorsToken="$(GitHubSponsorsToken)"
+        OpenCollectiveToken="$(OpenCollectiveToken)"
+        PolarToken="$(PolarToken)"
+        UserSecretsId="$(UserSecretsId)"
+        OverrideListPath="$(SponsorListOverride)"
+        VerifierTargetsTemplatePath="$(_EOSS_VerifierTemplate)"
+        ThePackageId="$(PackageId)"
+        OutputHashListPath="$(_EOSS_HashListPath)"
+        OutputVerifierTargetsPath="$(_EOSS_GeneratedTargetsPath)" />
+
+    <ItemGroup>
+      <None Include="$(_EOSS_HashListPath)"
+            Pack="true"
+            PackagePath="build\EnforceOssSponsorship.SponsorHashes.txt"
+            Visible="false" />
+      <None Include="$(_EOSS_GeneratedTargetsPath)"
+            Pack="true"
+            PackagePath="build\$(PackageId).targets"
+            Visible="false" />
+      <None Include="$(_EOSS_TasksDir)netstandard2.0\*.dll"
+            Pack="true"
+            PackagePath="tasks\netstandard2.0\"
+            Visible="false" />
+      <None Include="$(_EOSS_TasksDir)net472\*.dll"
+            Pack="true"
+            PackagePath="tasks\net472\"
+            Visible="false" />
+    </ItemGroup>
+  </Target>
+</Project>

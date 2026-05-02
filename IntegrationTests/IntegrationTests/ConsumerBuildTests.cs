@@ -1,0 +1,109 @@
+namespace EnforceOssSponsorship.IntegrationTests;
+
+public class ConsumerBuildTests
+{
+    static async Task<CliResult> BuildFixture(string fixtureName, string configuration = "Release")
+    {
+        var feed = await ThePackageBuilder.EnsureBuilt();
+        var workDir = TestEnvironment.MakeWorkDir(fixtureName);
+        TestEnvironment.CopyDirectory(Path.Combine(TestEnvironment.FixturesDir, fixtureName), workDir);
+        TestEnvironment.WriteNugetConfig(workDir, feed);
+        // Empty Directory.Build.props/targets so the temp dir doesn't pick up parent IntegrationTests config.
+        File.WriteAllText(Path.Combine(workDir, "Directory.Build.props"), "<Project/>");
+        File.WriteAllText(Path.Combine(workDir, "Directory.Build.targets"), "<Project/>");
+
+        var packagesDir = Path.Combine(workDir, ".pkgs");
+        Directory.CreateDirectory(packagesDir);
+        var project = Directory.GetFiles(workDir)
+            .Single(f => f.EndsWith(".csproj") || f.EndsWith(".fsproj") || f.EndsWith(".vbproj"));
+        return await DotnetCliRunner.Run("build", project, configuration, null, workDir, packagesDir);
+    }
+
+    [Test]
+    public async Task ValidGitHubSponsor_BuildsCleanly()
+    {
+        var result = await BuildFixture("Consumer.ValidGitHubSponsor");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+    }
+
+    [Test]
+    public async Task InvalidSponsor_FailsWithEOSS004()
+    {
+        var result = await BuildFixture("Consumer.InvalidSponsor");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("EOSS004");
+    }
+
+    [Test]
+    public async Task IgnoredLicense_BuildsWithEOSS003Warning()
+    {
+        var result = await BuildFixture("Consumer.IgnoredLicense");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("EOSS003");
+    }
+
+    [Test]
+    public async Task NoConfig_FailsWithEOSS001()
+    {
+        var result = await BuildFixture("Consumer.NoConfig");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("EOSS001");
+    }
+
+    [Test]
+    public async Task FutureLicense_BuildsCleanly()
+    {
+        var result = await BuildFixture("Consumer.FutureLicense");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+    }
+
+    [Test]
+    public async Task ExpiredLicense_FailsWithEOSS005()
+    {
+        var result = await BuildFixture("Consumer.ExpiredLicense");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("EOSS005");
+    }
+
+    [Test]
+    public async Task MultipleModes_FailsWithEOSS002()
+    {
+        var result = await BuildFixture("Consumer.MultipleModes");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("EOSS002");
+    }
+
+    [Test]
+    public async Task AnyMatchPasses_OnePlatformIsEnough()
+    {
+        var result = await BuildFixture("Consumer.AnyMatchPasses");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+    }
+
+    [Test]
+    public async Task DebugBuild_IsNoOpEvenWithoutLicense()
+    {
+        var result = await BuildFixture("Consumer.DebugIsNoOp", "Debug");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+    }
+
+    [Test]
+    public async Task FSharpConsumer_BuildsCleanly()
+    {
+        var result = await BuildFixture("Consumer.FSharp");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+    }
+
+    [Test]
+    public async Task VbConsumer_BuildsCleanly()
+    {
+        var result = await BuildFixture("Consumer.VB");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+    }
+}

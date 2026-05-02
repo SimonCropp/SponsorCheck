@@ -1,0 +1,6 @@
+[
+  { "platform": "GitHubSponsors", "account": "alice" },
+  { "platform": "GitHubSponsors", "account": "bob" },
+  { "platform": "OpenCollective", "account": "acme-org" },
+  { "platform": "Polar",          "account": "acme" }
+]

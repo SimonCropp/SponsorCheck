@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <PackageId>EnforceOssSponsorship</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageTags>opensource;maintenance;fee;sponsors;build;msbuild;github;opencollective;polar</PackageTags>
+    <PackageReadmeFile>nuget-readme.md</PackageReadmeFile>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoBuild>false</NoBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnforceOssSponsorship.Tasks\EnforceOssSponsorship.Tasks.csproj"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build\EnforceOssSponsorship.targets"
+          Pack="true" PackagePath="build\EnforceOssSponsorship.targets" />
+    <None Include="..\EnforceOssSponsorship.Tasks\EmbeddedTemplates\ConsumerVerifier.targets"
+          Pack="true" PackagePath="build\ConsumerVerifier.targets" Visible="false" />
+    <None Include="nuget-readme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <Target Name="_EOSS_PackTaskDlls" BeforeTargets="_GetPackageFiles" DependsOnTargets="_EOSS_BuildTasksProject">
+    <ItemGroup>
+      <None Include="..\EnforceOssSponsorship.Tasks\bin\$(Configuration)\netstandard2.0\*.dll"
+            Pack="true" PackagePath="tasks\netstandard2.0\" Visible="false" />
+      <None Include="..\EnforceOssSponsorship.Tasks\bin\$(Configuration)\net472\*.dll"
+            Pack="true" PackagePath="tasks\net472\" Visible="false" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_EOSS_BuildTasksProject">
+    <MSBuild Projects="..\EnforceOssSponsorship.Tasks\EnforceOssSponsorship.Tasks.csproj"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+</Project>

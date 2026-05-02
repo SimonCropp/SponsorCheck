@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>ThePackage</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Acme Corp</Authors>
+    <Description>Sample library used by EnforceOssSponsorship integration tests.</Description>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="EnforceOssSponsorship" Version="0.1.0"
+                      PrivateAssets="all"
+                      IncludeAssets="build;buildTransitive;contentFiles;analyzers"
+                      GitHubSponsorsAccount="acmecorp"
+                      OpenCollectiveAccount="acme-org"
+                      PolarAccount="acme" />
+  </ItemGroup>
+</Project>
