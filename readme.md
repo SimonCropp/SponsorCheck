@@ -52,7 +52,8 @@ Use [`dotnet user-secrets`](https://learn.microsoft.com/aspnet/core/security/app
 Run from the directory containing your library's `.csproj`, or pass `--project <path>` explicitly — `dotnet user-secrets` resolves the project from the current directory and errors if it finds zero or multiple project files.
 
 ```pwsh
-dotnet user-secrets init                                                # writes <UserSecretsId> into the csproj in cwd
+# writes <UserSecretsId> into the csproj in cwd
+dotnet user-secrets init
 dotnet user-secrets set "SponsorCheck:GitHubToken" "ghp_xxx"
 dotnet user-secrets set "SponsorCheck:PolarToken" "polar_yyy"
 ```

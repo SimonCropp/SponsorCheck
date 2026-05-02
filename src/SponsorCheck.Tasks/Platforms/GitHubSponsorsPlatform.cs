@@ -142,7 +142,21 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
         using var doc = JsonDocument.Parse(json);
         if (doc.RootElement.TryGetProperty("errors", out var errors) && errors.GetArrayLength() > 0)
         {
-            throw new MaintenanceFeeException($"GitHub GraphQL errors: {errors}");
+            var fatal = new List<JsonElement>();
+            foreach (var error in errors.EnumerateArray())
+            {
+                if (IsExpectedNotFound(error))
+                {
+                    continue;
+                }
+
+                fatal.Add(error);
+            }
+
+            if (fatal.Count > 0)
+            {
+                throw new MaintenanceFeeException($"GitHub GraphQL errors: [{string.Join(",", fatal)}]");
+            }
         }
 
         if (!doc.RootElement.TryGetProperty("data", out var data))
@@ -153,6 +167,32 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
         var (userExists, userLogins, userNext, userCursor) = ParseConnection(data, "user");
         var (orgExists, orgLogins, orgNext, orgCursor) = ParseConnection(data, "organization");
         return new PageResult(userExists, orgExists, userLogins, orgLogins, userNext, orgNext, userCursor, orgCursor);
+    }
+
+    static bool IsExpectedNotFound(JsonElement error)
+    {
+        if (!error.TryGetProperty("type", out var type) ||
+            type.ValueKind != JsonValueKind.String ||
+            !string.Equals(type.GetString(), "NOT_FOUND", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!error.TryGetProperty("path", out var path) ||
+            path.ValueKind != JsonValueKind.Array ||
+            path.GetArrayLength() == 0)
+        {
+            return false;
+        }
+
+        var first = path[0];
+        if (first.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        var name = first.GetString();
+        return name == "user" || name == "organization";
     }
 
     static (bool exists, IReadOnlyList<string> logins, bool hasNext, string? cursor) ParseConnection(JsonElement data, string key)
