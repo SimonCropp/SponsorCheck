@@ -46,7 +46,7 @@ public class AuthorPackTests
         using var stream = entry.Open();
         using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync();
-        await Assert.That(content).Contains("SponsorCheck.Tasks.VerifySponsorshipTask");
+        await Assert.That(content).Contains("VerifySponsorshipTask");
         await Assert.That(content).Contains("_SponsorCheck_Verify_ThePackage");
     }
 }

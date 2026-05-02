@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tasks;
-
 public sealed class MaintenanceFeeException : Exception
 {
     public MaintenanceFeeException(string message) : base(message)

@@ -39,9 +39,9 @@ At least one `<Platform>Account` must be set. Credentials per platform:
 
 | Platform | MSBuild property | User-secrets key | Required? |
 |---|---|---|---|
-| `GitHubSponsors` | `<GitHubToken>` | `SponsorCheck:GitHubToken` | Required ([classic PAT](https://github.com/settings/tokens/new) with no scopes, or a [fine-grained PAT](https://github.com/settings/personal-access-tokens/new) — GitHub's GraphQL API requires authentication even for public data) |
-| `OpenCollective` | `<OpenCollectiveToken>` | `SponsorCheck:OpenCollectiveToken` | Optional (public collectives queryable anonymously) |
-| `Polar` | `<PolarToken>` | `SponsorCheck:PolarToken` | Required |
+| `GitHubSponsors` | `<GitHubToken>` | `SponsorCheck:GitHubToken` | Required — [classic PAT](https://github.com/settings/tokens/new) with `read:user` (when sponsored as a user) and/or `read:org` (when sponsored as an organization), or a [fine-grained PAT](https://github.com/settings/personal-access-tokens/new) with **Sponsorships: Read-only**. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently filtered out and the bundled hash list will be incomplete |
+| `OpenCollective` | `<OpenCollectiveToken>` | `SponsorCheck:OpenCollectiveToken` | Optional — public collectives are queryable anonymously, but anonymous calls hit rate limits on collectives with many backers. Create a [Personal Token](https://opencollective.com/applications) (no scopes required — the token is used for rate-limit headroom, not access) |
+| `Polar` | `<PolarToken>` | `SponsorCheck:PolarToken` | Required — [organization access token](https://docs.polar.sh/integrate/authentication/personal-access-token) with scopes `subscriptions:read`, `customers:read`, `organizations:read`. The customer scope matters: without it Polar can return null `github_username` / `email` on embedded customer objects, causing the bundler to fall back to opaque `user_id`s that won't match consumer-declared `<PolarSponsorAccount>` values |
 
 > **Token expiry.** GitHub PATs and Polar API keys both expire. If your CI builds suddenly fail with HTTP 401 from a platform, your token has likely expired — rotate it and update the secret. Pick "no expiration" on the GitHub PAT form if you want set-and-forget; otherwise put the rotation date in your calendar.
 
@@ -55,6 +55,7 @@ Run from the directory containing your library's `.csproj`, or pass `--project <
 # writes <UserSecretsId> into the csproj in cwd
 dotnet user-secrets init
 dotnet user-secrets set "SponsorCheck:GitHubToken" "ghp_xxx"
+dotnet user-secrets set "SponsorCheck:OpenCollectiveToken" "zzz"
 dotnet user-secrets set "SponsorCheck:PolarToken" "polar_yyy"
 ```
 

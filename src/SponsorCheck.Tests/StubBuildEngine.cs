@@ -1,7 +1,3 @@
-namespace SponsorCheck.Tests;
-
-using Microsoft.Build.Framework;
-
 public sealed class StubBuildEngine : IBuildEngine
 {
     public List<BuildErrorEventArgs> Errors { get; } = [];

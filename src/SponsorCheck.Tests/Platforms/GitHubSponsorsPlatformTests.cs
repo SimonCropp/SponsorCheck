@@ -1,9 +1,4 @@
-namespace SponsorCheck.Tests.Platforms;
-
 using System.Net;
-using System.Net.Http;
-using System.Threading;
-using SponsorCheck.Tasks.Platforms;
 
 public class GitHubSponsorsPlatformTests
 {

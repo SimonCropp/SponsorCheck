@@ -7,7 +7,7 @@
     <_SponsorCheck_VerifierTemplate>$(MSBuildThisFileDirectory)ConsumerVerifier.targets</_SponsorCheck_VerifierTemplate>
   </PropertyGroup>
 
-  <UsingTask TaskName="SponsorCheck.Tasks.BundleSponsorListTask"
+  <UsingTask TaskName="BundleSponsorListTask"
              AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
 
   <Target Name="_SponsorCheck_BundleSponsorList"

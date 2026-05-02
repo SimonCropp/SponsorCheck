@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tests;
-
 public class LicenseModeResolverTests
 {
     static IReadOnlyDictionary<string, string?> NoSponsors() => new Dictionary<string, string?>

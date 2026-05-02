@@ -3,10 +3,10 @@ global using System.Collections.Generic;
 global using System.IO;
 global using System.Linq;
 global using System.Runtime.CompilerServices;
+global using System.Runtime.InteropServices;
 global using System.Text;
 global using System.Threading.Tasks;
-
-global using SponsorCheck.Tasks;
+global using Microsoft.Build.Framework;
 
 global using TUnit.Core;
 

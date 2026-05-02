@@ -1,7 +1,3 @@
-namespace SponsorCheck.Tasks.Platforms;
-
-using System.Net.Http.Headers;
-
 public sealed class PolarPlatform : ISponsorshipPlatform
 {
     const string BaseUrl = "https://api.polar.sh/v1/";

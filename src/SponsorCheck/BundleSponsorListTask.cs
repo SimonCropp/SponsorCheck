@@ -1,7 +1,3 @@
-namespace SponsorCheck.Tasks;
-
-using SponsorCheck.Tasks.Platforms;
-
 public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
 {
     public string GitHubSponsorsAccountFromRef { get; set; } = "";
@@ -61,7 +57,7 @@ public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
             EnsureDirectory(OutputPackDatePath);
             var packDate = !string.IsNullOrWhiteSpace(OverridePackDate)
                 ? OverridePackDate.Trim()
-                : DateTime.UtcNow.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                : DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             File.WriteAllText(OutputPackDatePath, packDate);
             var template = File.ReadAllText(VerifierTargetsTemplatePath);
             // Substitute package id into target/item names. Package IDs are restricted to

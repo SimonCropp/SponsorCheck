@@ -50,7 +50,7 @@ MSBuild target `Name` attributes do **not** support `$(Property)` expansion. Tha
 
 ## Multi-targeting in `SponsorCheck`
 
-`SponsorCheck.csproj` is a single multi-targeted project (`netstandard2.0;net472`) that holds both the task code and the package metadata. `IncludeBuildOutput=false` keeps the build output out of `lib/`; a custom `_SponsorCheck_PackTaskDlls` target copies each TFM's DLL closure into `tasks/{tfm}/`. Both TFMs must build because the consumer's MSBuild may be either Core (.NET) or Framework (Visual Studio / MSBuild.exe). `SponsorCheck.targets` and the generated verifier targets pick the right TFM via `'$(MSBuildRuntimeType)' == 'Core'` conditionals. Code keeps the `SponsorCheck.Tasks` namespace (so `UsingTask TaskName="SponsorCheck.Tasks.BundleSponsorListTask"` still resolves), but the assembly is `SponsorCheck.dll`.
+`SponsorCheck.csproj` is a single multi-targeted project (`netstandard2.0;net472`) that holds both the task code and the package metadata. `IncludeBuildOutput=false` keeps the build output out of `lib/`; a custom `_SponsorCheck_PackTaskDlls` target copies each TFM's DLL closure into `tasks/{tfm}/`. Both TFMs must build because the consumer's MSBuild may be either Core (.NET) or Framework (Visual Studio / MSBuild.exe). `SponsorCheck.targets` and the generated verifier targets pick the right TFM via `'$(MSBuildRuntimeType)' == 'Core'` conditionals. Task classes live in the global namespace, so `UsingTask` references them by bare name (`BundleSponsorListTask`, `VerifySponsorshipTask`); the shipping assembly is `SponsorCheck.dll`.
 
 The Tests project references the netstandard2.0 build via `SetTargetFramework="TargetFramework=netstandard2.0"`.
 

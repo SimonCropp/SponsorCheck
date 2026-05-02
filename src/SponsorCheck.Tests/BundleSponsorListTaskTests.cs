@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tests;
-
 public class BundleSponsorListTaskTests
 {
     static (string templateDir, string templatePath) BuildTemplate()
@@ -42,7 +40,7 @@ public class BundleSponsorListTaskTests
         await Assert.That(ok).IsTrue();
         await Assert.That(File.Exists(task.OutputHashListPath)).IsTrue();
         await Assert.That(File.Exists(task.OutputVerifierTargetsPath)).IsTrue();
-        var lines = File.ReadAllLines(task.OutputHashListPath);
+        var lines = await File.ReadAllLinesAsync(task.OutputHashListPath);
         await Assert.That(lines.Length).IsEqualTo(1);
         await Assert.That(lines[0]).IsEqualTo(SponsorHasher.Hash("GitHubSponsors", "alice"));
     }
@@ -75,14 +73,15 @@ public class BundleSponsorListTaskTests
     public async Task BundlesAcrossMultiplePlatforms()
     {
         var (_, template) = BuildTemplate();
-        var override_ = WriteOverride("""
-        [
-          {"platform":"GitHubSponsors","account":"alice"},
-          {"platform":"GitHubSponsors","account":"bob"},
-          {"platform":"OpenCollective","account":"acme-org"},
-          {"platform":"Polar","account":"acme"}
-        ]
-        """);
+        var override_ = WriteOverride(
+            """
+            [
+              {"platform":"GitHubSponsors","account":"alice"},
+              {"platform":"GitHubSponsors","account":"bob"},
+              {"platform":"OpenCollective","account":"acme-org"},
+              {"platform":"Polar","account":"acme"}
+            ]
+            """);
         var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
         Directory.CreateDirectory(work);
         var task = new BundleSponsorListTask
@@ -102,7 +101,7 @@ public class BundleSponsorListTaskTests
         var ok = task.Execute();
 
         await Assert.That(ok).IsTrue();
-        var lines = File.ReadAllLines(task.OutputHashListPath);
+        var lines = await File.ReadAllLinesAsync(task.OutputHashListPath);
         await Assert.That(lines.Length).IsEqualTo(4);
         // Sorted ordinal
         for (var i = 1; i < lines.Length; i++)
@@ -118,9 +117,11 @@ public class BundleSponsorListTaskTests
         var id = $"sponsorcheck-test-{Guid.NewGuid():N}";
         var secretsPath = UserSecretsReader.ResolvePath(id);
         Directory.CreateDirectory(Path.GetDirectoryName(secretsPath)!);
-        File.WriteAllText(secretsPath, """
-        { "SponsorCheck:GitHubToken": "ghp_from_secrets" }
-        """);
+        await File.WriteAllTextAsync(
+            secretsPath,
+            """
+            { "SponsorCheck:GitHubToken": "ghp_from_secrets" }
+            """);
         try
         {
             var (_, template) = BuildTemplate();
@@ -137,7 +138,7 @@ public class BundleSponsorListTaskTests
                 OverrideListPath = override_,
                 OutputHashListPath = Path.Combine(work, "SponsorHashes.txt"),
                 OutputVerifierTargetsPath = Path.Combine(work, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(work, "PackDate.txt")
+                OutputPackDatePath = Path.Combine(work, "PackDate.txt")
             };
 
             // Override list short-circuits the actual platform fetch, so we just confirm the task ran end-to-end
@@ -154,13 +155,14 @@ public class BundleSponsorListTaskTests
     public async Task DeterministicOutput()
     {
         var (_, template) = BuildTemplate();
-        var override_ = WriteOverride("""
-        [
-          {"platform":"GitHubSponsors","account":"bob"},
-          {"platform":"GitHubSponsors","account":"alice"},
-          {"platform":"GitHubSponsors","account":"alice"}
-        ]
-        """);
+        var override_ = WriteOverride(
+            """
+            [
+              {"platform":"GitHubSponsors","account":"bob"},
+              {"platform":"GitHubSponsors","account":"alice"},
+              {"platform":"GitHubSponsors","account":"alice"}
+            ]
+            """);
         var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
         Directory.CreateDirectory(work);
         var task = new BundleSponsorListTask
@@ -176,7 +178,7 @@ public class BundleSponsorListTaskTests
         };
 
         await Assert.That(task.Execute()).IsTrue();
-        var lines = File.ReadAllLines(task.OutputHashListPath);
+        var lines = await File.ReadAllLinesAsync(task.OutputHashListPath);
         await Assert.That(lines.Length).IsEqualTo(2); // dedup
     }
 }

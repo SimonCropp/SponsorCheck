@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tasks;
-
 public readonly record struct SponsorEntry(string Platform, string Account);
 
 public static class SponsorOverrideFile

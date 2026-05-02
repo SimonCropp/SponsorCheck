@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tests;
-
 public class UserSecretsReaderTests
 {
     static (string id, string secretsPath) WriteSecrets(string content)
@@ -14,12 +12,13 @@ public class UserSecretsReaderTests
     [Test]
     public async Task FlatKeys()
     {
-        var (id, path) = WriteSecrets("""
-        {
-          "SponsorCheck:GitHubToken": "ghp_xxx",
-          "SponsorCheck:PolarToken": "polar_yyy"
-        }
-        """);
+        var (id, path) = WriteSecrets(
+            """
+            {
+              "SponsorCheck:GitHubToken": "ghp_xxx",
+              "SponsorCheck:PolarToken": "polar_yyy"
+            }
+            """);
         try
         {
             var secrets = UserSecretsReader.Read(id);
@@ -35,14 +34,15 @@ public class UserSecretsReaderTests
     [Test]
     public async Task NestedKeys()
     {
-        var (id, path) = WriteSecrets("""
-        {
-          "SponsorCheck": {
-            "GitHubToken": "ghp_xxx",
-            "PolarToken": "polar_yyy"
-          }
-        }
-        """);
+        var (id, path) = WriteSecrets(
+            """
+            {
+              "SponsorCheck": {
+                "GitHubToken": "ghp_xxx",
+                "PolarToken": "polar_yyy"
+              }
+            }
+            """);
         try
         {
             var secrets = UserSecretsReader.Read(id);
@@ -82,7 +82,7 @@ public class UserSecretsReaderTests
     {
         var path = UserSecretsReader.ResolvePath("abc-123");
         await Assert.That(path).EndsWith(Path.Combine("abc-123", "secrets.json"));
-        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             await Assert.That(path).Contains("Microsoft");
             await Assert.That(path).Contains("UserSecrets");

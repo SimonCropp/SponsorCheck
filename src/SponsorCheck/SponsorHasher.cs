@@ -1,7 +1,3 @@
-namespace SponsorCheck.Tasks;
-
-using System.Security.Cryptography;
-
 public static class SponsorHasher
 {
     public static string Hash(string platformId, string account)

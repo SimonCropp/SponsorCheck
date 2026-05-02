@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tasks.Platforms;
-
 public interface ISponsorshipPlatform
 {
     string Id { get; }

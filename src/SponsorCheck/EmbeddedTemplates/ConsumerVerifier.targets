@@ -8,7 +8,7 @@
     <_SponsorCheck_PackDatePath>$(MSBuildThisFileDirectory)SponsorCheck.PackDate.txt</_SponsorCheck_PackDatePath>
   </PropertyGroup>
 
-  <UsingTask TaskName="SponsorCheck.Tasks.VerifySponsorshipTask"
+  <UsingTask TaskName="VerifySponsorshipTask"
              AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
 
   <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__"

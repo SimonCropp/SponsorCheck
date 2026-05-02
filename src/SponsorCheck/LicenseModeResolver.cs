@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tasks;
-
 public abstract record LicenseDecision(string PackageId)
 {
     public sealed record MissingConfig(string PackageId) : LicenseDecision(PackageId);

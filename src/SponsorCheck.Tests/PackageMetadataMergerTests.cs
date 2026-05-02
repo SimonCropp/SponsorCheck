@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tests;
-
 public class PackageMetadataMergerTests
 {
     [Test]

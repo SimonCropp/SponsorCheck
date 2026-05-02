@@ -1,30 +1,30 @@
-namespace SponsorCheck.Tasks.Platforms;
-
-using System.Net.Http.Headers;
-
 public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
 {
-    const string Endpoint = "https://api.github.com/graphql";
-    const string Query = """
-        query($login: String!, $cursor: String) {
-          user(login: $login) {
-            sponsors(first: 100, after: $cursor) {
-              pageInfo { hasNextPage endCursor }
-              nodes { __typename ... on User { login } ... on Organization { login } }
-            }
-          }
-          organization(login: $login) {
-            sponsors(first: 100, after: $cursor) {
-              pageInfo { hasNextPage endCursor }
-              nodes { __typename ... on User { login } ... on Organization { login } }
-            }
-          }
-        }
-        """;
+    const string endpoint = "https://api.github.com/graphql";
+
+    const string query = """
+                         query($login: String!, $cursor: String) {
+                           user(login: $login) {
+                             sponsors(first: 100, after: $cursor) {
+                               pageInfo { hasNextPage endCursor }
+                               nodes { __typename ... on User { login } ... on Organization { login } }
+                             }
+                           }
+                           organization(login: $login) {
+                             sponsors(first: 100, after: $cursor) {
+                               pageInfo { hasNextPage endCursor }
+                               nodes { __typename ... on User { login } ... on Organization { login } }
+                             }
+                           }
+                         }
+                         """;
 
     readonly HttpClient client;
 
-    public GitHubSponsorsPlatform() : this(HttpClientFactory.Get()) { }
+    public GitHubSponsorsPlatform() : this(HttpClientFactory.Get())
+    {
+    }
+
     public GitHubSponsorsPlatform(HttpClient client) => this.client = client;
 
     public string Id => "GitHubSponsors";
@@ -107,8 +107,13 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
             ["login"] = login,
             ["cursor"] = userCursor ?? orgCursor
         };
-        var payload = JsonSerializer.Serialize(new { query = Query, variables });
-        using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
+        var payload = JsonSerializer.Serialize(
+            new
+            {
+                query = query,
+                variables
+            });
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
         };
@@ -121,7 +126,7 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
         var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            throw new MaintenanceFeeException($"GitHub GraphQL HTTP {(int)response.StatusCode}: {body}");
+            throw new MaintenanceFeeException($"GitHub GraphQL HTTP {(int) response.StatusCode}: {body}");
         }
 
         return body;
@@ -161,12 +166,12 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
 
         if (!doc.RootElement.TryGetProperty("data", out var data))
         {
-            throw new MaintenanceFeeException($"GitHub GraphQL: missing 'data' in response.");
+            throw new MaintenanceFeeException("GitHub GraphQL: missing 'data' in response.");
         }
 
         var (userExists, userLogins, userNext, userCursor) = ParseConnection(data, "user");
         var (orgExists, orgLogins, orgNext, orgCursor) = ParseConnection(data, "organization");
-        return new PageResult(userExists, orgExists, userLogins, orgLogins, userNext, orgNext, userCursor, orgCursor);
+        return new(userExists, orgExists, userLogins, orgLogins, userNext, orgNext, userCursor, orgCursor);
     }
 
     static bool IsExpectedNotFound(JsonElement error)
@@ -192,7 +197,7 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
         }
 
         var name = first.GetString();
-        return name == "user" || name == "organization";
+        return name is "user" or "organization";
     }
 
     static (bool exists, IReadOnlyList<string> logins, bool hasNext, string? cursor) ParseConnection(JsonElement data, string key)

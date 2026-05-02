@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tasks;
-
 public static class PackageMetadataMerger
 {
     /// Merges the same metadatum sourced from PackageReference and PackageVersion under CPM.

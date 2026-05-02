@@ -1,10 +1,6 @@
-namespace SponsorCheck.Tasks.Platforms;
-
-using System.Net.Http.Headers;
-
-public sealed class OpenCollectivePlatform : ISponsorshipPlatform
+public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlatform
 {
-    const string Endpoint = "https://api.opencollective.com/graphql/v2";
+    const string endpoint = "https://api.opencollective.com/graphql/v2";
     const string Query = """
         query($slug: String!, $offset: Int!) {
           account(slug: $slug) {
@@ -16,10 +12,7 @@ public sealed class OpenCollectivePlatform : ISponsorshipPlatform
         }
         """;
 
-    readonly HttpClient client;
-
     public OpenCollectivePlatform() : this(HttpClientFactory.Get()) { }
-    public OpenCollectivePlatform(HttpClient client) => this.client = client;
 
     public string Id => "OpenCollective";
 
@@ -71,7 +64,7 @@ public sealed class OpenCollectivePlatform : ISponsorshipPlatform
             ["offset"] = offset
         };
         var payload = JsonSerializer.Serialize(new { query = Query, variables });
-        using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
         };

@@ -1,8 +1,5 @@
-namespace SponsorCheck.Tasks;
-
-using System.Globalization;
-
-public sealed class VerifySponsorshipTask : Microsoft.Build.Utilities.Task
+public sealed class VerifySponsorshipTask :
+    Microsoft.Build.Utilities.Task
 {
     [Required] public string ThePackageId { get; set; } = "";
     [Required] public string SponsorHashListPath { get; set; } = "";

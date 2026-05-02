@@ -1,8 +1,6 @@
-namespace SponsorCheck.Tasks.Platforms;
-
 public static class PlatformRegistry
 {
-    static readonly Dictionary<string, ISponsorshipPlatform> Platforms = BuildBuiltins();
+    static readonly Dictionary<string, ISponsorshipPlatform> platforms = BuildBuiltins();
 
     static Dictionary<string, ISponsorshipPlatform> BuildBuiltins()
     {
@@ -18,12 +16,12 @@ public static class PlatformRegistry
 
     public static ISponsorshipPlatform Get(string id)
     {
-        if (Platforms.TryGetValue(id, out var platform))
+        if (platforms.TryGetValue(id, out var platform))
         {
             return platform;
         }
 
         throw new MaintenanceFeeException(
-            $"Unknown sponsorship platform '{id}'. Built-in platforms: {string.Join(", ", Platforms.Keys)}.");
+            $"Unknown sponsorship platform '{id}'. Built-in platforms: {string.Join(", ", platforms.Keys)}.");
     }
 }

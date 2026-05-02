@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tasks;
-
 using System.Runtime.InteropServices;
 
 /// Reads .NET user-secrets (the file written by `dotnet user-secrets set`) at the conventional path.

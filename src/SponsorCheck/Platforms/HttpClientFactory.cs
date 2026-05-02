@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tasks.Platforms;
-
 internal static class HttpClientFactory
 {
     static readonly Lazy<HttpClient> Shared = new(() =>

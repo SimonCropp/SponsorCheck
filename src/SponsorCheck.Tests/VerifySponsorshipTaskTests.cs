@@ -1,5 +1,3 @@
-namespace SponsorCheck.Tests;
-
 public class VerifySponsorshipTaskTests
 {
     static string WriteHashes(params (string platform, string account)[] entries)
@@ -188,7 +186,7 @@ public class VerifySponsorshipTaskTests
     {
         var hashes = WriteHashes(("GitHubSponsors", "alice"));
         var packDate = Path.Combine(Path.GetTempPath(), $"pd-{Guid.NewGuid():N}.txt");
-        File.WriteAllText(packDate, "2026-04-15");
+        await File.WriteAllTextAsync(packDate, "2026-04-15");
         var engine = new StubBuildEngine();
         var task = new VerifySponsorshipTask
         {
@@ -209,7 +207,7 @@ public class VerifySponsorshipTaskTests
     {
         var hashes = WriteHashes(("GitHubSponsors", "alice"));
         var packDate = Path.Combine(Path.GetTempPath(), $"pd-{Guid.NewGuid():N}.txt");
-        File.WriteAllText(packDate, "2026-04-15");
+        await File.WriteAllTextAsync(packDate, "2026-04-15");
         var engine = new StubBuildEngine();
         var task = new VerifySponsorshipTask
         {
@@ -274,10 +272,10 @@ public class VerifySponsorshipTaskTests
 
 internal sealed class TaskLoggingHelperFor : Microsoft.Build.Utilities.TaskLoggingHelper
 {
-    public TaskLoggingHelperFor(Microsoft.Build.Framework.IBuildEngine engine) : base(new StubTask(engine)) { }
+    public TaskLoggingHelperFor(IBuildEngine engine) : base(new StubTask(engine)) { }
     sealed class StubTask : Microsoft.Build.Utilities.Task
     {
-        public StubTask(Microsoft.Build.Framework.IBuildEngine engine) => BuildEngine = engine;
+        public StubTask(IBuildEngine engine) => BuildEngine = engine;
         public override bool Execute() => true;
     }
 }
