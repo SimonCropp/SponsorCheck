@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="../.gitattributes" />
+    <File Path="../.gitignore" />
+    <File Path="../readme.md" />
+    <File Path="../.editorconfig" />
+    <File Path="appveyor.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="mdsnippets.json" />
+    <File Path="nuget.config" />
+  </Folder>
+  <Project Path="SponsorCheck/SponsorCheck.csproj" />
+  <Project Path="SponsorCheck.Tasks/SponsorCheck.Tasks.csproj" />
+  <Project Path="SponsorCheck.Tests/SponsorCheck.Tests.csproj" />
+</Solution>

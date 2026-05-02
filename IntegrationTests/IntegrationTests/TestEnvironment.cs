@@ -1,4 +1,4 @@
-namespace EnforceOssSponsorship.IntegrationTests;
+namespace SponsorCheck.IntegrationTests;
 
 public static class TestEnvironment
 {
@@ -27,7 +27,7 @@ public static class TestEnvironment
 
     public static string MakeWorkDir([CallerMemberName] string caller = "")
     {
-        var dir = Path.Combine(Path.GetTempPath(), "eoss-it", $"{caller}-{Guid.NewGuid():N}");
+        var dir = Path.Combine(Path.GetTempPath(), "sponsorcheck-it", $"{caller}-{Guid.NewGuid():N}");
         Directory.CreateDirectory(dir);
         return dir;
     }

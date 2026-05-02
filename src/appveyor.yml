@@ -7,7 +7,7 @@ build_script:
 - appveyor DownloadFile https://dot.net/v1/dotnet-install.ps1
 - pwsh: ./dotnet-install.ps1 -JSonFile src/global.json -Architecture x64 -InstallDir 'C:\Program Files\dotnet'
 - dotnet build src --configuration Release
-- dotnet run --project src/EnforceOssSponsorship.Tests --configuration Release --no-build
+- dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build
 - dotnet build IntegrationTests --configuration Release
 - dotnet run --project IntegrationTests/IntegrationTests --configuration Release --no-build
 on_failure:

@@ -1,4 +1,4 @@
-namespace EnforceOssSponsorship.IntegrationTests;
+namespace SponsorCheck.IntegrationTests;
 
 using System.IO.Compression;
 
@@ -12,9 +12,9 @@ public class AuthorPackTests
         using var zip = ZipFile.OpenRead(nupkg);
         var entries = zip.Entries.Select(e => e.FullName).ToList();
         await Assert.That(entries).Contains("build/ThePackage.targets");
-        await Assert.That(entries).Contains("build/EnforceOssSponsorship.SponsorHashes.txt");
-        await Assert.That(entries.Any(e => e.StartsWith("tasks/netstandard2.0/EnforceOssSponsorship.Tasks.dll"))).IsTrue();
-        await Assert.That(entries.Any(e => e.StartsWith("tasks/net472/EnforceOssSponsorship.Tasks.dll"))).IsTrue();
+        await Assert.That(entries).Contains("build/SponsorCheck.SponsorHashes.txt");
+        await Assert.That(entries.Any(e => e.StartsWith("tasks/netstandard2.0/SponsorCheck.Tasks.dll"))).IsTrue();
+        await Assert.That(entries.Any(e => e.StartsWith("tasks/net472/SponsorCheck.Tasks.dll"))).IsTrue();
     }
 
     [Test]
@@ -23,7 +23,7 @@ public class AuthorPackTests
         var feed = await ThePackageBuilder.EnsureBuilt();
         var nupkg = Directory.GetFiles(feed, "ThePackage.*.nupkg").Single();
         using var zip = ZipFile.OpenRead(nupkg);
-        var entry = zip.GetEntry("build/EnforceOssSponsorship.SponsorHashes.txt")!;
+        var entry = zip.GetEntry("build/SponsorCheck.SponsorHashes.txt")!;
         using var stream = entry.Open();
         using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync();
@@ -46,7 +46,7 @@ public class AuthorPackTests
         using var stream = entry.Open();
         using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync();
-        await Assert.That(content).Contains("EnforceOssSponsorship.Tasks.VerifySponsorshipTask");
-        await Assert.That(content).Contains("_EOSS_Verify_ThePackage");
+        await Assert.That(content).Contains("SponsorCheck.Tasks.VerifySponsorshipTask");
+        await Assert.That(content).Contains("_SponsorCheck_Verify_ThePackage");
     }
 }

@@ -1,0 +1,69 @@
+<Project>
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU5100</NoWarn>
+    <_SponsorCheck_TasksDir>$(MSBuildThisFileDirectory)..\tasks\</_SponsorCheck_TasksDir>
+    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck_TasksDir)netstandard2.0\SponsorCheck.Tasks.dll</_SponsorCheck_TasksAssembly>
+    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.Tasks.dll</_SponsorCheck_TasksAssembly>
+    <_SponsorCheck_VerifierTemplate>$(MSBuildThisFileDirectory)ConsumerVerifier.targets</_SponsorCheck_VerifierTemplate>
+  </PropertyGroup>
+
+  <UsingTask TaskName="SponsorCheck.Tasks.BundleSponsorListTask"
+             AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
+
+  <Target Name="_SponsorCheck_BundleSponsorList"
+          BeforeTargets="_GetPackageFiles;GenerateNuspec"
+          Condition="'$(Configuration)' == 'Release' and '$(IsPackable)' == 'true'">
+    <PropertyGroup>
+      <_SponsorCheck_HashListPath>$(IntermediateOutputPath)SponsorCheck\SponsorHashes.txt</_SponsorCheck_HashListPath>
+      <_SponsorCheck_GeneratedTargetsPath>$(IntermediateOutputPath)SponsorCheck\$(PackageId).targets</_SponsorCheck_GeneratedTargetsPath>
+      <_SponsorCheck_PackDatePath>$(IntermediateOutputPath)SponsorCheck\PackDate.txt</_SponsorCheck_PackDatePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_SponsorCheck_Self    Include="@(PackageReference)" Condition="'%(Identity)' == 'SponsorCheck'" />
+      <_SponsorCheck_SelfVer Include="@(PackageVersion)"   Condition="'%(Identity)' == 'SponsorCheck'" />
+    </ItemGroup>
+
+    <BundleSponsorListTask
+        GitHubSponsorsAccountFromRef="%(_SponsorCheck_Self.GitHubSponsorsAccount)"
+        GitHubSponsorsAccountFromVer="%(_SponsorCheck_SelfVer.GitHubSponsorsAccount)"
+        OpenCollectiveAccountFromRef="%(_SponsorCheck_Self.OpenCollectiveAccount)"
+        OpenCollectiveAccountFromVer="%(_SponsorCheck_SelfVer.OpenCollectiveAccount)"
+        PolarAccountFromRef="%(_SponsorCheck_Self.PolarAccount)"
+        PolarAccountFromVer="%(_SponsorCheck_SelfVer.PolarAccount)"
+        GitHubToken="$(GitHubToken)"
+        OpenCollectiveToken="$(OpenCollectiveToken)"
+        PolarToken="$(PolarToken)"
+        UserSecretsId="$(UserSecretsId)"
+        OverrideListPath="$(SponsorListOverride)"
+        VerifierTargetsTemplatePath="$(_SponsorCheck_VerifierTemplate)"
+        ThePackageId="$(PackageId)"
+        OutputHashListPath="$(_SponsorCheck_HashListPath)"
+        OutputVerifierTargetsPath="$(_SponsorCheck_GeneratedTargetsPath)"
+        OutputPackDatePath="$(_SponsorCheck_PackDatePath)"
+        OverridePackDate="$(SponsorCheck_PackDateOverride)" />
+
+    <ItemGroup>
+      <None Include="$(_SponsorCheck_HashListPath)"
+            Pack="true"
+            PackagePath="build\SponsorCheck.SponsorHashes.txt"
+            Visible="false" />
+      <None Include="$(_SponsorCheck_PackDatePath)"
+            Pack="true"
+            PackagePath="build\SponsorCheck.PackDate.txt"
+            Visible="false" />
+      <None Include="$(_SponsorCheck_GeneratedTargetsPath)"
+            Pack="true"
+            PackagePath="build\$(PackageId).targets"
+            Visible="false" />
+      <None Include="$(_SponsorCheck_TasksDir)netstandard2.0\*.dll"
+            Pack="true"
+            PackagePath="tasks\netstandard2.0\"
+            Visible="false" />
+      <None Include="$(_SponsorCheck_TasksDir)net472\*.dll"
+            Pack="true"
+            PackagePath="tasks\net472\"
+            Visible="false" />
+    </ItemGroup>
+  </Target>
+</Project>

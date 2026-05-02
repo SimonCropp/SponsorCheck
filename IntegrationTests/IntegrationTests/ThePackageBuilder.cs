@@ -1,4 +1,4 @@
-namespace EnforceOssSponsorship.IntegrationTests;
+namespace SponsorCheck.IntegrationTests;
 
 /// One-time setup that packs the canonical _Shared/ThePackage fixture into a per-suite local feed dir.
 /// Subsequent consumer-side tests reference ThePackage from that feed.
@@ -17,18 +17,18 @@ public static class ThePackageBuilder
                 return localFeedDir;
             }
 
-            var feed = Path.Combine(Path.GetTempPath(), "eoss-it-feed", Guid.NewGuid().ToString("N"));
+            var feed = Path.Combine(Path.GetTempPath(), "sponsorcheck-it-feed", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(feed);
 
-            // Copy the latest EnforceOssSponsorship nupkg from src/../nugets into the feed.
+            // Copy the latest SponsorCheck nupkg from src/../nugets into the feed.
             var srcNugets = TestEnvironment.SrcNugetsDir;
-            if (!Directory.Exists(srcNugets) || Directory.GetFiles(srcNugets, "EnforceOssSponsorship.*.nupkg").Length == 0)
+            if (!Directory.Exists(srcNugets) || Directory.GetFiles(srcNugets, "SponsorCheck.*.nupkg").Length == 0)
             {
                 throw new InvalidOperationException(
-                    $"No EnforceOssSponsorship nupkg in {srcNugets}. Run `dotnet build src --configuration Release` first.");
+                    $"No SponsorCheck nupkg in {srcNugets}. Run `dotnet build src --configuration Release` first.");
             }
 
-            foreach (var nupkg in Directory.GetFiles(srcNugets, "EnforceOssSponsorship.*.nupkg"))
+            foreach (var nupkg in Directory.GetFiles(srcNugets, "SponsorCheck.*.nupkg"))
             {
                 File.Copy(nupkg, Path.Combine(feed, Path.GetFileName(nupkg)), overwrite: true);
             }
@@ -39,7 +39,7 @@ public static class ThePackageBuilder
             TestEnvironment.WriteNugetConfig(workDir, feed);
 
             // Pack with override list so we don't hit live platforms.
-            // Use an isolated packages dir so we don't pull a stale EnforceOssSponsorship from the global cache.
+            // Use an isolated packages dir so we don't pull a stale SponsorCheck from the global cache.
             var packagesDir = Path.Combine(feed, ".pkgs");
             Directory.CreateDirectory(packagesDir);
             var result = await DotnetCliRunner.Run(
@@ -49,7 +49,10 @@ public static class ThePackageBuilder
                 new Dictionary<string, string>
                 {
                     ["SponsorListOverride"] = TestEnvironment.OverrideListPath,
-                    ["PackageOutputPath"] = feed
+                    ["PackageOutputPath"] = feed,
+                    // Backdate pack so Consumer.RecentSponsor can have a SponsorshipStart that is
+                    // both AFTER the pack date and BEFORE today (i.e. not in the future).
+                    ["SponsorCheck_PackDateOverride"] = "2024-01-01"
                 },
                 workDir,
                 packagesDir).ConfigureAwait(false);

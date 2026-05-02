@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <PackageId>SponsorCheck</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageTags>opensource;maintenance;fee;sponsors;build;msbuild;github;opencollective;polar</PackageTags>
+    <PackageReadmeFile>nuget-readme.md</PackageReadmeFile>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoBuild>false</NoBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>
+    <UserSecretsId>0b81e813-4e7d-40f9-810b-9bd2cddd69e4</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SponsorCheck.Tasks\SponsorCheck.Tasks.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build\SponsorCheck.targets" Pack="true" PackagePath="build\SponsorCheck.targets" />
+    <None Include="..\SponsorCheck.Tasks\EmbeddedTemplates\ConsumerVerifier.targets" Pack="true" PackagePath="build\ConsumerVerifier.targets" Visible="false" />
+    <None Include="nuget-readme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <Target Name="_SponsorCheck_PackTaskDlls" BeforeTargets="_GetPackageFiles" DependsOnTargets="_SponsorCheck_BuildTasksProject">
+    <ItemGroup>
+      <None Include="..\SponsorCheck.Tasks\bin\$(Configuration)\netstandard2.0\*.dll" Pack="true" PackagePath="tasks\netstandard2.0\" Visible="false" />
+      <None Include="..\SponsorCheck.Tasks\bin\$(Configuration)\net472\*.dll" Pack="true" PackagePath="tasks\net472\" Visible="false" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_SponsorCheck_BuildTasksProject">
+    <MSBuild Projects="..\SponsorCheck.Tasks\SponsorCheck.Tasks.csproj" Properties="Configuration=$(Configuration)" />
+  </Target>
+</Project>

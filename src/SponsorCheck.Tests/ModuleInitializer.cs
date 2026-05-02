@@ -1,4 +1,4 @@
-namespace SponsorCheck.IntegrationTests;
+namespace SponsorCheck.Tests;
 
 public static class ModuleInitializer
 {

@@ -1,4 +1,4 @@
-namespace EnforceOssSponsorship.IntegrationTests;
+namespace SponsorCheck.IntegrationTests;
 
 public sealed record CliResult(int ExitCode, string Stdout, string Stderr)
 {

@@ -8,7 +8,7 @@
     <Description>Enforce the Open Source Maintenance Fee at build time via pluggable sponsorship platforms (GitHub Sponsors, Open Collective, Polar).</Description>
     <Authors>Simon Cropp</Authors>
     <Copyright>Copyright Simon Cropp</Copyright>
-    <PackageProjectUrl>https://github.com/SimonCropp/EnforceOssSponsorship</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/SimonCropp/SponsorCheck</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\nugets</PackageOutputPath>
     <ResolveAssemblyReferencesSilent>true</ResolveAssemblyReferencesSilent>

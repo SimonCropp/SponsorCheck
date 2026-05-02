@@ -5,18 +5,21 @@
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>SponsorCheck.IntegrationTests</RootNamespace>
+    <RootNamespace>SponsorCheck.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SponsorCheck.Tasks\SponsorCheck.Tasks.csproj"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Utilities.Core" />
+    <PackageReference Include="Microsoft.Build.Framework" />
+    <PackageReference Include="MarkdownSnippets.MsBuild" PrivateAssets="all" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Verify.TUnit" />
     <PackageReference Include="Verify" />
     <PackageReference Include="Verify.DiffPlex" />
-    <PackageReference Include="SponsorCheck" PrivateAssets="all" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Fixtures\sponsors-override.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

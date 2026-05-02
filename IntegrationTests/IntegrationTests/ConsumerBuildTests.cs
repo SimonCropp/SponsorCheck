@@ -1,4 +1,4 @@
-namespace EnforceOssSponsorship.IntegrationTests;
+namespace SponsorCheck.IntegrationTests;
 
 public class ConsumerBuildTests
 {
@@ -24,31 +24,31 @@ public class ConsumerBuildTests
     {
         var result = await BuildFixture("Consumer.ValidGitHubSponsor");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+        await Assert.That(result.Combined).DoesNotContain("SC00");
     }
 
     [Test]
-    public async Task InvalidSponsor_FailsWithEOSS004()
+    public async Task InvalidSponsor_FailsWithSC004()
     {
         var result = await BuildFixture("Consumer.InvalidSponsor");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("EOSS004");
+        await Assert.That(result.Combined).Contains("SC004");
     }
 
     [Test]
-    public async Task IgnoredLicense_BuildsWithEOSS003Warning()
+    public async Task IgnoredLicense_BuildsWithSC003Warning()
     {
         var result = await BuildFixture("Consumer.IgnoredLicense");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("EOSS003");
+        await Assert.That(result.Combined).Contains("SC003");
     }
 
     [Test]
-    public async Task NoConfig_FailsWithEOSS001()
+    public async Task NoConfig_FailsWithSC001()
     {
         var result = await BuildFixture("Consumer.NoConfig");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("EOSS001");
+        await Assert.That(result.Combined).Contains("SC001");
     }
 
     [Test]
@@ -56,23 +56,23 @@ public class ConsumerBuildTests
     {
         var result = await BuildFixture("Consumer.FutureLicense");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+        await Assert.That(result.Combined).DoesNotContain("SC00");
     }
 
     [Test]
-    public async Task ExpiredLicense_FailsWithEOSS005()
+    public async Task ExpiredLicense_FailsWithSC005()
     {
         var result = await BuildFixture("Consumer.ExpiredLicense");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("EOSS005");
+        await Assert.That(result.Combined).Contains("SC005");
     }
 
     [Test]
-    public async Task MultipleModes_FailsWithEOSS002()
+    public async Task MultipleModes_FailsWithSC002()
     {
         var result = await BuildFixture("Consumer.MultipleModes");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("EOSS002");
+        await Assert.That(result.Combined).Contains("SC002");
     }
 
     [Test]
@@ -80,7 +80,7 @@ public class ConsumerBuildTests
     {
         var result = await BuildFixture("Consumer.AnyMatchPasses");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+        await Assert.That(result.Combined).DoesNotContain("SC00");
     }
 
     [Test]
@@ -88,7 +88,7 @@ public class ConsumerBuildTests
     {
         var result = await BuildFixture("Consumer.DebugIsNoOp", "Debug");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+        await Assert.That(result.Combined).DoesNotContain("SC00");
     }
 
     [Test]
@@ -96,7 +96,7 @@ public class ConsumerBuildTests
     {
         var result = await BuildFixture("Consumer.FSharp");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+        await Assert.That(result.Combined).DoesNotContain("SC00");
     }
 
     [Test]
@@ -104,6 +104,22 @@ public class ConsumerBuildTests
     {
         var result = await BuildFixture("Consumer.VB");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).DoesNotContain("EOSS00");
+        await Assert.That(result.Combined).DoesNotContain("SC00");
+    }
+
+    [Test]
+    public async Task RecentSponsor_TrustedDespiteNotInBundledList()
+    {
+        var result = await BuildFixture("Consumer.RecentSponsor");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("trusting unverified sponsor");
+    }
+
+    [Test]
+    public async Task FutureSponsorshipStart_FailsWithSC014()
+    {
+        var result = await BuildFixture("Consumer.FutureSponsorshipStart");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC014");
     }
 }
