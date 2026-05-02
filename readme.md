@@ -225,8 +225,7 @@ The hash list is **light obfuscation**, not real privacy. Anyone with a wordlist
 
 ## Project layout
 
-- `src/SponsorCheck` — the meta nupkg (only ships files and the bundler `.targets`)
-- `src/SponsorCheck.Tasks` — single multi-targeted (netstandard2.0;net472) MSBuild task assembly with both the Bundler and the Verifier
+- `src/SponsorCheck` — the multi-targeted (netstandard2.0;net472) MSBuild task assembly plus the package's bundler `.targets` and embedded verifier template; produces the `SponsorCheck` nupkg
 - `src/SponsorCheck.Tests` — TUnit + Verify unit tests for pure helpers and tasks
 - `IntegrationTests/IntegrationTests` — end-to-end tests that pack ThePackage with the just-built SponsorCheck and build consumer fixtures (C#, F#, VB) against it
 

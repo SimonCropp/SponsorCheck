@@ -12,6 +12,5 @@
     <File Path="nuget.config" />
   </Folder>
   <Project Path="SponsorCheck/SponsorCheck.csproj" />
-  <Project Path="SponsorCheck.Tasks/SponsorCheck.Tasks.csproj" />
   <Project Path="SponsorCheck.Tests/SponsorCheck.Tests.csproj" />
 </Solution>

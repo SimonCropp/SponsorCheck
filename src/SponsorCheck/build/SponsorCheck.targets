@@ -2,8 +2,8 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);NU5100</NoWarn>
     <_SponsorCheck_TasksDir>$(MSBuildThisFileDirectory)..\tasks\</_SponsorCheck_TasksDir>
-    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck_TasksDir)netstandard2.0\SponsorCheck.Tasks.dll</_SponsorCheck_TasksAssembly>
-    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.Tasks.dll</_SponsorCheck_TasksAssembly>
+    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck_TasksDir)netstandard2.0\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
+    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
     <_SponsorCheck_VerifierTemplate>$(MSBuildThisFileDirectory)ConsumerVerifier.targets</_SponsorCheck_VerifierTemplate>
   </PropertyGroup>
 

@@ -13,8 +13,8 @@ public class AuthorPackTests
         var entries = zip.Entries.Select(e => e.FullName).ToList();
         await Assert.That(entries).Contains("build/ThePackage.targets");
         await Assert.That(entries).Contains("build/SponsorCheck.SponsorHashes.txt");
-        await Assert.That(entries.Any(e => e.StartsWith("tasks/netstandard2.0/SponsorCheck.Tasks.dll"))).IsTrue();
-        await Assert.That(entries.Any(e => e.StartsWith("tasks/net472/SponsorCheck.Tasks.dll"))).IsTrue();
+        await Assert.That(entries.Any(e => e.StartsWith("tasks/netstandard2.0/SponsorCheck.dll"))).IsTrue();
+        await Assert.That(entries.Any(e => e.StartsWith("tasks/net472/SponsorCheck.dll"))).IsTrue();
     }
 
     [Test]

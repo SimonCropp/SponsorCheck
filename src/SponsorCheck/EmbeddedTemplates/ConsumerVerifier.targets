@@ -2,8 +2,8 @@
   <PropertyGroup>
     <_SponsorCheck_ThePackageId>__SC_PACKAGE_ID_RAW__</_SponsorCheck_ThePackageId>
     <_SponsorCheck_TasksDir>$(MSBuildThisFileDirectory)..\tasks\</_SponsorCheck_TasksDir>
-    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck_TasksDir)netstandard2.0\SponsorCheck.Tasks.dll</_SponsorCheck_TasksAssembly>
-    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.Tasks.dll</_SponsorCheck_TasksAssembly>
+    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck_TasksDir)netstandard2.0\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
+    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
     <_SponsorCheck_HashListPath>$(MSBuildThisFileDirectory)SponsorCheck.SponsorHashes.txt</_SponsorCheck_HashListPath>
     <_SponsorCheck_PackDatePath>$(MSBuildThisFileDirectory)SponsorCheck.PackDate.txt</_SponsorCheck_PackDatePath>
   </PropertyGroup>
