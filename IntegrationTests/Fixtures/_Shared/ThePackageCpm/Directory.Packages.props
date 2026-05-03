@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Metadata lives on PackageVersion (CPM), the path Verify.Syncfusion uses.
+         This combined with multi-targeting is what triggered the double-bundler-schedule
+         that caused the second invocation to fail with SC102. -->
+    <PackageVersion Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                    GitHubSponsorsAccount="acmecorp"
+                    OpenCollectiveAccount="acme-org"
+                    PolarAccount="acme" />
+  </ItemGroup>
+</Project>

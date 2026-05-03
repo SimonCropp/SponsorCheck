@@ -52,6 +52,20 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task CpmMultiTargeted_BundlerRunsExactlyOnceWithMetadataOnPackageVersion()
+    {
+        // Regression: with CPM (metadata on <PackageVersion>) + multi-targeting + GeneratePackageOnBuild,
+        // BeforeTargets="_GetPackageFiles;GenerateNuspec" caused MSBuild to schedule the bundler twice.
+        // The second invocation saw a different item-state and tripped SC102. Idempotency guard fixes it.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageCpm");
+        var nupkg = Directory.GetFiles(feed, "ThePackageCpm.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entries = zip.Entries.Select(e => e.FullName).ToList();
+        await Assert.That(entries).Contains("build/ThePackageCpm.targets");
+        await Assert.That(entries).Contains("build/SponsorCheck.SponsorHashes.txt");
+    }
+
+    [Test]
     public async Task BundledTargetsReferencesRightAssembly()
     {
         var feed = await ThePackageBuilder.EnsureBuilt();

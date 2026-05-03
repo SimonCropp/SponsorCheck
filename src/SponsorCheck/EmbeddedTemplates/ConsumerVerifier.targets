@@ -19,21 +19,37 @@
       <_SponsorCheck___SC_PACKAGE_ID___Ver Include="@(PackageVersion)"   Condition="'%(Identity)' == '$(_SponsorCheck_ThePackageId)'" />
     </ItemGroup>
 
+    <!-- Flatten item-metadata into properties first so MSBuild doesn't task-batch. See SponsorCheck.targets for the full explanation. -->
+    <PropertyGroup>
+      <_SponsorCheck___SC_PACKAGE_ID___IgnoredFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipLicenseIgnored)')</_SponsorCheck___SC_PACKAGE_ID___IgnoredFromRef>
+      <_SponsorCheck___SC_PACKAGE_ID___IgnoredFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipLicenseIgnored)')</_SponsorCheck___SC_PACKAGE_ID___IgnoredFromVer>
+      <_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipLicensedUntil)')</_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromRef>
+      <_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipLicensedUntil)')</_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromVer>
+      <_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipStart)')</_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromRef>
+      <_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipStart)')</_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromVer>
+      <_SponsorCheck___SC_PACKAGE_ID___GitHubFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(GitHubSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___GitHubFromRef>
+      <_SponsorCheck___SC_PACKAGE_ID___GitHubFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(GitHubSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___GitHubFromVer>
+      <_SponsorCheck___SC_PACKAGE_ID___OpenCollectiveFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(OpenCollectiveSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___OpenCollectiveFromRef>
+      <_SponsorCheck___SC_PACKAGE_ID___OpenCollectiveFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(OpenCollectiveSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___OpenCollectiveFromVer>
+      <_SponsorCheck___SC_PACKAGE_ID___PolarFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(PolarSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___PolarFromRef>
+      <_SponsorCheck___SC_PACKAGE_ID___PolarFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(PolarSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___PolarFromVer>
+    </PropertyGroup>
+
     <VerifySponsorshipTask
         ThePackageId="$(_SponsorCheck_ThePackageId)"
         SponsorHashListPath="$(_SponsorCheck_HashListPath)"
         PackDatePath="$(_SponsorCheck_PackDatePath)"
-        IgnoredFromRef="%(_SponsorCheck___SC_PACKAGE_ID___Ref.SponsorshipLicenseIgnored)"
-        IgnoredFromVer="%(_SponsorCheck___SC_PACKAGE_ID___Ver.SponsorshipLicenseIgnored)"
-        LicensedUntilFromRef="%(_SponsorCheck___SC_PACKAGE_ID___Ref.SponsorshipLicensedUntil)"
-        LicensedUntilFromVer="%(_SponsorCheck___SC_PACKAGE_ID___Ver.SponsorshipLicensedUntil)"
-        SponsorshipStartFromRef="%(_SponsorCheck___SC_PACKAGE_ID___Ref.SponsorshipStart)"
-        SponsorshipStartFromVer="%(_SponsorCheck___SC_PACKAGE_ID___Ver.SponsorshipStart)"
-        GitHubFromRef="%(_SponsorCheck___SC_PACKAGE_ID___Ref.GitHubSponsorAccount)"
-        GitHubFromVer="%(_SponsorCheck___SC_PACKAGE_ID___Ver.GitHubSponsorAccount)"
-        OpenCollectiveFromRef="%(_SponsorCheck___SC_PACKAGE_ID___Ref.OpenCollectiveSponsorAccount)"
-        OpenCollectiveFromVer="%(_SponsorCheck___SC_PACKAGE_ID___Ver.OpenCollectiveSponsorAccount)"
-        PolarFromRef="%(_SponsorCheck___SC_PACKAGE_ID___Ref.PolarSponsorAccount)"
-        PolarFromVer="%(_SponsorCheck___SC_PACKAGE_ID___Ver.PolarSponsorAccount)" />
+        IgnoredFromRef="$(_SponsorCheck___SC_PACKAGE_ID___IgnoredFromRef)"
+        IgnoredFromVer="$(_SponsorCheck___SC_PACKAGE_ID___IgnoredFromVer)"
+        LicensedUntilFromRef="$(_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromRef)"
+        LicensedUntilFromVer="$(_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromVer)"
+        SponsorshipStartFromRef="$(_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromRef)"
+        SponsorshipStartFromVer="$(_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromVer)"
+        GitHubFromRef="$(_SponsorCheck___SC_PACKAGE_ID___GitHubFromRef)"
+        GitHubFromVer="$(_SponsorCheck___SC_PACKAGE_ID___GitHubFromVer)"
+        OpenCollectiveFromRef="$(_SponsorCheck___SC_PACKAGE_ID___OpenCollectiveFromRef)"
+        OpenCollectiveFromVer="$(_SponsorCheck___SC_PACKAGE_ID___OpenCollectiveFromVer)"
+        PolarFromRef="$(_SponsorCheck___SC_PACKAGE_ID___PolarFromRef)"
+        PolarFromVer="$(_SponsorCheck___SC_PACKAGE_ID___PolarFromVer)" />
   </Target>
 </Project>

@@ -24,13 +24,28 @@
       <_SponsorCheck_SelfVer Include="@(PackageVersion)"   Condition="'%(Identity)' == 'SponsorCheck'" />
     </ItemGroup>
 
+    <!-- Flatten item-metadata into scalar properties. Using %(ItemGroup.Metadata) directly as
+         task parameters causes MSBuild to batch the task per unique item identity — and with two
+         ItemGroups in scope (PackageReference + PackageVersion under CPM) the task gets invoked
+         once per batch. The PackageReference batch typically has no SponsorCheck metadata under
+         CPM (it lives on PackageVersion), so that batch trips SC102 even though the other one
+         succeeds. Item transforms below produce a single string, which kills the batching. -->
+    <PropertyGroup>
+      <_SponsorCheck_GitHubFromRef>@(_SponsorCheck_Self->'%(GitHubSponsorsAccount)')</_SponsorCheck_GitHubFromRef>
+      <_SponsorCheck_GitHubFromVer>@(_SponsorCheck_SelfVer->'%(GitHubSponsorsAccount)')</_SponsorCheck_GitHubFromVer>
+      <_SponsorCheck_OpenCollectiveFromRef>@(_SponsorCheck_Self->'%(OpenCollectiveAccount)')</_SponsorCheck_OpenCollectiveFromRef>
+      <_SponsorCheck_OpenCollectiveFromVer>@(_SponsorCheck_SelfVer->'%(OpenCollectiveAccount)')</_SponsorCheck_OpenCollectiveFromVer>
+      <_SponsorCheck_PolarFromRef>@(_SponsorCheck_Self->'%(PolarAccount)')</_SponsorCheck_PolarFromRef>
+      <_SponsorCheck_PolarFromVer>@(_SponsorCheck_SelfVer->'%(PolarAccount)')</_SponsorCheck_PolarFromVer>
+    </PropertyGroup>
+
     <BundleSponsorListTask
-        GitHubSponsorsAccountFromRef="%(_SponsorCheck_Self.GitHubSponsorsAccount)"
-        GitHubSponsorsAccountFromVer="%(_SponsorCheck_SelfVer.GitHubSponsorsAccount)"
-        OpenCollectiveAccountFromRef="%(_SponsorCheck_Self.OpenCollectiveAccount)"
-        OpenCollectiveAccountFromVer="%(_SponsorCheck_SelfVer.OpenCollectiveAccount)"
-        PolarAccountFromRef="%(_SponsorCheck_Self.PolarAccount)"
-        PolarAccountFromVer="%(_SponsorCheck_SelfVer.PolarAccount)"
+        GitHubSponsorsAccountFromRef="$(_SponsorCheck_GitHubFromRef)"
+        GitHubSponsorsAccountFromVer="$(_SponsorCheck_GitHubFromVer)"
+        OpenCollectiveAccountFromRef="$(_SponsorCheck_OpenCollectiveFromRef)"
+        OpenCollectiveAccountFromVer="$(_SponsorCheck_OpenCollectiveFromVer)"
+        PolarAccountFromRef="$(_SponsorCheck_PolarFromRef)"
+        PolarAccountFromVer="$(_SponsorCheck_PolarFromVer)"
         GitHubToken="$(GitHubToken)"
         OpenCollectiveToken="$(OpenCollectiveToken)"
         PolarToken="$(PolarToken)"
