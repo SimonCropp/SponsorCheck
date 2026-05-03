@@ -1,17 +1,15 @@
 public class BundleSponsorListTaskTests
 {
-    static string BuildTemplate()
+    static string BuildTemplate(TempDirectory dir)
     {
-        var dir = Path.Combine(Path.GetTempPath(), $"sponsorcheck-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, "ConsumerVerifier.targets");
         File.WriteAllText(path, "<Project><!-- stub --></Project>");
         return path;
     }
 
-    static string WriteOverride(string content)
+    static string WriteOverride(TempDirectory dir, string content)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"sponsorcheck-override-{Guid.NewGuid():N}.json");
+        var path = Path.Combine(dir, "override.json");
         File.WriteAllText(path, content);
         return path;
     }
@@ -19,10 +17,9 @@ public class BundleSponsorListTaskTests
     [Test]
     public async Task SucceedsWithOverrideListSingleAccount()
     {
-        var template = BuildTemplate();
-        var override_ = WriteOverride("""[{"platform":"GitHubSponsors","account":"alice"}]""");
-        var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(work);
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var override_ = WriteOverride(dir, """[{"platform":"GitHubSponsors","account":"alice"}]""");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -30,9 +27,9 @@ public class BundleSponsorListTaskTests
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
             OverrideListPath = override_,
-            OutputHashListPath = Path.Combine(work, "SponsorHashes.txt"),
-            OutputVerifierTargetsPath = Path.Combine(work, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(work, "PackDate.txt")
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
         };
 
         var ok = task.Execute();
@@ -50,9 +47,8 @@ public class BundleSponsorListTaskTests
     {
         // Polar requires a token. Missing token throws MissingCredentialException,
         // which the task catches and surfaces as SC103 (distinct from the generic SC100).
-        var template = BuildTemplate();
-        var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(work);
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
         var engine = new StubBuildEngine();
         var task = new BundleSponsorListTask
         {
@@ -61,9 +57,9 @@ public class BundleSponsorListTaskTests
             // No PolarToken set, no UserSecretsId — token resolution returns null.
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OutputHashListPath = Path.Combine(work, "SponsorHashes.txt"),
-            OutputVerifierTargetsPath = Path.Combine(work, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(work, "PackDate.txt")
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
         };
 
         var ok = task.Execute();
@@ -80,18 +76,17 @@ public class BundleSponsorListTaskTests
     [Test]
     public async Task FailsWhenNoPlatformAccount()
     {
-        var template = BuildTemplate();
-        var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(work);
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
         var engine = new StubBuildEngine();
         var task = new BundleSponsorListTask
         {
             BuildEngine = engine,
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OutputHashListPath = Path.Combine(work, "SponsorHashes.txt"),
-            OutputVerifierTargetsPath = Path.Combine(work, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(work, "PackDate.txt")
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
         };
 
         var ok = task.Execute();
@@ -104,8 +99,10 @@ public class BundleSponsorListTaskTests
     [Test]
     public async Task BundlesAcrossMultiplePlatforms()
     {
-        var template = BuildTemplate();
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
         var override_ = WriteOverride(
+            dir,
             """
             [
               {"platform":"GitHubSponsors","account":"alice"},
@@ -114,8 +111,6 @@ public class BundleSponsorListTaskTests
               {"platform":"Polar","account":"acme"}
             ]
             """);
-        var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(work);
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -125,9 +120,9 @@ public class BundleSponsorListTaskTests
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
             OverrideListPath = override_,
-            OutputHashListPath = Path.Combine(work, "SponsorHashes.txt"),
-            OutputVerifierTargetsPath = Path.Combine(work, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(work, "PackDate.txt")
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
         };
 
         var ok = task.Execute();
@@ -238,10 +233,11 @@ public class BundleSponsorListTaskTests
         // MSBuild target/item names) and __SC_PACKAGE_ID_RAW__ (literal package id, used inside
         // element values). Catch regressions where someone moves a placeholder to attribute
         // position and breaks the >...< substitution shape.
-        var dir = Path.Combine(Path.GetTempPath(), $"sponsorcheck-tpl-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(dir);
+        using var dir = new TempDirectory();
         var templatePath = Path.Combine(dir, "ConsumerVerifier.targets");
-        File.WriteAllText(templatePath, """
+        await File.WriteAllTextAsync(
+            templatePath,
+            """
             <Project>
               <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__" />
               <PropertyGroup>
@@ -250,9 +246,7 @@ public class BundleSponsorListTaskTests
             </Project>
             """);
 
-        var override_ = WriteOverride("[]");
-        var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(work);
+        var override_ = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -261,9 +255,9 @@ public class BundleSponsorListTaskTests
             // ID with dot, dash, and digit — exercise sanitization.
             ThePackageId = "Acme.Lib-2",
             OverrideListPath = override_,
-            OutputHashListPath = Path.Combine(work, "SponsorHashes.txt"),
-            OutputVerifierTargetsPath = Path.Combine(work, "Acme.Lib-2.targets"),
-            OutputPackDatePath = Path.Combine(work, "PackDate.txt")
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "Acme.Lib-2.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -277,8 +271,10 @@ public class BundleSponsorListTaskTests
     [Test]
     public async Task DeterministicOutput()
     {
-        var template = BuildTemplate();
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
         var override_ = WriteOverride(
+            dir,
             """
             [
               {"platform":"GitHubSponsors","account":"bob"},
@@ -286,8 +282,6 @@ public class BundleSponsorListTaskTests
               {"platform":"GitHubSponsors","account":"alice"}
             ]
             """);
-        var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(work);
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -295,9 +289,9 @@ public class BundleSponsorListTaskTests
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
             OverrideListPath = override_,
-            OutputHashListPath = Path.Combine(work, "SponsorHashes.txt"),
-            OutputVerifierTargetsPath = Path.Combine(work, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(work, "PackDate.txt")
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
         };
 
         await Assert.That(task.Execute()).IsTrue();

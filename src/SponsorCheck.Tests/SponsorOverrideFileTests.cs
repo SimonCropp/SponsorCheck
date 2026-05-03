@@ -1,8 +1,8 @@
 public class SponsorOverrideFileTests
 {
-    static string WriteTempJson(string content)
+    static string WriteTempJson(TempDirectory dir, string content)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"sponsorcheck-test-{Guid.NewGuid():N}.json");
+        var path = Path.Combine(dir, "override.json");
         File.WriteAllText(path, content);
         return path;
     }
@@ -10,7 +10,8 @@ public class SponsorOverrideFileTests
     [Test]
     public async Task ReadsValidArray()
     {
-        var path = WriteTempJson("""
+        using var dir = new TempDirectory();
+        var path = WriteTempJson(dir, """
         [
           { "platform": "GitHubSponsors", "account": "alice" },
           { "platform": "OpenCollective", "account": "acme-org" },
@@ -28,7 +29,8 @@ public class SponsorOverrideFileTests
     [Test]
     public async Task EmptyArrayOk()
     {
-        var path = WriteTempJson("[]");
+        using var dir = new TempDirectory();
+        var path = WriteTempJson(dir, "[]");
         var entries = SponsorOverrideFile.Read(path);
         await Assert.That(entries.Count).IsEqualTo(0);
     }
@@ -41,21 +43,24 @@ public class SponsorOverrideFileTests
     [Test]
     public void NonArrayRootThrows()
     {
-        var path = WriteTempJson("""{ "platform": "X", "account": "Y" }""");
+        using var dir = new TempDirectory();
+        var path = WriteTempJson(dir, """{ "platform": "X", "account": "Y" }""");
         Assert.Throws<MaintenanceFeeException>(() => SponsorOverrideFile.Read(path));
     }
 
     [Test]
     public void MissingPlatformThrows()
     {
-        var path = WriteTempJson("""[{ "account": "alice" }]""");
+        using var dir = new TempDirectory();
+        var path = WriteTempJson(dir, """[{ "account": "alice" }]""");
         Assert.Throws<MaintenanceFeeException>(() => SponsorOverrideFile.Read(path));
     }
 
     [Test]
     public void MissingAccountThrows()
     {
-        var path = WriteTempJson("""[{ "platform": "GitHubSponsors" }]""");
+        using var dir = new TempDirectory();
+        var path = WriteTempJson(dir, """[{ "platform": "GitHubSponsors" }]""");
         Assert.Throws<MaintenanceFeeException>(() => SponsorOverrideFile.Read(path));
     }
 }
