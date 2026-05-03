@@ -1,31 +1,30 @@
-public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
+public sealed class GitHubSponsorsPlatform(HttpClient client) :
+    ISponsorshipPlatform
 {
     const string endpoint = "https://api.github.com/graphql";
 
-    const string query = """
-                         query($login: String!, $cursor: String) {
-                           user(login: $login) {
-                             sponsors(first: 100, after: $cursor) {
-                               pageInfo { hasNextPage endCursor }
-                               nodes { __typename ... on User { login } ... on Organization { login } }
-                             }
-                           }
-                           organization(login: $login) {
-                             sponsors(first: 100, after: $cursor) {
-                               pageInfo { hasNextPage endCursor }
-                               nodes { __typename ... on User { login } ... on Organization { login } }
-                             }
-                           }
-                         }
-                         """;
+    const string query =
+        """
+        query($login: String!, $cursor: String) {
+          user(login: $login) {
+            sponsors(first: 100, after: $cursor) {
+              pageInfo { hasNextPage endCursor }
+              nodes { __typename ... on User { login } ... on Organization { login } }
+            }
+          }
+          organization(login: $login) {
+            sponsors(first: 100, after: $cursor) {
+              pageInfo { hasNextPage endCursor }
+              nodes { __typename ... on User { login } ... on Organization { login } }
+            }
+          }
+        }
+        """;
 
-    readonly HttpClient client;
-
-    public GitHubSponsorsPlatform() : this(HttpClientFactory.Get())
+    public GitHubSponsorsPlatform() :
+        this(HttpClientFactory.Get())
     {
     }
-
-    public GitHubSponsorsPlatform(HttpClient client) => this.client = client;
 
     public string Id => "GitHubSponsors";
 
@@ -132,12 +131,12 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
 
         using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);
         var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
         {
-            throw new MaintenanceFeeException($"GitHub GraphQL HTTP {(int) response.StatusCode}: {body}");
+            return body;
         }
 
-        return body;
+        throw new MaintenanceFeeException($"GitHub GraphQL HTTP {(int) response.StatusCode}: {body}");
     }
 
     public readonly record struct PageResult(
@@ -201,14 +200,15 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
             return false;
         }
 
-        if (!error.TryGetProperty("message", out var msg) ||
-            msg.ValueKind != JsonValueKind.String)
+        if (!error.TryGetProperty("message", out var message) ||
+            message.ValueKind != JsonValueKind.String)
         {
             return false;
         }
 
-        var text = msg.GetString();
-        if (text == null || text.IndexOf("personal access token (classic)", StringComparison.Ordinal) < 0)
+        var text = message.GetString();
+        if (text == null ||
+            text.IndexOf("personal access token (classic)", StringComparison.Ordinal) < 0)
         {
             return false;
         }
@@ -255,7 +255,8 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
 
     static (bool exists, IReadOnlyList<string> logins, bool hasNext, string? cursor) ParseConnection(JsonElement data, string key)
     {
-        if (!data.TryGetProperty(key, out var node) || node.ValueKind == JsonValueKind.Null)
+        if (!data.TryGetProperty(key, out var node) ||
+            node.ValueKind == JsonValueKind.Null)
         {
             return (false, [], false, null);
         }
@@ -265,11 +266,13 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
         string? cursor = null;
         if (node.TryGetProperty("sponsors", out var sponsors))
         {
-            if (sponsors.TryGetProperty("nodes", out var nodes) && nodes.ValueKind == JsonValueKind.Array)
+            if (sponsors.TryGetProperty("nodes", out var nodes) &&
+                nodes.ValueKind == JsonValueKind.Array)
             {
                 foreach (var entry in nodes.EnumerateArray())
                 {
-                    if (entry.TryGetProperty("login", out var login) && login.ValueKind == JsonValueKind.String)
+                    if (entry.TryGetProperty("login", out var login) &&
+                        login.ValueKind == JsonValueKind.String)
                     {
                         var value = login.GetString();
                         if (!string.IsNullOrWhiteSpace(value))
@@ -282,12 +285,14 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
 
             if (sponsors.TryGetProperty("pageInfo", out var pageInfo))
             {
-                if (pageInfo.TryGetProperty("hasNextPage", out var next) && next.ValueKind == JsonValueKind.True)
+                if (pageInfo.TryGetProperty("hasNextPage", out var next) &&
+                    next.ValueKind == JsonValueKind.True)
                 {
                     hasNext = true;
                 }
 
-                if (pageInfo.TryGetProperty("endCursor", out var cur) && cur.ValueKind == JsonValueKind.String)
+                if (pageInfo.TryGetProperty("endCursor", out var cur) &&
+                    cur.ValueKind == JsonValueKind.String)
                 {
                     cursor = cur.GetString();
                 }

@@ -63,7 +63,8 @@ public sealed class PolarPlatform(HttpClient client) :
     {
         using var doc = JsonDocument.Parse(json);
         var accounts = new List<string>();
-        if (!doc.RootElement.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
+        if (!doc.RootElement.TryGetProperty("items", out var items) ||
+            items.ValueKind != JsonValueKind.Array)
         {
             return new(accounts, 0);
         }
@@ -104,6 +105,11 @@ public sealed class PolarPlatform(HttpClient client) :
             }
         }
 
-        return current.ValueKind == JsonValueKind.String ? current.GetString() : null;
+        if (current.ValueKind == JsonValueKind.String)
+        {
+            return current.GetString();
+        }
+
+        return null;
     }
 }

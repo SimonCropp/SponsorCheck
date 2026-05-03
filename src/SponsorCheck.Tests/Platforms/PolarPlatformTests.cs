@@ -100,9 +100,9 @@ public class PolarPlatformTests
         {
             await platform.FetchSponsorAccounts("acme", token: null, log, Cancel.None);
         }
-        catch (MissingCredentialException ex)
+        catch (MissingCredentialException exception)
         {
-            caught = ex;
+            caught = exception;
         }
 
         await Assert.That(caught).IsNotNull();

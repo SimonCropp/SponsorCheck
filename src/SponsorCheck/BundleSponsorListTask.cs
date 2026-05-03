@@ -87,19 +87,19 @@ public sealed class BundleSponsorListTask :
                 $"SponsorCheck: bundled {hashes.Count} sponsor entries across {entries.Select(e => e.Platform).Distinct(StringComparer.OrdinalIgnoreCase).Count()} platform(s) into '{ThePackageId}'.");
             return true;
         }
-        catch (MissingCredentialException ex)
+        catch (MissingCredentialException exception)
         {
-            Log.LogError("SponsorCheck", "SC103", "", "", 0, 0, 0, 0, ex.Message);
+            Log.LogError("SponsorCheck", "SC103", "", "", 0, 0, 0, 0, exception.Message);
             return false;
         }
-        catch (MaintenanceFeeException ex)
+        catch (MaintenanceFeeException exception)
         {
-            Log.LogError("SponsorCheck", "SC100", "", "", 0, 0, 0, 0, ex.Message);
+            Log.LogError("SponsorCheck", "SC100", "", "", 0, 0, 0, 0, exception.Message);
             return false;
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            Log.LogErrorFromException(ex, showStackTrace: false);
+            Log.LogErrorFromException(exception, showStackTrace: false);
             return false;
         }
     }
@@ -149,8 +149,7 @@ public sealed class BundleSponsorListTask :
         return results;
     }
 
-    IReadOnlyDictionary<string, string>? userSecrets;
-    IReadOnlyDictionary<string, string> UserSecrets => userSecrets ??= LoadUserSecrets();
+    IReadOnlyDictionary<string, string> UserSecrets => field ??= LoadUserSecrets();
 
     IReadOnlyDictionary<string, string> LoadUserSecrets()
     {
@@ -169,10 +168,10 @@ public sealed class BundleSponsorListTask :
 
             return secrets;
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
             Log.LogWarning("SponsorCheck", "SC104", "", "", 0, 0, 0, 0,
-                $"SponsorCheck: could not read user-secrets at '{UserSecretsReader.ResolvePath(UserSecretsId)}': {ex.Message}");
+                $"SponsorCheck: could not read user-secrets at '{UserSecretsReader.ResolvePath(UserSecretsId)}': {exception.Message}");
             return new Dictionary<string, string>();
         }
     }

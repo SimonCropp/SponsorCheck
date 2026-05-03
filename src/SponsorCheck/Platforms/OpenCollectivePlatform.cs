@@ -99,7 +99,8 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
             return new(true, [], 0);
         }
 
-        var totalCount = members.TryGetProperty("totalCount", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0;
+        var totalCount = members.TryGetProperty("totalCount", out var t) &&
+                         t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0;
         var slugs = new List<string>();
         if (members.TryGetProperty("nodes", out var nodes) &&
             nodes.ValueKind == JsonValueKind.Array)
