@@ -234,10 +234,7 @@ flowchart TD
     Start([Consumer Release build]) --> Merge[Merge metadata from<br/>PackageReference + PackageVersion]
     Merge --> Conflict{Ref vs Ver<br/>disagree?}
     Conflict -->|Yes| SC006[SC006 Error<br/>conflicting metadata]
-    Conflict -->|No| Modes{License modes declared?<br/>Ignored / LicensedUntil / SponsorAccount}
-    Modes -->|none| SC001[SC001 Error<br/>no license mode]
-    Modes -->|more than one| SC002[SC002 Error<br/>mutually exclusive]
-    Modes -->|exactly one| Which{Which mode?}
+    Conflict -->|No| Which{Which mode?}
 
     Which -->|SponsorshipIgnored=true| SC003[SC003 Warning<br/>build passes]
 
