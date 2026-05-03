@@ -116,6 +116,21 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task CpmConsumer_LicenseMetadataOnPackageVersion_PassesWithoutBatchingError()
+    {
+        // Regression: under CPM the consumer's license metadata lives on <PackageVersion>, not
+        // <PackageReference>. Without the property-flatten in ConsumerVerifier.targets, MSBuild
+        // task-batches the verifier across the two ItemGroups. The PackageReference batch (no
+        // metadata) trips SC001 (no license mode), even though the PackageVersion batch succeeds
+        // with SponsorshipLicenseIgnored=true.
+        var result = await BuildFixture("Consumer.Cpm");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC003");
+        await Assert.That(result.Combined).DoesNotContain("SC001");
+        await Assert.That(result.Combined).DoesNotContain("SC002");
+    }
+
+    [Test]
     public async Task FutureSponsorshipStart_FailsWithSC014()
     {
         var result = await BuildFixture("Consumer.FutureSponsorshipStart");

@@ -15,14 +15,13 @@ public sealed class PolarPlatform(HttpClient client) :
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            throw new MaintenanceFeeException(
-                "Polar: API token required. Set <PolarToken> MSBuild property or POLAR_API_KEY env var. (SC103)");
+            throw new MissingCredentialException(
+                "Polar: API token required. Set <PolarToken> MSBuild property or POLAR_API_KEY env var.");
         }
 
         var accounts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var page = 1;
         const int limit = 100;
-        bool resolved;
 
         while (true)
         {
@@ -37,13 +36,16 @@ public sealed class PolarPlatform(HttpClient client) :
             }
 
             var pageResult = ParseResponse(body);
-            resolved = true;
             foreach (var account in pageResult.SponsorAccounts)
             {
                 accounts.Add(account);
             }
 
-            if (pageResult.SponsorAccounts.Count < limit)
+            // Terminate on raw page size, not extracted account count: an item without any usable
+            // identifier (no github_username, no email, no user_id) gets dropped from SponsorAccounts
+            // but still counts as one of the API's `limit` rows. Using filtered count here would
+            // prematurely end pagination on later pages with sparse identifiers.
+            if (pageResult.RawItemCount < limit)
             {
                 break;
             }
@@ -51,16 +53,11 @@ public sealed class PolarPlatform(HttpClient client) :
             page++;
         }
 
-        if (!resolved)
-        {
-            throw new MaintenanceFeeException($"Polar: failed to resolve subscriptions for '{ownerAccount}'.");
-        }
-
         log.LogMessage(MessageImportance.Normal, $"Polar: fetched {accounts.Count} active subscribers of '{ownerAccount}'.");
         return [.. accounts];
     }
 
-    public readonly record struct PageResult(IReadOnlyList<string> SponsorAccounts);
+    public readonly record struct PageResult(IReadOnlyList<string> SponsorAccounts, int RawItemCount);
 
     public static PageResult ParseResponse(string json)
     {
@@ -68,11 +65,13 @@ public sealed class PolarPlatform(HttpClient client) :
         var accounts = new List<string>();
         if (!doc.RootElement.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
         {
-            return new(accounts);
+            return new(accounts, 0);
         }
 
+        var rawItemCount = 0;
         foreach (var item in items.EnumerateArray())
         {
+            rawItemCount++;
             // Prefer explicit GitHub username if Polar exposes it, fall back to email, then customer id.
             var account = TryString(item, "user", "github_username")
                 ?? TryString(item, "customer", "github_username")
@@ -85,7 +84,7 @@ public sealed class PolarPlatform(HttpClient client) :
             }
         }
 
-        return new(accounts);
+        return new(accounts, rawItemCount);
     }
 
     static string? TryString(JsonElement parent, params string[] path)

@@ -22,25 +22,25 @@ public static class ThePackageBuilder
             var feed = Path.Combine(Path.GetTempPath(), "sponsorcheck-it-feed", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(feed);
 
-            // Copy the latest SponsorCheck nupkg from src/../nugets into the feed.
+            // Copy the just-built SponsorCheck nupkg from src/../nugets into the feed.
             var srcNugets = TestEnvironment.SrcNugetsDir;
             var sponsorCheckNupkgs = Directory.Exists(srcNugets)
                 ? Directory.GetFiles(srcNugets, "SponsorCheck.*.nupkg")
                 : [];
-            if (sponsorCheckNupkgs.Length == 0)
+            if (sponsorCheckNupkgs.Length != 1)
             {
                 throw new InvalidOperationException(
-                    $"No SponsorCheck nupkg in {srcNugets}. Run `dotnet build src --configuration Release` first.");
+                    sponsorCheckNupkgs.Length == 0
+                        ? $"No SponsorCheck nupkg in {srcNugets}. Run `dotnet build src --configuration Release` first."
+                        : $"Expected exactly one SponsorCheck.*.nupkg in {srcNugets}, found {sponsorCheckNupkgs.Length}. Clean stale nupkgs and rebuild src.");
             }
 
-            foreach (var nupkg in sponsorCheckNupkgs)
-            {
-                File.Copy(nupkg, Path.Combine(feed, Path.GetFileName(nupkg)), overwrite: true);
-            }
+            var sponsorCheckNupkg = sponsorCheckNupkgs[0];
+            File.Copy(sponsorCheckNupkg, Path.Combine(feed, Path.GetFileName(sponsorCheckNupkg)), overwrite: true);
 
-            // Use whichever SponsorCheck.*.nupkg sits in nugets/ as the source of truth for the version.
+            // Use the nupkg filename as the source of truth for the version.
             // Fixture csprojs declare Version="$(SponsorCheckVersion)" so they pick up exactly that build.
-            var sponsorCheckVersion = ExtractVersion(sponsorCheckNupkgs[0]);
+            var sponsorCheckVersion = ExtractVersion(sponsorCheckNupkg);
 
             var workDir = TestEnvironment.MakeWorkDir($"{fixtureName}-pack");
             TestEnvironment.CopyDirectory(Path.Combine(TestEnvironment.FixturesDir, "_Shared", fixtureName), workDir);

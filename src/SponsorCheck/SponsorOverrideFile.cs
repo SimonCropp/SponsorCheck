@@ -8,7 +8,7 @@ public static class SponsorOverrideFile
         }
 
         using var stream = File.OpenRead(path);
-        var doc = JsonDocument.Parse(stream);
+        using var doc = JsonDocument.Parse(stream);
         if (doc.RootElement.ValueKind != JsonValueKind.Array)
         {
             throw new MaintenanceFeeException($"Override file root must be a JSON array: {path}");

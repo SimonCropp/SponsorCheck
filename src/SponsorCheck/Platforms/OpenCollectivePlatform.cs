@@ -24,7 +24,6 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
     {
         var slugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var offset = 0;
-        bool resolved;
         while (true)
         {
             var json = await Post(ownerAccount, offset, token, cancel).ConfigureAwait(false);
@@ -34,7 +33,6 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
                 throw new MaintenanceFeeException($"Open Collective: account '{ownerAccount}' not found.");
             }
 
-            resolved = true;
             foreach (var slug in page.MemberSlugs)
             {
                 slugs.Add(slug);
@@ -46,11 +44,6 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
             {
                 break;
             }
-        }
-
-        if (!resolved)
-        {
-            throw new MaintenanceFeeException($"Open Collective: failed to resolve '{ownerAccount}'.");
         }
 
         log.LogMessage(MessageImportance.Normal, $"Open Collective: fetched {slugs.Count} backers of '{ownerAccount}'.");

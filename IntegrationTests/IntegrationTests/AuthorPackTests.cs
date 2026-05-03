@@ -52,11 +52,15 @@ public class AuthorPackTests
     }
 
     [Test]
-    public async Task CpmMultiTargeted_BundlerRunsExactlyOnceWithMetadataOnPackageVersion()
+    public async Task CpmMultiTargeted_MetadataOnPackageVersion_BundlesSuccessfully()
     {
-        // Regression: with CPM (metadata on <PackageVersion>) + multi-targeting + GeneratePackageOnBuild,
-        // BeforeTargets="_GetPackageFiles;GenerateNuspec" caused MSBuild to schedule the bundler twice.
-        // The second invocation saw a different item-state and tripped SC102. Idempotency guard fixes it.
+        // Regression: when SponsorCheck metadata lives on <PackageVersion> (CPM) and the author project
+        // multi-targets, MSBuild *task batches* on `%(ItemGroup.Metadata)` parameters when two ItemGroups
+        // are in scope (PackageReference batch + PackageVersion batch). The PackageReference batch under
+        // CPM has no SponsorCheck metadata, so that invocation tripped SC102 even though the PackageVersion
+        // batch succeeded. Fix: SponsorCheck.targets flattens metadata into scalar properties first
+        // (`@(Items->'%(M)')`), which kills the batching. Same fix in ConsumerVerifier.targets — see
+        // ConsumerBuildTests.CpmConsumer_LicenseMetadataOnPackageVersion_PassesWithoutBatchingError.
         var feed = await ThePackageBuilder.EnsureBuilt("ThePackageCpm");
         var nupkg = Directory.GetFiles(feed, "ThePackageCpm.*.nupkg").Single();
         using var zip = ZipFile.OpenRead(nupkg);

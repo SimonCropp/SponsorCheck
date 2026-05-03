@@ -87,6 +87,11 @@ public sealed class BundleSponsorListTask :
                 $"SponsorCheck: bundled {hashes.Count} sponsor entries across {entries.Select(e => e.Platform).Distinct(StringComparer.OrdinalIgnoreCase).Count()} platform(s) into '{ThePackageId}'.");
             return true;
         }
+        catch (MissingCredentialException ex)
+        {
+            Log.LogError("SponsorCheck", "SC103", "", "", 0, 0, 0, 0, ex.Message);
+            return false;
+        }
         catch (MaintenanceFeeException ex)
         {
             Log.LogError("SponsorCheck", "SC100", "", "", 0, 0, 0, 0, ex.Message);
@@ -144,8 +149,8 @@ public sealed class BundleSponsorListTask :
         return results;
     }
 
-    Lazy<IReadOnlyDictionary<string, string>>? userSecretsCache;
-    IReadOnlyDictionary<string, string> UserSecrets => (userSecretsCache ??= new(LoadUserSecrets)).Value;
+    IReadOnlyDictionary<string, string>? userSecrets;
+    IReadOnlyDictionary<string, string> UserSecrets => userSecrets ??= LoadUserSecrets();
 
     IReadOnlyDictionary<string, string> LoadUserSecrets()
     {
@@ -176,25 +181,30 @@ public sealed class BundleSponsorListTask :
     {
         var explicitToken = platformId switch
         {
-            "GitHubSponsors" => NullIfEmpty(GitHubToken),
-            "OpenCollective" => NullIfEmpty(OpenCollectiveToken),
-            "Polar" => NullIfEmpty(PolarToken),
+            "GitHubSponsors" => GitHubToken,
+            "OpenCollective" => OpenCollectiveToken,
+            "Polar" => PolarToken,
             _ => null
         };
-        if (explicitToken != null)
+        return ResolveToken(platformId, explicitToken, UserSecrets);
+    }
+
+    // Token resolution: explicit MSBuild property (or env-var-promoted property) wins; otherwise
+    // fall back to user-secrets convention. GitHub uses the standard "GitHubToken" name (matching
+    // the GITHUB_TOKEN env var convention); other platforms use "SponsorCheck:{PlatformId}Token".
+    // Static + injected secrets dict so this is unit-testable without writing to the real user-secrets directory.
+    public static string? ResolveToken(string platformId, string? explicitToken, IReadOnlyDictionary<string, string> userSecrets)
+    {
+        if (!string.IsNullOrWhiteSpace(explicitToken))
         {
             return explicitToken;
         }
 
-        // Fall back to user-secrets convention. GitHub uses the standard "GitHubToken" name
-        // (matching the GITHUB_TOKEN env var convention); the others use "<PlatformId>Token".
         var key = platformId == "GitHubSponsors"
             ? "SponsorCheck:GitHubToken"
             : $"SponsorCheck:{platformId}Token";
-        return UserSecrets.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
+        return userSecrets.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
     }
-
-    static string? NullIfEmpty(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
     static string Sanitize(string packageId)
     {

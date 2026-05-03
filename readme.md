@@ -246,7 +246,10 @@ Build passes but emits `SC003` warning every Release build, telling the consumer
 | SC010 | Error | Bundled sponsor hash file is missing from the package (corrupt install) |
 | SC013 | Error | `SponsorshipStart` not in `yyyy-MM-dd` format |
 | SC014 | Error | `SponsorshipStart` is in the future |
+| SC100 | Error | Bundler-side platform error (HTTP failure, GraphQL error, etc.) — see message |
 | SC102 | Error | OSS author has no `<Platform>Account` metadata on SponsorCheck |
+| SC103 | Error | A platform that requires a credential is missing one (currently Polar) |
+| SC104 | Warning | User-secrets file present but couldn't be read at pack time |
 
 
 ## How it works

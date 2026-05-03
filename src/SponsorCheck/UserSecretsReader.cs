@@ -12,7 +12,7 @@ public static class UserSecretsReader
         }
 
         using var stream = File.OpenRead(path);
-        var doc = JsonDocument.Parse(stream);
+        using var doc = JsonDocument.Parse(stream);
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         if (doc.RootElement.ValueKind == JsonValueKind.Object)
         {

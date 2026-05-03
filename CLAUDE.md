@@ -80,9 +80,13 @@ The 2024-01-01 backdate is what enables `Consumer.RecentSponsor` to test the `Sp
 ## Diagnostic code conventions
 
 - `SC0xx` — consumer-side (verifier). 001-007 are license-mode errors; 008 is the `SponsorshipStart` trust-attestation info message; 010 is corrupt install; 013-014 are `SponsorshipStart` errors.
-- `SC1xx` — author-side (bundler). 102 = no platform metadata; 103 = required platform credential missing; 104 = user-secrets read warning.
+- `SC1xx` — author-side (bundler). 100 = catch-all for `MaintenanceFeeException` (HTTP/GraphQL errors); 102 = no platform metadata; 103 = required platform credential missing (typed via `MissingCredentialException`); 104 = user-secrets read warning.
 
 When adding a new code, update both `VerifySponsorshipTask`/`BundleSponsorListTask` AND the diagnostic codes table in `readme.md`.
+
+## MSBuild task batching trap
+
+`SponsorCheck.targets` and `ConsumerVerifier.targets` flatten item-metadata into scalar properties (`@(Items->'%(M)')`) before passing to the bundler/verifier task. Do not revert this to direct `%(ItemGroup.Metadata)` task parameters. With CPM both `@(PackageReference)` and `@(PackageVersion)` carry SponsorCheck items, and direct metadata accessors cause MSBuild to invoke the task once per ItemGroup batch. The PackageReference batch typically has no metadata under CPM (it lives on PackageVersion), so that batch fires SC102/SC001 even though the other one would succeed. Regression coverage: `AuthorPackTests.CpmMultiTargeted_MetadataOnPackageVersion_BundlesSuccessfully` (bundler) and `ConsumerBuildTests.CpmConsumer_LicenseMetadataOnPackageVersion_PassesWithoutBatchingError` (verifier).
 
 ## Release-only
 
