@@ -12,8 +12,7 @@
              AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
 
   <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__"
-          BeforeTargets="BeforeBuild"
-          Condition="'$(Configuration)' == 'Release'">
+          BeforeTargets="BeforeBuild">
     <ItemGroup>
       <_SponsorCheck___SC_PACKAGE_ID___Ref Include="@(PackageReference)" Condition="'%(Identity)' == '$(_SponsorCheck_ThePackageId)'" />
       <_SponsorCheck___SC_PACKAGE_ID___Ver Include="@(PackageVersion)"   Condition="'%(Identity)' == '$(_SponsorCheck_ThePackageId)'" />
