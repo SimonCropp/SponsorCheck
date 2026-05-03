@@ -53,6 +53,8 @@ At least one `<Platform>Account` must be set. Credentials per platform:
 
 Required - [classic PAT](https://github.com/settings/tokens/new) with `read:user` (when sponsored as a user) and/or `read:org` (when sponsored as an organization), or a [fine-grained PAT](https://github.com/settings/personal-access-tokens/new) with **Sponsorships: Read-only**. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently filtered out and the bundled hash list will be incomplete.
 
+Some organizations disable classic-PAT access in their security settings. When sponsored as such an org, a classic PAT will fail with a `FORBIDDEN` error from GitHub at pack time and the bundler emits an actionable message. The fix is to issue a [fine-grained PAT](https://github.com/settings/personal-access-tokens/new) — set **Resource owner** to the sponsored org and grant **Sponsorships: Read-only** under organization permissions.
+
 
 #### [OpenCollective](https://opencollective.com)
 

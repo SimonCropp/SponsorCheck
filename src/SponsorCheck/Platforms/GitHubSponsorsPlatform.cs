@@ -163,6 +163,15 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
                     continue;
                 }
 
+                if (IsClassicPatForbidden(error, out var orgName))
+                {
+                    throw new MaintenanceFeeException(
+                        $"GitHub Sponsors: organization '{orgName}' has disabled access via classic personal access tokens. " +
+                        "Create a fine-grained PAT at https://github.com/settings/personal-access-tokens/new with " +
+                        $"Resource owner = '{orgName}' and Sponsorships: Read-only, then update the SponsorCheck:GitHubToken user-secret " +
+                        "(or the GitHubToken MSBuild property / env var).");
+                }
+
                 fatal.Add(error);
             }
 
@@ -180,6 +189,42 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
         var (userExists, userLogins, userNext, userCursor) = ParseConnection(data, "user");
         var (orgExists, orgLogins, orgNext, orgCursor) = ParseConnection(data, "organization");
         return new(userExists, orgExists, userLogins, orgLogins, userNext, orgNext, userCursor, orgCursor);
+    }
+
+    static bool IsClassicPatForbidden(JsonElement error, out string? orgName)
+    {
+        orgName = null;
+        if (!error.TryGetProperty("type", out var type) ||
+            type.ValueKind != JsonValueKind.String ||
+            !string.Equals(type.GetString(), "FORBIDDEN", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!error.TryGetProperty("message", out var msg) ||
+            msg.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        var text = msg.GetString();
+        if (text == null || text.IndexOf("personal access token (classic)", StringComparison.Ordinal) < 0)
+        {
+            return false;
+        }
+
+        // Message format: "`<orgName>` forbids access via a personal access token (classic)..."
+        var first = text.IndexOf('`');
+        if (first >= 0)
+        {
+            var second = text.IndexOf('`', first + 1);
+            if (second > first)
+            {
+                orgName = text.Substring(first + 1, second - first - 1);
+            }
+        }
+
+        return true;
     }
 
     static bool IsExpectedNotFound(JsonElement error)

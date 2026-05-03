@@ -163,6 +163,28 @@ public class GitHubSponsorsPlatformTests
     }
 
     [Test]
+    public async Task ClassicPatForbiddenSurfacesActionableError()
+    {
+        var json = """
+        {
+          "errors": [
+            {
+              "type": "FORBIDDEN",
+              "path": [ "organization" ],
+              "extensions": { "saml_failure": false },
+              "locations": [ { "line": 8, "column": 3 } ],
+              "message": "`VerifyTests` forbids access via a personal access token (classic). Please use a GitHub App, OAuth App, or a personal access token with fine-grained permissions."
+            }
+          ]
+        }
+        """;
+        var ex = Assert.Throws<MaintenanceFeeException>(() => GitHubSponsorsPlatform.ParseResponse(json));
+        await Assert.That(ex.Message).Contains("VerifyTests");
+        await Assert.That(ex.Message).Contains("fine-grained PAT");
+        await Assert.That(ex.Message).Contains("Sponsorships: Read-only");
+    }
+
+    [Test]
     public void NotFoundOnUnrelatedPathStillThrows()
     {
         var json = """
