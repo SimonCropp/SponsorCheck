@@ -5,7 +5,7 @@
     <DevelopmentDependency>true</DevelopmentDependency>
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <PackageTags>opensource;maintenance;fee;sponsors;build;msbuild;github;opencollective;polar</PackageTags>
+    <PackageTags>sponsors;sponsorship;build;msbuild;github;opencollective;polar;opensource;maintenance;fee</PackageTags>
     <PackageReadmeFile>nuget-readme.md</PackageReadmeFile>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>
