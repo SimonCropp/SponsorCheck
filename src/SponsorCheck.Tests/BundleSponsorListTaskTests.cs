@@ -1,12 +1,12 @@
 public class BundleSponsorListTaskTests
 {
-    static (string templateDir, string templatePath) BuildTemplate()
+    static string BuildTemplate()
     {
         var dir = Path.Combine(Path.GetTempPath(), $"sponsorcheck-{Guid.NewGuid():N}");
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, "ConsumerVerifier.targets");
         File.WriteAllText(path, "<Project><!-- stub --></Project>");
-        return (dir, path);
+        return path;
     }
 
     static string WriteOverride(string content)
@@ -19,7 +19,7 @@ public class BundleSponsorListTaskTests
     [Test]
     public async Task SucceedsWithOverrideListSingleAccount()
     {
-        var (_, template) = BuildTemplate();
+        var template = BuildTemplate();
         var override_ = WriteOverride("""[{"platform":"GitHubSponsors","account":"alice"}]""");
         var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
         Directory.CreateDirectory(work);
@@ -48,7 +48,7 @@ public class BundleSponsorListTaskTests
     [Test]
     public async Task FailsWhenNoPlatformAccount()
     {
-        var (_, template) = BuildTemplate();
+        var template = BuildTemplate();
         var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
         Directory.CreateDirectory(work);
         var engine = new StubBuildEngine();
@@ -72,7 +72,7 @@ public class BundleSponsorListTaskTests
     [Test]
     public async Task BundlesAcrossMultiplePlatforms()
     {
-        var (_, template) = BuildTemplate();
+        var template = BuildTemplate();
         var override_ = WriteOverride(
             """
             [
@@ -124,7 +124,7 @@ public class BundleSponsorListTaskTests
             """);
         try
         {
-            var (_, template) = BuildTemplate();
+            var template = BuildTemplate();
             var override_ = WriteOverride("""[{"platform":"GitHubSponsors","account":"alice"}]""");
             var work = Path.Combine(Path.GetTempPath(), $"sponsorcheck-out-{Guid.NewGuid():N}");
             Directory.CreateDirectory(work);
@@ -154,7 +154,7 @@ public class BundleSponsorListTaskTests
     [Test]
     public async Task DeterministicOutput()
     {
-        var (_, template) = BuildTemplate();
+        var template = BuildTemplate();
         var override_ = WriteOverride(
             """
             [

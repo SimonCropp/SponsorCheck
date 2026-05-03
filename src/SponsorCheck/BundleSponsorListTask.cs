@@ -1,4 +1,5 @@
-public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
+public sealed class BundleSponsorListTask :
+    Microsoft.Build.Utilities.Task
 {
     public string GitHubSponsorsAccountFromRef { get; set; } = "";
     public string GitHubSponsorsAccountFromVer { get; set; } = "";
@@ -43,9 +44,15 @@ public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
                 return false;
             }
 
-            var entries = !string.IsNullOrWhiteSpace(OverrideListPath)
-                ? FetchFromOverride()
-                : FetchFromPlatformsAsync(enabled).GetAwaiter().GetResult();
+            IReadOnlyList<SponsorEntry>? entries;
+            if (string.IsNullOrWhiteSpace(OverrideListPath))
+            {
+                entries = FetchFromPlatformsAsync(enabled).GetAwaiter().GetResult();
+            }
+            else
+            {
+                entries = FetchFromOverride();
+            }
 
             var hashes = entries
                 .Select(e => SponsorHasher.Hash(e.Platform, e.Account))
@@ -55,9 +62,15 @@ public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
 
             File.WriteAllLines(OutputHashListPath, hashes);
             EnsureDirectory(OutputPackDatePath);
-            var packDate = !string.IsNullOrWhiteSpace(OverridePackDate)
-                ? OverridePackDate.Trim()
-                : DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            string packDate;
+            if (string.IsNullOrWhiteSpace(OverridePackDate))
+            {
+                packDate = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                packDate = OverridePackDate.Trim();
+            }
             File.WriteAllText(OutputPackDatePath, packDate);
             var template = File.ReadAllText(VerifierTargetsTemplatePath);
             // Substitute package id into target/item names. Package IDs are restricted to
@@ -123,7 +136,7 @@ public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
             {
                 if (!string.IsNullOrWhiteSpace(account))
                 {
-                    results.Add(new SponsorEntry(platform.Id, account));
+                    results.Add(new(platform.Id, account));
                 }
             }
         }
@@ -185,13 +198,13 @@ public sealed class BundleSponsorListTask : Microsoft.Build.Utilities.Task
 
     static string Sanitize(string packageId)
     {
-        var sb = new StringBuilder(packageId.Length);
+        var builder = new StringBuilder(packageId.Length);
         foreach (var c in packageId)
         {
-            sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+            builder.Append(char.IsLetterOrDigit(c) ? c : '_');
         }
 
-        return sb.ToString();
+        return builder.ToString();
     }
 
     static void EnsureDirectory(string filePath)

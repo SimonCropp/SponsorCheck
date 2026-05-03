@@ -1,11 +1,9 @@
-public sealed class PolarPlatform : ISponsorshipPlatform
+public sealed class PolarPlatform(HttpClient client) :
+    ISponsorshipPlatform
 {
-    const string BaseUrl = "https://api.polar.sh/v1/";
-
-    readonly HttpClient client;
+    const string baseUrl = "https://api.polar.sh/v1/";
 
     public PolarPlatform() : this(HttpClientFactory.Get()) { }
-    public PolarPlatform(HttpClient client) => this.client = client;
 
     public string Id => "Polar";
 
@@ -24,13 +22,13 @@ public sealed class PolarPlatform : ISponsorshipPlatform
         var accounts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var page = 1;
         const int limit = 100;
-        var resolved = false;
+        bool resolved;
 
         while (true)
         {
-            var url = $"{BaseUrl}subscriptions/?organization_slug={Uri.EscapeDataString(ownerAccount)}&active=true&limit={limit}&page={page}";
+            var url = $"{baseUrl}subscriptions/?organization_slug={Uri.EscapeDataString(ownerAccount)}&active=true&limit={limit}&page={page}";
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Authorization = new("Bearer", token);
             using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);
             var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
@@ -70,7 +68,7 @@ public sealed class PolarPlatform : ISponsorshipPlatform
         var accounts = new List<string>();
         if (!doc.RootElement.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
         {
-            return new PageResult(accounts);
+            return new(accounts);
         }
 
         foreach (var item in items.EnumerateArray())
@@ -87,7 +85,7 @@ public sealed class PolarPlatform : ISponsorshipPlatform
             }
         }
 
-        return new PageResult(accounts);
+        return new(accounts);
     }
 
     static string? TryString(JsonElement parent, params string[] path)
@@ -95,7 +93,8 @@ public sealed class PolarPlatform : ISponsorshipPlatform
         var current = parent;
         foreach (var key in path)
         {
-            if (current.ValueKind != JsonValueKind.Object || !current.TryGetProperty(key, out current))
+            if (current.ValueKind != JsonValueKind.Object ||
+                !current.TryGetProperty(key, out current))
             {
                 return null;
             }

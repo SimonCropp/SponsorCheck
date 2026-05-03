@@ -44,7 +44,12 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
 
         while (!(userDone && orgDone))
         {
-            var json = await Post(ownerAccount, userDone ? null : userCursor, orgDone ? null : orgCursor, token, cancel).ConfigureAwait(false);
+            var json = await Post(
+                ownerAccount,
+                userDone ? null : userCursor,
+                orgDone ? null : orgCursor,
+                token,
+                cancel).ConfigureAwait(false);
             var page = ParseResponse(json);
             if (page.UserExists || page.OrgExists)
             {
@@ -61,22 +66,22 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
                 logins.Add(login);
             }
 
-            if (!page.UserHasNextPage)
-            {
-                userDone = true;
-            }
-            else
+            if (page.UserHasNextPage)
             {
                 userCursor = page.UserEndCursor;
             }
-
-            if (!page.OrgHasNextPage)
+            else
             {
-                orgDone = true;
+                userDone = true;
+            }
+
+            if (page.OrgHasNextPage)
+            {
+                orgCursor = page.OrgEndCursor;
             }
             else
             {
-                orgCursor = page.OrgEndCursor;
+                orgDone = true;
             }
 
             if (!page.UserExists)
@@ -107,19 +112,22 @@ public sealed class GitHubSponsorsPlatform : ISponsorshipPlatform
             ["login"] = login,
             ["cursor"] = userCursor ?? orgCursor
         };
+
         var payload = JsonSerializer.Serialize(
             new
             {
-                query = query,
+                query,
                 variables
             });
+
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
         };
+
         if (!string.IsNullOrWhiteSpace(token))
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Authorization = new("Bearer", token);
         }
 
         using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);

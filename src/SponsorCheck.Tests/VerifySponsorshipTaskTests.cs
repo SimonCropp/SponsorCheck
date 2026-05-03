@@ -199,7 +199,7 @@ public class VerifySponsorshipTaskTests
         };
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
-        await Assert.That(engine.Messages.Any(m => m.Message?.Contains("trusting unverified sponsor") == true)).IsTrue();
+        await Assert.That(engine.Messages.Any(_ => _.Message?.Contains("trusting unverified sponsor") == true)).IsTrue();
     }
 
     [Test]
@@ -298,16 +298,25 @@ public class VerifySponsorshipTaskTests
     {
         // The license is for the whole month; if utcNow is anywhere within that month it passes.
         var path = WriteHashes(("GitHubSponsors", "alice"));
-        var decision = LicenseModeResolver.Resolve(null, "2026-05",
-            new Dictionary<string, string?> { ["GitHubSponsors"] = null, ["OpenCollective"] = null, ["Polar"] = null }, null, "MyOssLib");
-        var ok = DecisionApplier.Apply(decision, path, "", new TaskLoggingHelperFor(new StubBuildEngine()), new DateTime(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        var decision = LicenseModeResolver.Resolve(
+            null,
+            "2026-05",
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = null,
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            null,
+            "MyOssLib");
+        var ok = DecisionApplier.Apply(decision, path, "", new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsTrue();
     }
 }
 
-internal sealed class TaskLoggingHelperFor : Microsoft.Build.Utilities.TaskLoggingHelper
+internal sealed class TaskLoggingHelperFor(IBuildEngine engine) :
+    Microsoft.Build.Utilities.TaskLoggingHelper(new StubTask(engine))
 {
-    public TaskLoggingHelperFor(IBuildEngine engine) : base(new StubTask(engine)) { }
     sealed class StubTask : Microsoft.Build.Utilities.Task
     {
         public StubTask(IBuildEngine engine) => BuildEngine = engine;

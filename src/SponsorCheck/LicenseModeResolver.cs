@@ -1,12 +1,3 @@
-public abstract record LicenseDecision(string PackageId)
-{
-    public sealed record MissingConfig(string PackageId) : LicenseDecision(PackageId);
-    public sealed record ConflictingModes(string PackageId, IReadOnlyList<string> Modes) : LicenseDecision(PackageId);
-    public sealed record Ignored(string PackageId) : LicenseDecision(PackageId);
-    public sealed record Sponsor(string PackageId, IReadOnlyDictionary<string, string> AccountByPlatform, string? SponsorshipStartRaw) : LicenseDecision(PackageId);
-    public sealed record Licensed(string PackageId, string LicensedUntilRaw) : LicenseDecision(PackageId);
-}
-
 public static class LicenseModeResolver
 {
     public static LicenseDecision Resolve(
@@ -24,8 +15,8 @@ public static class LicenseModeResolver
         }
 
         var nonEmptySponsors = sponsorAccountsByPlatform
-            .Where(p => !string.IsNullOrWhiteSpace(p.Value))
-            .ToDictionary(p => p.Key, p => p.Value!.Trim(), StringComparer.OrdinalIgnoreCase);
+            .Where(_ => !string.IsNullOrWhiteSpace(_.Value))
+            .ToDictionary(_ => _.Key, _ => _.Value!.Trim(), StringComparer.OrdinalIgnoreCase);
         if (nonEmptySponsors.Count > 0)
         {
             modes.Add("Sponsor");

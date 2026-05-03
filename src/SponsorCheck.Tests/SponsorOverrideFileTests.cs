@@ -20,9 +20,9 @@ public class SponsorOverrideFileTests
 
         var entries = SponsorOverrideFile.Read(path);
         await Assert.That(entries.Count).IsEqualTo(3);
-        await Assert.That(entries[0]).IsEqualTo(new SponsorEntry("GitHubSponsors", "alice"));
-        await Assert.That(entries[1]).IsEqualTo(new SponsorEntry("OpenCollective", "acme-org"));
-        await Assert.That(entries[2]).IsEqualTo(new SponsorEntry("Polar", "acme"));
+        await Assert.That(entries[0]).IsEqualTo(new("GitHubSponsors", "alice"));
+        await Assert.That(entries[1]).IsEqualTo(new("OpenCollective", "acme-org"));
+        await Assert.That(entries[2]).IsEqualTo(new("Polar", "acme"));
     }
 
     [Test]

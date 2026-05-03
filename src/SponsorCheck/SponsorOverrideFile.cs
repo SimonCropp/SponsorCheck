@@ -23,24 +23,27 @@ public static class SponsorOverrideFile
                 throw new MaintenanceFeeException($"Override file entry [{index}] must be an object: {path}");
             }
 
-            if (!item.TryGetProperty("platform", out var platformElem) || platformElem.ValueKind != JsonValueKind.String)
+            if (!item.TryGetProperty("platform", out var platformElem) ||
+                platformElem.ValueKind != JsonValueKind.String)
             {
                 throw new MaintenanceFeeException($"Override file entry [{index}] missing string 'platform': {path}");
             }
 
-            if (!item.TryGetProperty("account", out var accountElem) || accountElem.ValueKind != JsonValueKind.String)
+            if (!item.TryGetProperty("account", out var accountElem) ||
+                accountElem.ValueKind != JsonValueKind.String)
             {
                 throw new MaintenanceFeeException($"Override file entry [{index}] missing string 'account': {path}");
             }
 
             var platform = platformElem.GetString()!.Trim();
             var account = accountElem.GetString()!.Trim();
-            if (platform.Length == 0 || account.Length == 0)
+            if (platform.Length == 0 ||
+                account.Length == 0)
             {
                 throw new MaintenanceFeeException($"Override file entry [{index}] has empty platform or account: {path}");
             }
 
-            result.Add(new SponsorEntry(platform, account));
+            result.Add(new(platform, account));
             index++;
         }
 

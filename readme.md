@@ -29,7 +29,7 @@ Add `SponsorCheck` as a `PrivateAssets="all"` development dependency on the libr
     <NoWarn>$(NoWarn);NU5128</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="SponsorCheck" Version="0.1.1"
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
                       PrivateAssets="all"
                       GitHubSponsorsAccount="acmecorp"
                       OpenCollectiveAccount="acme-org"

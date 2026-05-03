@@ -24,7 +24,7 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
     {
         var slugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var offset = 0;
-        var resolved = false;
+        bool resolved;
         while (true)
         {
             var json = await Post(ownerAccount, offset, token, cancel).ConfigureAwait(false);
@@ -41,7 +41,8 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
             }
 
             offset += page.MemberSlugs.Count;
-            if (page.MemberSlugs.Count == 0 || offset >= page.TotalCount)
+            if (page.MemberSlugs.Count == 0 ||
+                offset >= page.TotalCount)
             {
                 break;
             }
@@ -97,33 +98,36 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
             !data.TryGetProperty("account", out var account) ||
             account.ValueKind == JsonValueKind.Null)
         {
-            return new PageResult(false, [], 0);
+            return new(false, [], 0);
         }
 
         if (!account.TryGetProperty("members", out var members))
         {
-            return new PageResult(true, [], 0);
+            return new(true, [], 0);
         }
 
         var totalCount = members.TryGetProperty("totalCount", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0;
         var slugs = new List<string>();
-        if (members.TryGetProperty("nodes", out var nodes) && nodes.ValueKind == JsonValueKind.Array)
+        if (members.TryGetProperty("nodes", out var nodes) &&
+            nodes.ValueKind == JsonValueKind.Array)
         {
             foreach (var node in nodes.EnumerateArray())
             {
-                if (node.TryGetProperty("account", out var memberAccount) &&
-                    memberAccount.TryGetProperty("slug", out var slug) &&
-                    slug.ValueKind == JsonValueKind.String)
+                if (!node.TryGetProperty("account", out var memberAccount) ||
+                    !memberAccount.TryGetProperty("slug", out var slug) ||
+                    slug.ValueKind != JsonValueKind.String)
                 {
-                    var value = slug.GetString();
-                    if (!string.IsNullOrWhiteSpace(value))
-                    {
-                        slugs.Add(value!);
-                    }
+                    continue;
+                }
+
+                var value = slug.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    slugs.Add(value!);
                 }
             }
         }
 
-        return new PageResult(true, slugs, totalCount);
+        return new(true, slugs, totalCount);
     }
 }
