@@ -77,9 +77,14 @@ Required - [organization access token](https://docs.polar.sh/integrate/authentic
 GitHub PATs and Polar API keys both expire. If a CI build suddenly fails with HTTP 401 from a platform, the token has likely expired — rotate it and update the secret. Pick "no expiration" on the GitHub PAT form for set-and-forget; otherwise add the rotation date to a calendar.
 
 
-### Storing credentials locally
+### Storing credentials
 
-Use [`dotnet user-secrets`](https://learn.microsoft.com/aspnet/core/security/app-secrets) — no extra wiring. The bundler reads `SponsorCheck:<Platform>Token` keys from the secrets file at the conventional path (`%APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json` on Windows; `~/.microsoft/usersecrets/<id>/secrets.json` on Unix).
+Precedence: explicit MSBuild property → env var (auto-imported by MSBuild) → user-secrets.
+
+
+#### Local dev — user-secrets
+
+Recommended for local builds. [`dotnet user-secrets`](https://learn.microsoft.com/aspnet/core/security/app-secrets) stores tokens at `%APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json` (Windows) or `~/.microsoft/usersecrets/<id>/secrets.json` (Unix) — outside the repo, so there's no risk of accidentally committing the value. The bundler reads `SponsorCheck:<Platform>Token` keys.
 
 Run from the directory containing the library's `.csproj`, or pass `--project <path>` explicitly — `dotnet user-secrets` resolves the project from the current directory and errors if it finds zero or multiple project files.
 
@@ -90,6 +95,11 @@ dotnet user-secrets set "SponsorCheck:GitHubToken" "ghp_xxx"
 dotnet user-secrets set "SponsorCheck:OpenCollectiveToken" "zzz"
 dotnet user-secrets set "SponsorCheck:PolarToken" "polar_yyy"
 ```
+
+
+#### CI — encrypted env vars
+
+Recommended for CI builds, where there's no per-developer profile to hold a user-secrets file. Encrypt the token in the CI provider's secret store (AppVeyor "secure variable", GitHub Actions secret, Azure DevOps secret variable, etc.) and surface it as an env var named `GitHubToken`, `OpenCollectiveToken`, or `PolarToken`. MSBuild auto-imports env vars as properties, so no extra wiring is needed — the bundler picks them up via the same `<GitHubToken>` / `<OpenCollectiveToken>` / `<PolarToken>` resolution path. Names match the MSBuild property names exactly (case-sensitive on Linux/macOS).
 
 
 ### Multiple packable projects in one repo
@@ -118,10 +128,6 @@ Each csproj declares the bare reference:
 ```
 
 Each project still bundles independently at its own pack time (one platform fetch per packable project).
-
-For CI, set the corresponding MSBuild properties via env vars (e.g. an AppVeyor/GitHub Actions secret named `GitHubToken` lands as `$(GitHubToken)` automatically).
-
-Precedence: explicit MSBuild property → env var (auto-imported by MSBuild) → user-secrets.
 
 For testing or offline builds, set `<SponsorListOverride>` to a JSON file path:
 

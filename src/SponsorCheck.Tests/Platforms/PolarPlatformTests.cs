@@ -1,18 +1,9 @@
 public class PolarPlatformTests
 {
-    // Matches <UserSecretsId> in src/SponsorCheck/SponsorCheck.csproj.
-    const string userSecretsId = "0b81e813-4e7d-40f9-810b-9bd2cddd69e4";
-    const string secretKey = "SponsorCheck:PolarToken";
-
     [Test]
     public async Task LiveLookup()
     {
-        var secrets = UserSecretsReader.Read(userSecretsId);
-        if (!secrets.TryGetValue(secretKey, out var token) || string.IsNullOrWhiteSpace(token))
-        {
-            Skip.Test($"User secret '{secretKey}' not set under UserSecretsId '{userSecretsId}'. Run `dotnet user-secrets set {secretKey} <pat>` in src/SponsorCheck.");
-        }
-
+        var token = LiveTokenResolver.ResolveOrSkip("PolarToken", "SponsorCheck:PolarToken", "Polar");
         var log = new TaskLoggingHelperFor(new StubBuildEngine());
         var platform = new PolarPlatform();
         var sponsors = await platform.FetchSponsorAccounts("simoncropp", token, log, Cancel.None);

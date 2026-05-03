@@ -96,7 +96,8 @@ Both bundler and verifier targets are gated on `'$(Configuration)' == 'Release'`
 
 - File-scoped namespaces, `LangVersion=preview`, nullable enabled, `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true` (see `src/Directory.Build.props`).
 - Tests use TUnit + Verify. `StubBuildEngine` and `TaskLoggingHelperFor` (in `VerifySponsorshipTaskTests.cs`) are the standard test plumbing for invoking tasks directly.
-- Live tests that need credentials should call `Skip.Test("...")` when the secret is absent — see `GitHubSponsorsPlatformTests.LiveLookup` for the pattern.
+- Live tests that need credentials use `LiveTokenResolver.ResolveOrSkip(envVar, secretKey, label, localExtra?)` — env var → user-secrets → `Skip.Test`. Skip messages auto-flip between user-secrets-first (local dev) and env-var-first (CI) advice based on `BuildServerDetector.Detected`.
+- `BuildServerDetector.cs` is a verbatim duplicate of `VerifyTests/DiffEngine/src/DiffEngine/BuildServerDetector.cs`. If the upstream changes meaningfully, re-sync this copy rather than editing in place.
 
 ## readme is generated
 

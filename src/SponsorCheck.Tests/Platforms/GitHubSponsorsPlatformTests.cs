@@ -2,20 +2,10 @@ using System.Net;
 
 public class GitHubSponsorsPlatformTests
 {
-    // Matches <UserSecretsId> in src/SponsorCheck/SponsorCheck.csproj.
-    const string userSecretsId = "0b81e813-4e7d-40f9-810b-9bd2cddd69e4";
-    const string secretKey = "SponsorCheck:GitHubToken";
-
     [Test]
     public async Task LiveLookup()
     {
-        var secrets = UserSecretsReader.Read(userSecretsId);
-        if (!secrets.TryGetValue(secretKey, out var token) ||
-            string.IsNullOrWhiteSpace(token))
-        {
-            Skip.Test($"User secret '{secretKey}' not set under UserSecretsId '{userSecretsId}'. Run `dotnet user-secrets set {secretKey} <pat>` in src/SponsorCheck.");
-        }
-
+        var token = LiveTokenResolver.ResolveOrSkip("GitHubToken", "SponsorCheck:GitHubToken", "GitHub Sponsors");
         var log = new TaskLoggingHelperFor(new StubBuildEngine());
         var platform = new GitHubSponsorsPlatform();
         var sponsors = await platform.FetchSponsorAccounts("SimonCropp", token, log, Cancel.None);
