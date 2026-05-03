@@ -34,6 +34,12 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
         TaskLoggingHelper log,
         Cancel cancel)
     {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            throw new MissingCredentialException(
+                "GitHub Sponsors: API token required. Set <GitHubToken> MSBuild property, GITHUB_TOKEN env var, or SponsorCheck:GitHubToken user-secret. Unauthenticated GitHub API calls hit a low rate limit and cause SC100 failures on shared CI IPs.");
+        }
+
         var logins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string? userCursor = null;
         string? orgCursor = null;
@@ -124,10 +130,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
         };
 
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            request.Headers.Authorization = new("Bearer", token);
-        }
+        request.Headers.Authorization = new("Bearer", token);
 
         using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);
         var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);

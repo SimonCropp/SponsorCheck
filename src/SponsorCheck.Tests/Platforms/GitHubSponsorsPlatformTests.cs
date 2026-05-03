@@ -199,6 +199,29 @@ public class GitHubSponsorsPlatformTests
     }
 
     [Test]
+    public async Task MissingTokenThrowsTypedMissingCredentialException()
+    {
+        // GitHub's mandatory token check throws MissingCredentialException specifically (not the
+        // base MaintenanceFeeException), so the bundler maps it to SC103. Unauthenticated GitHub
+        // API calls hit a low rate limit and cause SC100 failures on shared CI IPs.
+        var platform = new GitHubSponsorsPlatform();
+        var log = new TaskLoggingHelperFor(new StubBuildEngine());
+
+        MissingCredentialException? caught = null;
+        try
+        {
+            await platform.FetchSponsorAccounts("acmecorp", token: null, log, Cancel.None);
+        }
+        catch (MissingCredentialException exception)
+        {
+            caught = exception;
+        }
+
+        await Assert.That(caught).IsNotNull();
+        await Assert.That(caught!.Message).Contains("GitHub Sponsors");
+    }
+
+    [Test]
     public async Task FetchSponsorAccounts_ToleratesNotFoundOnOrganizationPath()
     {
         var json = """
