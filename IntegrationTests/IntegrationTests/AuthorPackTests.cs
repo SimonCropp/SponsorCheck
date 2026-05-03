@@ -37,6 +37,21 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task MultiTargeted_ProducedNupkgContainsBundlerOutputs()
+    {
+        // Multi-targeted authors hit a different MSBuild import path: NuGet's per-TFM <project>.nuget.g.targets
+        // ImportGroups don't fire in the outer multi-target build (where Pack runs). buildMultiTargeting/SponsorCheck.targets
+        // is what makes the bundler visible to that outer build.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageMulti");
+        var nupkg = Directory.GetFiles(feed, "ThePackageMulti.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entries = zip.Entries.Select(e => e.FullName).ToList();
+        await Assert.That(entries).Contains("build/ThePackageMulti.targets");
+        await Assert.That(entries).Contains("build/SponsorCheck.SponsorHashes.txt");
+        await Assert.That(entries.Any(e => e.StartsWith("tasks/netstandard2.0/SponsorCheck.dll"))).IsTrue();
+    }
+
+    [Test]
     public async Task BundledTargetsReferencesRightAssembly()
     {
         var feed = await ThePackageBuilder.EnsureBuilt();
