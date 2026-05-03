@@ -4,6 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackage" Version="1.0.0"
-                      SponsorshipIgnored="true" />
+                      SponsorshipLicenseIgnored="true" />
   </ItemGroup>
 </Project>

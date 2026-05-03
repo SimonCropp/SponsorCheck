@@ -71,7 +71,7 @@ public class LicenseModeResolverTests
     {
         var d = LicenseModeResolver.Resolve("true", null, Sponsors(("GitHubSponsors", "alice")), null, "ThePkg");
         var conflict = (LicenseDecision.ConflictingModes)d;
-        await Assert.That(conflict.Modes).Contains("SponsorshipIgnored");
+        await Assert.That(conflict.Modes).Contains("SponsorshipLicenseIgnored");
         await Assert.That(conflict.Modes).Contains("Sponsor");
     }
 

@@ -1,6 +1,6 @@
 public static class SponsorHasher
 {
-    // 48-bit truncation. SponsorshipIgnored is the bypass; the hash only needs
+    // 48-bit truncation. SponsorshipLicenseIgnored is the bypass; the hash only needs
     // to make accidental collisions vanishingly unlikely, not resist preimage attacks.
     const int hashByteLength = 6;
 

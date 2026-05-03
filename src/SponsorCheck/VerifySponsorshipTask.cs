@@ -22,7 +22,7 @@ public sealed class VerifySponsorshipTask :
     {
         try
         {
-            var ignored = PackageMetadataMerger.Merge("SponsorshipIgnored", IgnoredFromRef, IgnoredFromVer);
+            var ignored = PackageMetadataMerger.Merge("SponsorshipLicenseIgnored", IgnoredFromRef, IgnoredFromVer);
             var licensedUntil = PackageMetadataMerger.Merge("SponsorshipLicensedUntil", LicensedUntilFromRef, LicensedUntilFromVer);
             var sponsorshipStart = PackageMetadataMerger.Merge("SponsorshipStart", SponsorshipStartFromRef, SponsorshipStartFromVer);
             var sponsors = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
@@ -64,7 +64,7 @@ public static class DecisionApplier
                     0,
                     0,
                     0,
-                    $"Package '{m.PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipIgnored=\"true\", a <Platform>SponsorAccount, or SponsorshipLicensedUntil=\"yyyy-MM\". See https://opensourcemaintenancefee.org/.");
+                    $"Package '{m.PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored=\"true\", a <Platform>SponsorAccount, or SponsorshipLicensedUntil=\"yyyy-MM\". See https://opensourcemaintenancefee.org/.");
                 return false;
 
             case LicenseDecision.ConflictingModes c:
@@ -90,7 +90,7 @@ public static class DecisionApplier
                     0,
                     0,
                     0,
-                    $"Package '{i.PackageId}': SponsorshipIgnored=\"true\". Build is allowed but you are not honoring the OSS Maintenance Fee. See https://opensourcemaintenancefee.org/.");
+                    $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but you are not honoring the OSS Maintenance Fee. See https://opensourcemaintenancefee.org/.");
                 return true;
 
             case LicenseDecision.Sponsor s:

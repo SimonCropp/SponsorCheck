@@ -20,7 +20,7 @@ public static class LicenseModeResolver
         var isIgnored = string.Equals(ignored, "true", StringComparison.OrdinalIgnoreCase);
         if (isIgnored)
         {
-            modes.Add("SponsorshipIgnored");
+            modes.Add("SponsorshipLicenseIgnored");
         }
 
         var nonEmptySponsors = sponsorAccountsByPlatform

@@ -1,10 +1,11 @@
 # SponsorCheck
 
-Enforce the [Open Source Maintenance Fee](https://opensourcemaintenancefee.org/) at build time via NuGet. Gentle nudging plus honesty rather than runtime DRM.
+Build-time sponsorship verification for NuGet packages — nudge consumers of an OSS library to sponsor its author, in the spirit of the [Open Source Maintenance Fee](https://opensourcemaintenancefee.org/). Gentle nudging plus honesty rather than runtime DRM.
 
 OSS authors install `SponsorCheck` as a development dependency in their library project. At pack time, a Bundler MSBuild task fetches the author's sponsor list from one or more configured **sponsorship platforms** (GitHub Sponsors, Open Collective, Polar), hashes each account, and bundles a build-time verifier into the produced NuGet package — *without* adding any runtime dependency to that package.
 
 When consumers reference the produced package, the bundled verifier runs in their Release builds and requires one of three mutually exclusive license-mode metadata declarations per package: a sponsor account that matches the bundled list, a time-bounded private license, or an explicit "ignored" with a build warning.
+
 
 ## OSS author setup
 
@@ -45,6 +46,7 @@ At least one `<Platform>Account` must be set. Credentials per platform:
 
 > **Token expiry.** GitHub PATs and Polar API keys both expire. If your CI builds suddenly fail with HTTP 401 from a platform, your token has likely expired — rotate it and update the secret. Pick "no expiration" on the GitHub PAT form if you want set-and-forget; otherwise put the rotation date in your calendar.
 
+
 ### Storing credentials locally
 
 Use [`dotnet user-secrets`](https://learn.microsoft.com/aspnet/core/security/app-secrets) — no extra wiring. The bundler reads `SponsorCheck:<Platform>Token` keys from the secrets file at the conventional path (`%APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json` on Windows; `~/.microsoft/usersecrets/<id>/secrets.json` on Unix).
@@ -58,6 +60,7 @@ dotnet user-secrets set "SponsorCheck:GitHubToken" "ghp_xxx"
 dotnet user-secrets set "SponsorCheck:OpenCollectiveToken" "zzz"
 dotnet user-secrets set "SponsorCheck:PolarToken" "polar_yyy"
 ```
+
 
 ### Multiple packable projects in one repo
 
@@ -105,9 +108,11 @@ For testing or offline builds, set `<SponsorListOverride>` to a JSON file path:
 <sup><a href='/IntegrationTests/IntegrationTests/Fixtures/sponsors-override.json#L1-L6' title='Snippet source file'>snippet source</a> | <a href='#snippet-sponsors-override.json' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+
 ## Consumer license modes (per package, mutually exclusive)
 
 Pick exactly one mode per `<PackageReference>` (or set the metadata on the matching `<PackageVersion>` under CPM). The verifier reads metadata from both and merges (agree → use; disagree → error SC006).
+
 
 ### Sponsor account match (any platform)
 
@@ -150,7 +155,7 @@ If `SponsorshipStart` is **after** the package's pack date, the verifier trusts 
 The bundled hash list is frozen per package version. The verifier has no notion of "currently sponsoring" — it only checks whether the consumer's account hash was in the list at pack time, or whether the consumer has attested to a `SponsorshipStart` after that pack date. That has three practical consequences when sponsorship lapses:
 
 1. **Already-bundled versions stay buildable forever.** If the consumer's account hash was bundled into v1.1 at the time it was packed, the verifier keeps accepting it for v1.1 builds even after the consumer stops sponsoring. Versions paid for stay paid for; the OSS author has no recall mechanism short of yanking the package.
-2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with `SC004`. To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipIgnored="true"` (which emits the `SC003` warning every Release build).
+2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with `SC004`. To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipLicenseIgnored="true"` (which emits the `SC003` warning every Release build).
 3. **`SponsorshipStart` is honor-system and never expires.** The verifier cannot tell whether the consumer is currently sponsoring; it only checks that the attested start date is `> PackDate` and `<= today`. A stale attestation left in a csproj after a lapse keeps passing the build. The only audit signal is the `SC008` message in the consumer's own build log — the OSS author never sees it. Treat `SponsorshipStart` as a self-attestation to remove the moment sponsorship stops (and the moment the consumer upgrades to a version that bundles the matching hash).
 
 
@@ -186,7 +191,7 @@ For private B2B licensing arrangements outside of the platforms. Format is `yyyy
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackage" Version="1.0.0"
-                      SponsorshipIgnored="true" />
+                      SponsorshipLicenseIgnored="true" />
   </ItemGroup>
 </Project>
 ```
@@ -202,7 +207,7 @@ Build passes but emits `SC003` warning every Release build, telling the consumer
 |---|---|---|
 | SC001 | Error | No license mode set on the PackageReference / PackageVersion |
 | SC002 | Error | Multiple license modes set (mutually exclusive) |
-| SC003 | Warning | `SponsorshipIgnored="true"` — consumer has opted out |
+| SC003 | Warning | `SponsorshipLicenseIgnored="true"` — consumer has opted out |
 | SC004 | Error | None of the supplied platform accounts match the bundled hash list |
 | SC005 | Error | `SponsorshipLicensedUntil` has expired |
 | SC006 | Error | Conflicting metadata between PackageReference and PackageVersion |
@@ -226,37 +231,30 @@ The bundler runs at the OSS author's pack time (Release config, `IsPackable=true
 The verifier runs in consumer projects (Release config) and:
 
 1. Locates the consumer's `PackageReference` and `PackageVersion` for ThePackage by id.
-2. Merges metadata across both. Reads license-mode declarations (`SponsorshipIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
+2. Merges metadata across both. Reads license-mode declarations (`SponsorshipLicenseIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
 3. Applies the appropriate decision: ignored (warn), sponsor (check hash list), license (check expiry), or fail with the relevant SC code.
 
 ```mermaid
 flowchart TD
-    Start([Consumer Release build]) --> Merge[Merge metadata from<br/>PackageReference + PackageVersion]
-    Merge --> Conflict{Ref vs Ver<br/>disagree?}
-    Conflict -->|Yes| SC006[SC006 Error<br/>conflicting metadata]
-    Conflict -->|No| Which{Which mode?}
+    Start([Consumer Release build]) --> Which{Which mode?}
 
-    Which -->|SponsorshipIgnored=true| SC003[SC003 Warning<br/>build passes]
+    Which -->|Ignored| SC003[SC003 Warning<br/>build passes]
 
-    Which -->|SponsorshipLicensedUntil| ParseYM{Valid<br/>yyyy-MM?}
+    Which -->|Licensed Until| ParseYM{Valid<br/>yyyy-MM?}
     ParseYM -->|No| SC007[SC007 Error<br/>bad format]
     ParseYM -->|Yes| Expired{End of month<br/>in the past?}
     Expired -->|Yes| SC005[SC005 Error<br/>expired]
     Expired -->|No| PassLicense([Build passes])
 
-    Which -->|Platform SponsorAccount| HasStart{SponsorshipStart<br/>set?}
-    HasStart -->|Yes| ParseStart{Valid<br/>yyyy-MM-dd?}
-    ParseStart -->|No| SC013[SC013 Error<br/>bad format]
-    ParseStart -->|Yes| Future{Start in<br/>future?}
+    Which -->|Supplied sponsor account| HasStart{Sponsorship<br/>Start set?}
+    HasStart -->|Yes| Future{Start in<br/>future?}
     Future -->|Yes| SC014[SC014 Error<br/>future date]
     Future -->|No| AfterPack{Start &gt;<br/>PackDate?}
     AfterPack -->|Yes| PassAttest([Build passes<br/>SC008 audit message])
-    AfterPack -->|No| HashFile
-    HasStart -->|No| HashFile
+    AfterPack -->|No| Match
+    HasStart -->|No| Match
 
-    HashFile{Bundled hash<br/>file present?}
-    HashFile -->|No| SC010[SC010 Error<br/>corrupt install]
-    HashFile -->|Yes| Match{Any supplied account<br/>hash in list?}
+    Match{Supplied account<br/>exists in hash list?}
     Match -->|Yes| PassSponsor([Build passes])
     Match -->|No| SC004[SC004 Error<br/>no match]
 ```
@@ -264,7 +262,7 @@ flowchart TD
 
 ## Hashing — what it protects
 
-The hash is **light obfuscation, not real privacy.** Anyone with a wordlist of candidate usernames can reverse-engineer the published hashes by recomputing `SHA256("{platform-id}:{lowercase(login)}")` for each candidate and truncating to 12 hex chars. The hash isn't a security boundary either — `SponsorshipIgnored="true"` is the documented bypass, so anyone wanting to free-ride doesn't need to forge a match.
+The hash is **light obfuscation, not real privacy.** Anyone with a wordlist of candidate usernames can reverse-engineer the published hashes by recomputing `SHA256("{platform-id}:{lowercase(login)}")` for each candidate and truncating to 12 hex chars. The hash isn't a security boundary either — `SponsorshipLicenseIgnored="true"` is the documented bypass, so anyone wanting to free-ride doesn't need to forge a match.
 
 What hashing actually buys:
 
@@ -273,7 +271,7 @@ What hashing actually buys:
 
 If a sponsor needs guarantees stronger than "annoying to reverse" — e.g. they're sponsoring under a pseudonym they're trying to keep separate from their GitHub identity — the OSS author should ask them up front and either skip the bundling entirely or accept the risk of targeted username guesses. The hash is a speed bump, not a wall.
 
-Hash length is truncated to 48 bits (12 hex chars) because the only correctness requirement is "accidental collisions are implausible" — a non-sponsor's hash falsely matching the bundled list is ≈ 1 in tens of billions even at 100k sponsors. Preimage resistance is unnecessary given `SponsorshipIgnored`.
+Hash length is truncated to 48 bits (12 hex chars) because the only correctness requirement is "accidental collisions are implausible" — a non-sponsor's hash falsely matching the bundled list is ≈ 1 in tens of billions even at 100k sponsors. Preimage resistance is unnecessary given `SponsorshipLicenseIgnored`.
 
 
 ## Project layout

@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackage" Version="1.0.0"
-                      SponsorshipIgnored="true"
+                      SponsorshipLicenseIgnored="true"
                       GitHubSponsorAccount="alice" />
   </ItemGroup>
 </Project>
