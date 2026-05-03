@@ -28,6 +28,9 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
 
     public string Id => "GitHubSponsors";
 
+    public string SponsorPageUrl(string ownerAccount) =>
+        $"https://github.com/sponsors/{ownerAccount}";
+
     public async Task<IReadOnlyList<string>> FetchSponsorAccounts(
         string ownerAccount,
         string? token,

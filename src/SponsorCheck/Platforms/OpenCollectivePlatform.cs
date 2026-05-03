@@ -16,6 +16,9 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
 
     public string Id => "OpenCollective";
 
+    public string SponsorPageUrl(string ownerAccount) =>
+        $"https://opencollective.com/{ownerAccount}";
+
     public async Task<IReadOnlyList<string>> FetchSponsorAccounts(
         string ownerAccount,
         string? token,

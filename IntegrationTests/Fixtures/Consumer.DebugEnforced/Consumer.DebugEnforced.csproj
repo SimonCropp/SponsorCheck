@@ -3,7 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <!-- No license metadata; would fail in Release but should be no-op in Debug. -->
+    <!-- No license metadata; verifier should fail with SC001 in Debug, same as Release. -->
     <PackageReference Include="ThePackage" Version="1.0.0" />
   </ItemGroup>
 </Project>

@@ -24,4 +24,7 @@ public static class PlatformRegistry
         throw new MaintenanceFeeException(
             $"Unknown sponsorship platform '{id}'. Built-in platforms: {string.Join(", ", platforms.Keys)}.");
     }
+
+    public static bool TryGet(string id, out ISponsorshipPlatform? platform) =>
+        platforms.TryGetValue(id, out platform);
 }
