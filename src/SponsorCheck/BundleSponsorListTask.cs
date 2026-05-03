@@ -19,6 +19,7 @@ public sealed class BundleSponsorListTask :
     [Required] public string OutputHashListPath { get; set; } = "";
     [Required] public string OutputVerifierTargetsPath { get; set; } = "";
     [Required] public string OutputPackDatePath { get; set; } = "";
+    [Required] public string OutputAuthorAccountsPath { get; set; } = "";
     public string OverridePackDate { get; set; } = "";
 
     public override bool Execute()
@@ -61,6 +62,8 @@ public sealed class BundleSponsorListTask :
                 .ToList();
 
             File.WriteAllLines(OutputHashListPath, hashes);
+            EnsureDirectory(OutputAuthorAccountsPath);
+            AuthorAccountsFile.Write(OutputAuthorAccountsPath, enabled);
             EnsureDirectory(OutputPackDatePath);
             string packDate;
             if (string.IsNullOrWhiteSpace(OverridePackDate))

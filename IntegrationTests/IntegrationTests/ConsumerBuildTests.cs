@@ -84,11 +84,13 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task DebugBuild_IsNoOpEvenWithoutLicense()
+    public async Task DebugBuild_StillEnforcesSponsorship()
     {
-        var result = await BuildFixture("Consumer.DebugIsNoOp", "Debug");
-        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).DoesNotContain("SC00");
+        // The verifier runs in every configuration, not just Release. Debug builds without a
+        // license-mode declaration must still fail with SC001 — same shape as Release.
+        var result = await BuildFixture("Consumer.DebugEnforced", "Debug");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC001");
     }
 
     [Test]

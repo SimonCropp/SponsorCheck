@@ -7,6 +7,9 @@ public sealed class PolarPlatform(HttpClient client) :
 
     public string Id => "Polar";
 
+    public string SponsorPageUrl(string ownerAccount) =>
+        $"https://polar.sh/{ownerAccount}";
+
     public async Task<IReadOnlyList<string>> FetchSponsorAccounts(
         string ownerAccount,
         string? token,

@@ -29,7 +29,8 @@ public class BundleSponsorListTaskTests
             OverrideListPath = override_,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt")
         };
 
         var ok = task.Execute();
@@ -40,6 +41,35 @@ public class BundleSponsorListTaskTests
         var lines = await File.ReadAllLinesAsync(task.OutputHashListPath);
         await Assert.That(lines.Length).IsEqualTo(1);
         await Assert.That(lines[0]).IsEqualTo(SponsorHasher.Hash("GitHubSponsors", "alice"));
+    }
+
+    [Test]
+    public async Task WritesAuthorAccountsFileWithEnabledPlatforms()
+    {
+        // The bundled AuthorAccounts file is what lets the consumer-side verifier construct
+        // platform-specific sponsor URLs in SC001/SC003 messages.
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var override_ = WriteOverride(dir, "[]");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            OpenCollectiveAccountFromRef = "acme-org",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var entries = AuthorAccountsFile.Read(task.OutputAuthorAccountsPath);
+        await Assert.That(entries.Count).IsEqualTo(2);
+        await Assert.That(entries.Any(p => p.Key == "GitHubSponsors" && p.Value == "acmecorp")).IsTrue();
+        await Assert.That(entries.Any(p => p.Key == "OpenCollective" && p.Value == "acme-org")).IsTrue();
     }
 
     [Test]
@@ -59,7 +89,8 @@ public class BundleSponsorListTaskTests
             ThePackageId = "MyOssLib",
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt")
         };
 
         var ok = task.Execute();
@@ -86,7 +117,8 @@ public class BundleSponsorListTaskTests
             ThePackageId = "MyOssLib",
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt")
         };
 
         var ok = task.Execute();
@@ -122,7 +154,8 @@ public class BundleSponsorListTaskTests
             OverrideListPath = override_,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt")
         };
 
         var ok = task.Execute();
@@ -257,7 +290,8 @@ public class BundleSponsorListTaskTests
             OverrideListPath = override_,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "Acme.Lib-2.targets"),
-            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -291,7 +325,8 @@ public class BundleSponsorListTaskTests
             OverrideListPath = override_,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
-            OutputPackDatePath = Path.Combine(dir, "PackDate.txt")
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt")
         };
 
         await Assert.That(task.Execute()).IsTrue();

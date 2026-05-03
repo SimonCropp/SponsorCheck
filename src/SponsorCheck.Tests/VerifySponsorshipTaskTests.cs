@@ -24,6 +24,73 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
     }
 
+    static string WriteAuthorAccounts(TempDirectory dir, params (string platform, string account)[] entries)
+    {
+        var path = Path.Combine(dir, "AuthorAccounts.txt");
+        AuthorAccountsFile.Write(path, entries.Select(e => new KeyValuePair<string, string>(e.platform, e.account)));
+        return path;
+    }
+
+    [Test]
+    public async Task SC001_MessageIncludesAuthorSponsorUrls()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains("https://github.com/sponsors/acmecorp");
+        await Assert.That(message).Contains("https://opencollective.com/acme-org");
+        await Assert.That(message).Contains("https://polar.sh/acme");
+        await Assert.That(message).DoesNotContain("opensourcemaintenancefee.org");
+    }
+
+    [Test]
+    public async Task SC003_MessageIncludesAuthorSponsorUrls()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromRef = "true"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var message = engine.Warnings[0].Message!;
+        await Assert.That(message).Contains("https://github.com/sponsors/acmecorp");
+        await Assert.That(message).DoesNotContain("opensourcemaintenancefee.org");
+    }
+
+    [Test]
+    public async Task SC001_FallsBackToMaintenanceFeeUrlWhenAuthorAccountsMissing()
+    {
+        // Old packages bundled before this feature shipped won't have AuthorAccounts.txt. The
+        // verifier should still produce a coherent message in that case rather than swallowing the
+        // help link entirely.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Message!).Contains("https://opensourcemaintenancefee.org/");
+    }
+
     [Test]
     public async Task IgnoredTrue_PassesWithSC003Warning()
     {
@@ -327,7 +394,7 @@ public class VerifySponsorshipTaskTests
             },
             null,
             "MyOssLib");
-        var ok = DecisionApplier.Apply(decision, path, "", new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        var ok = DecisionApplier.Apply(decision, path, "", [], new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsTrue();
     }
 }

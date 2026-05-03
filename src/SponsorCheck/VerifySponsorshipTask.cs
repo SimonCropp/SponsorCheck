@@ -4,6 +4,7 @@ public sealed class VerifySponsorshipTask :
     [Required] public string ThePackageId { get; set; } = "";
     [Required] public string SponsorHashListPath { get; set; } = "";
     [Required] public string PackDatePath { get; set; } = "";
+    public string AuthorAccountsPath { get; set; } = "";
 
     public string IgnoredFromRef { get; set; } = "";
     public string IgnoredFromVer { get; set; } = "";
@@ -33,7 +34,8 @@ public sealed class VerifySponsorshipTask :
             };
 
             var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, sponsors, sponsorshipStart, ThePackageId);
-            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, Log, DateTime.UtcNow);
+            var sponsorUrls = ResolveSponsorUrls(AuthorAccountsPath);
+            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, sponsorUrls, Log, DateTime.UtcNow);
         }
         catch (MaintenanceFeeException exception)
         {
@@ -45,5 +47,25 @@ public sealed class VerifySponsorshipTask :
             Log.LogErrorFromException(exception, showStackTrace: false);
             return false;
         }
+    }
+
+    public static IReadOnlyList<string> ResolveSponsorUrls(string authorAccountsPath)
+    {
+        if (string.IsNullOrWhiteSpace(authorAccountsPath))
+        {
+            return [];
+        }
+
+        var entries = AuthorAccountsFile.Read(authorAccountsPath);
+        var urls = new List<string>(entries.Count);
+        foreach (var entry in entries)
+        {
+            if (PlatformRegistry.TryGet(entry.Key, out var platform))
+            {
+                urls.Add(platform!.SponsorPageUrl(entry.Value));
+            }
+        }
+
+        return urls;
     }
 }
