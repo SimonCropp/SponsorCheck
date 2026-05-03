@@ -58,8 +58,8 @@ The Tests project references the netstandard2.0 build via `SetTargetFramework="T
 
 In `BundleSponsorListTask.TokenFor`:
 
-1. Explicit task property (`GitHubToken`, `OpenCollectiveToken`, `PolarToken`) — comes from MSBuild properties of the same name. MSBuild auto-imports env vars as properties, so `GITHUB_TOKEN` env var lands here automatically.
-2. User-secrets at key `SponsorCheck:<Platform>Token` (special case: `SponsorCheck:GitHubToken` for the `GitHubSponsors` platform — matches the `GITHUB_TOKEN` env var convention). The UserSecretsId is read from `$(UserSecretsId)` in the **author's** csproj, not this repo.
+1. Explicit task property (`GitHubToken`, `OpenCollectiveToken`, `PolarToken`) — comes from MSBuild properties of the same name. MSBuild auto-imports env vars as properties of the same name (case-insensitive but underscore-sensitive), so a `GitHubToken` env var lands as `$(GitHubToken)` automatically. Conventional CI names like `GITHUB_TOKEN` / `POLAR_API_KEY` do **not** auto-flow — the env var must be named to match the property exactly.
+2. User-secrets at key `SponsorCheck:<Platform>Token`. The UserSecretsId is read from `$(UserSecretsId)` in the **author's** csproj, not this repo.
 
 `UserSecretsReader` reads the conventional path (`%APPDATA%\Microsoft\UserSecrets\<id>\secrets.json` on Windows; `~/.microsoft/usersecrets/<id>/secrets.json` on Unix) and flattens nested JSON into colon-keyed paths.
 
@@ -96,8 +96,8 @@ Both bundler and verifier targets are gated on `'$(Configuration)' == 'Release'`
 
 - File-scoped namespaces, `LangVersion=preview`, nullable enabled, `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true` (see `src/Directory.Build.props`).
 - Tests use TUnit + Verify. `StubBuildEngine` and `TaskLoggingHelperFor` (in `VerifySponsorshipTaskTests.cs`) are the standard test plumbing for invoking tasks directly.
-- Live tests that need credentials use `LiveTokenResolver.ResolveOrSkip(envVar, secretKey, label, localExtra?)` — env var → user-secrets → `Skip.Test`. Skip messages auto-flip between user-secrets-first (local dev) and env-var-first (CI) advice based on `BuildServerDetector.Detected`.
-- `BuildServerDetector.cs` is a verbatim duplicate of `VerifyTests/DiffEngine/src/DiffEngine/BuildServerDetector.cs`. If the upstream changes meaningfully, re-sync this copy rather than editing in place.
+- Live tests that need credentials use `LiveTokenResolver.ResolveOrSkip(envVar, secretKey, label, extra?)` — env var → user-secrets → `Skip.Test`. Skip messages flip between user-secrets-first (local) and env-var-only (CI) advice based on `BuildServerDetector.Detected`. The bundler's missing-credential errors (`SC103`) flip the same way via `TokenSetupAdvice.MissingTokenMessage`.
+- `src/SponsorCheck/BuildServerDetector.cs` is a verbatim duplicate of `VerifyTests/DiffEngine/src/DiffEngine/BuildServerDetector.cs`. If the upstream changes meaningfully, re-sync this copy rather than editing in place.
 
 ## readme is generated
 

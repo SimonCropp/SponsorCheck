@@ -1,6 +1,10 @@
 // Duplicated from VerifyTests/DiffEngine/src/DiffEngine/BuildServerDetector.cs.
-// Used by live tests to flip skip messages between user-secrets (local) and env-var (CI) advice.
+// Used by the bundler and the live tests to flip token-missing / skip messages between user-secrets
+// (recommended locally) and env-var (recommended on CI). If the upstream copy changes meaningfully,
+// re-sync this file rather than editing in place.
 // ReSharper disable CommentTypo
+
+using System.Collections;
 
 public static class BuildServerDetector
 {

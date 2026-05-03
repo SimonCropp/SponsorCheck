@@ -54,7 +54,7 @@ public class LiveTokenResolverTests
     }
 
     [Test]
-    public async Task SkipMessage_OnBuildServer_LeadsWithEnvVar()
+    public async Task SkipMessage_OnBuildServer_RecommendsEnvVarOnly()
     {
         var msg = LiveTokenResolver.BuildSkipMessage(
             "GitHubToken",
@@ -62,10 +62,10 @@ public class LiveTokenResolverTests
             "GitHub Sponsors",
             onBuildServer: true);
         await Assert.That(msg).Contains("GitHub Sponsors");
-        await Assert.That(msg).Contains("env var 'GitHubToken'");
-        // user-secrets should still be mentioned, but secondary.
-        await Assert.That(msg.IndexOf("env var", StringComparison.Ordinal))
-            .IsLessThan(msg.IndexOf("user-secrets", StringComparison.Ordinal));
+        await Assert.That(msg).Contains("'GitHubToken' env var");
+        // CI has no per-developer profile, so don't suggest user-secrets at all.
+        await Assert.That(msg).DoesNotContain("user-secrets");
+        await Assert.That(msg).DoesNotContain("dotnet user-secrets");
     }
 
     [Test]
@@ -78,20 +78,20 @@ public class LiveTokenResolverTests
             onBuildServer: false);
         await Assert.That(msg).Contains("Polar");
         await Assert.That(msg).Contains("dotnet user-secrets set SponsorCheck:PolarToken");
-        await Assert.That(msg).Contains("env var 'PolarToken'");
+        await Assert.That(msg).Contains("'PolarToken' env var");
         await Assert.That(msg.IndexOf("user-secrets", StringComparison.Ordinal))
             .IsLessThan(msg.IndexOf("env var", StringComparison.Ordinal));
     }
 
     [Test]
-    public async Task SkipMessage_AppendsLocalExtra()
+    public async Task SkipMessage_AppendsExtra()
     {
         var msg = LiveTokenResolver.BuildSkipMessage(
             "OpenCollectiveToken",
             "SponsorCheck:OpenCollectiveToken",
             "OpenCollective",
             onBuildServer: false,
-            localExtra: "Anonymous calls hit rate limits.");
+            extra: "Anonymous calls hit rate limits.");
         await Assert.That(msg).Contains("Anonymous calls hit rate limits.");
     }
 }

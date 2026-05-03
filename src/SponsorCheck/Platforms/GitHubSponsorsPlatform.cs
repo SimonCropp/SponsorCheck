@@ -37,7 +37,11 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
         if (string.IsNullOrWhiteSpace(token))
         {
             throw new MissingCredentialException(
-                "GitHub Sponsors: API token required. Set <GitHubToken> MSBuild property, GITHUB_TOKEN env var, or SponsorCheck:GitHubToken user-secret. Unauthenticated GitHub API calls hit a low rate limit and cause SC100 failures on shared CI IPs.");
+                TokenSetupAdvice.MissingTokenMessage(
+                    "GitHub Sponsors",
+                    "GitHubToken",
+                    "SponsorCheck:GitHubToken",
+                    "Unauthenticated GitHub API calls hit a low rate limit and cause SC100 failures on shared CI IPs."));
         }
 
         var logins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

@@ -7,7 +7,7 @@ public static class LiveTokenResolver
     // Matches <UserSecretsId> in src/SponsorCheck/SponsorCheck.csproj.
     public const string UserSecretsId = "0b81e813-4e7d-40f9-810b-9bd2cddd69e4";
 
-    public static string ResolveOrSkip(string envVarName, string secretKey, string platformLabel, string? localExtra = null)
+    public static string ResolveOrSkip(string envVarName, string secretKey, string platformLabel, string? extra = null)
     {
         var token = TryResolve(envVarName, secretKey);
         if (token != null)
@@ -15,7 +15,7 @@ public static class LiveTokenResolver
             return token;
         }
 
-        Skip.Test(BuildSkipMessage(envVarName, secretKey, platformLabel, BuildServerDetector.Detected, localExtra));
+        Skip.Test(BuildSkipMessage(envVarName, secretKey, platformLabel, BuildServerDetector.Detected, extra));
         return null!; // unreachable: Skip.Test throws
     }
 
@@ -35,19 +35,14 @@ public static class LiveTokenResolver
         return secrets.TryGetValue(secretKey, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
     }
 
-    public static string BuildSkipMessage(string envVarName, string secretKey, string platformLabel, bool onBuildServer, string? localExtra = null)
+    public static string BuildSkipMessage(string envVarName, string secretKey, string platformLabel, bool onBuildServer, string? extra = null)
     {
-        // On a build server: lead with env-var advice (no per-developer user-secrets profile).
+        // On a build server: env var only (no per-developer user-secrets profile to point at).
         // Locally: lead with user-secrets (the recommended convention) and mention env-var as alt.
-        if (onBuildServer)
-        {
-            var msg = $"{platformLabel}: live test skipped. Set env var '{envVarName}' on this build server, or '{secretKey}' in a user-secrets file.";
-            return localExtra == null ? msg : $"{msg} {localExtra}";
-        }
-        else
-        {
-            var msg = $"{platformLabel}: live test skipped. Run `dotnet user-secrets set {secretKey} <pat>` in src/SponsorCheck (or set env var '{envVarName}').";
-            return localExtra == null ? msg : $"{msg} {localExtra}";
-        }
+        var advice = onBuildServer
+            ? $"Set the '{envVarName}' env var on this build server."
+            : $"Run `dotnet user-secrets set {secretKey} <pat>` in src/SponsorCheck (or set the '{envVarName}' env var).";
+        var message = $"{platformLabel}: live test skipped. {advice}";
+        return extra == null ? message : $"{message} {extra}";
     }
 }

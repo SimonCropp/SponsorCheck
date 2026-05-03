@@ -49,6 +49,7 @@ At least one `<Platform>Account` must be set. Credentials per platform:
 #### [GitHub Sponsors](https://github.com/open-source/sponsors)
 
  * MSBuild property: `<GitHubToken>`
+ * Env var: `GitHubToken` (auto-imported into the MSBuild property of the same name)
  * User-secrets key: `SponsorCheck:GitHubToken`
 
 Required - [classic PAT](https://github.com/settings/tokens/new) with `read:user` (when sponsored as a user) and/or `read:org` (when sponsored as an organization), or a [fine-grained PAT](https://github.com/settings/personal-access-tokens/new) with **Sponsorships: Read-only**. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently filtered out and the bundled hash list will be incomplete.
@@ -59,6 +60,7 @@ Some organizations disable classic-PAT access in their security settings. When s
 #### [OpenCollective](https://opencollective.com)
 
  * MSBuild property: `<OpenCollectiveToken>`
+ * Env var: `OpenCollectiveToken` (auto-imported into the MSBuild property of the same name)
  * User-secrets key: `SponsorCheck:OpenCollectiveToken`
 
 Optional - public collectives are queryable anonymously, but anonymous calls hit rate limits on collectives with many backers. Create a [Personal Token](https://opencollective.com/applications) (no scopes required — the token is used for rate-limit headroom, not access).
@@ -67,6 +69,7 @@ Optional - public collectives are queryable anonymously, but anonymous calls hit
 #### [Polar](https://polar.sh)
 
  * MSBuild property: `<PolarToken>`
+ * Env var: `PolarToken` (auto-imported into the MSBuild property of the same name)
  * User-secrets key: `SponsorCheck:PolarToken`
 
 Required - [organization access token](https://docs.polar.sh/integrate/authentication/personal-access-token) with scopes `subscriptions:read`, `customers:read`, `organizations:read`. The customer scope matters: without it Polar can return null `github_username` / `email` on embedded customer objects, causing the bundler to fall back to opaque `user_id`s that won't match consumer-declared `<PolarSponsorAccount>` values.

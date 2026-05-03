@@ -15,7 +15,7 @@ Add as a development dependency to the library project. At pack time it fetches 
                   PolarAccount="acme" />
 ```
 
-At least one `<Platform>Account` must be set. Credentials per platform come from MSBuild properties / env vars: `GITHUB_TOKEN`, `OPENCOLLECTIVE_API_KEY`, `POLAR_API_KEY` (the last is required).
+At least one `<Platform>Account` must be set. Credentials per platform come from MSBuild properties (or env vars of the same name, which MSBuild auto-imports): `GitHubToken` (required), `OpenCollectiveToken`, `PolarToken` (required). Locally, prefer `dotnet user-secrets set SponsorCheck:<Platform>Token`.
 
 ## Consumer license modes (per package, mutually exclusive)
 

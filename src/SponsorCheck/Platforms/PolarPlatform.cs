@@ -16,7 +16,10 @@ public sealed class PolarPlatform(HttpClient client) :
         if (string.IsNullOrWhiteSpace(token))
         {
             throw new MissingCredentialException(
-                "Polar: API token required. Set <PolarToken> MSBuild property or POLAR_API_KEY env var.");
+                TokenSetupAdvice.MissingTokenMessage(
+                    "Polar",
+                    "PolarToken",
+                    "SponsorCheck:PolarToken"));
         }
 
         var accounts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
