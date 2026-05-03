@@ -72,7 +72,7 @@ Required - [organization access token](https://docs.polar.sh/integrate/authentic
 
 ### Token expiry
 
-GitHub PATs and Polar API keys both expire. If a CI builds suddenly fail with HTTP 401 from a platform, your token has likely expired — rotate it and update the secret. Pick "no expiration" on the GitHub PAT form if you want set-and-forget; otherwise put the rotation date in your calendar.
+GitHub PATs and Polar API keys both expire. If a CI build suddenly fails with HTTP 401 from a platform, the token has likely expired — rotate it and update the secret. Pick "no expiration" on the GitHub PAT form for set-and-forget; otherwise add the rotation date to a calendar.
 
 
 ### Storing credentials locally
