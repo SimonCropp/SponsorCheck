@@ -88,9 +88,9 @@ When adding a new code, update both `VerifySponsorshipTask`/`BundleSponsorListTa
 
 `SponsorCheck.targets` and `ConsumerVerifier.targets` flatten item-metadata into scalar properties (`@(Items->'%(M)')`) before passing to the bundler/verifier task. Do not revert this to direct `%(ItemGroup.Metadata)` task parameters. With CPM both `@(PackageReference)` and `@(PackageVersion)` carry SponsorCheck items, and direct metadata accessors cause MSBuild to invoke the task once per ItemGroup batch. The PackageReference batch typically has no metadata under CPM (it lives on PackageVersion), so that batch fires SC102/SC001 even though the other one would succeed. Regression coverage: `AuthorPackTests.CpmMultiTargeted_MetadataOnPackageVersion_BundlesSuccessfully` (bundler) and `ConsumerBuildTests.CpmConsumer_LicenseMetadataOnPackageVersion_PassesWithoutBatchingError` (verifier).
 
-## Release-only
+## Configuration gating
 
-Both bundler and verifier targets are gated on `'$(Configuration)' == 'Release'`. Debug is intentionally a no-op so dev iteration isn't blocked by sponsor checks. Don't add `'$(Configuration)' == 'Debug'` paths.
+The bundler target is gated on `'$(Configuration)' == 'Release'` (it only runs alongside packing). The consumer verifier runs in every configuration — Debug builds enforce sponsorship too. Don't reintroduce a `Configuration == 'Release'` gate on the verifier.
 
 ## Code style
 

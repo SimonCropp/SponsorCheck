@@ -8,7 +8,7 @@ Build-time sponsorship verification for NuGet packages — nudge consumers of an
 
 OSS authors install `SponsorCheck` as a development dependency in their library project. At pack time, a Bundler MSBuild task fetches the author's sponsor list from one or more configured **sponsorship platforms** (GitHub Sponsors, Open Collective, Polar), hashes each account, and bundles a build-time verifier into the produced NuGet package — *without* adding any runtime dependency to that package.
 
-When consumers reference the produced package, the bundled verifier runs in their Release builds and requires one of three mutually exclusive license-mode metadata declarations per package: a sponsor account that matches the bundled list, a time-bounded private license, or an explicit "ignored" with a build warning.
+When consumers reference the produced package, the bundled verifier runs on every build and requires one of three mutually exclusive license-mode metadata declarations per package: a sponsor account that matches the bundled list, a time-bounded private license, or an explicit "ignored" with a build warning.
 
 
 ## OSS author setup
@@ -194,7 +194,7 @@ If `SponsorshipStart` is **after** the package's pack date, the verifier trusts 
 The bundled hash list is frozen per package version. The verifier has no notion of "currently sponsoring" — it only checks whether the consumer's account hash was in the list at pack time, or whether the consumer has attested to a `SponsorshipStart` after that pack date. That has three practical consequences when sponsorship lapses:
 
 1. **Already-bundled versions stay buildable forever.** If the consumer's account hash was bundled into v1.1 at the time it was packed, the verifier keeps accepting it for v1.1 builds even after the consumer stops sponsoring. Versions paid for stay paid for; the OSS author has no recall mechanism short of yanking the package.
-2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with `SC004`. To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipLicenseIgnored="true"` (which emits the `SC003` warning every Release build).
+2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with `SC004`. To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipLicenseIgnored="true"` (which emits the `SC003` warning on every build).
 3. **`SponsorshipStart` is honor-system but self-expiring.** The verifier cannot tell whether the consumer is currently sponsoring; it only checks that the attested start date is `> PackDate` and `<= today`. While the consumer stays on the package version where the attestation was added, leaving it in after a lapse keeps the build passing — same shape as bullet 1 (paid versions stay paid). On upgrade, the newer `PackDate` overtakes the attested start, the bypass stops firing, and bullet 2 takes over (lapsed sponsors fail with `SC004`). So `SponsorshipStart` doesn't need to be cleaned up proactively — leaving it in place is harmless. The only audit signal while the bypass is active is the `SC008` message in the consumer's own build log; the OSS author never sees it.
 
 
@@ -237,7 +237,7 @@ For private B2B licensing arrangements outside of the platforms. Format is `yyyy
 <sup><a href='/IntegrationTests/Fixtures/Consumer.IgnoredLicense/Consumer.IgnoredLicense.csproj#L1-L9' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.IgnoredLicense.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Build passes but emits `SC003` warning every Release build, telling the consumer they are not honoring the maintenance fee.
+Build passes but emits `SC003` warning on every build, telling the consumer they are not honoring the maintenance fee.
 
 
 ## Diagnostic codes
@@ -270,7 +270,7 @@ The bundler runs at the OSS author's pack time (Release config, `IsPackable=true
 3. Hashes each as the first 12 hex chars (48 bits) of `SHA256(utf8("{platform-id}:{lowercase(account)}"))`. Platform-id prefix prevents cross-platform spoofing.
 4. Writes the sorted, deduped hashes to `build/SponsorCheck.SponsorHashes.txt` and a verifier `.targets` file to `build/<ThePackageId>.targets` inside the produced nupkg, plus the verifier task DLL under `tasks/`.
 
-The verifier runs in consumer projects (Release config) and:
+The verifier runs in consumer projects on every build and:
 
 1. Locates the consumer's `PackageReference` and `PackageVersion` for ThePackage by id.
 2. Merges metadata across both. Reads license-mode declarations (`SponsorshipLicenseIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
@@ -278,7 +278,7 @@ The verifier runs in consumer projects (Release config) and:
 
 ```mermaid
 flowchart TD
-    Start([Consumer Release build]) --> Which{Which mode?}
+    Start([Consumer build]) --> Which{Which mode?}
 
     Which -->|Ignored| SC003[SC003 Warning<br/>build passes]
 
