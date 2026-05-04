@@ -1,0 +1,16 @@
+﻿{
+  Errors: [
+    {
+      Subcategory: SponsorCheck,
+      Code: SC014,
+      File: ,
+      Message: Package 'MyOssLib': SponsorshipStart='2099-01-01' is in the future.,
+      Timestamp: DateTime_1,
+      ThreadId: 17,
+      HelpKeyword: ,
+      SenderName: VerifySponsorshipTask
+    }
+  ],
+  ContinueOnError: false,
+  ProjectFileOfTaskNode: 
+}

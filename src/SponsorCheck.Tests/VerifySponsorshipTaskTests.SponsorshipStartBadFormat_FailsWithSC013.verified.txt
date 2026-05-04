@@ -1,0 +1,16 @@
+﻿{
+  Errors: [
+    {
+      Subcategory: SponsorCheck,
+      Code: SC013,
+      File: ,
+      Message: Package 'MyOssLib': SponsorshipStart='yesterday' is not in 'yyyy-MM-dd' format.,
+      Timestamp: DateTime_1,
+      ThreadId: 14,
+      HelpKeyword: ,
+      SenderName: VerifySponsorshipTask
+    }
+  ],
+  ContinueOnError: false,
+  ProjectFileOfTaskNode: 
+}

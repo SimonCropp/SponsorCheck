@@ -22,6 +22,7 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+        await Verify(engine);
     }
 
     static string WriteAuthorAccounts(TempDirectory dir, params (string platform, string account)[] entries)
@@ -50,6 +51,7 @@ public class VerifySponsorshipTaskTests
         await Assert.That(message).Contains("https://opencollective.com/acme-org");
         await Assert.That(message).Contains("https://polar.sh/acme");
         await Assert.That(message).DoesNotContain("opensourcemaintenancefee.org");
+        await Verify(engine);
     }
 
     [Test]
@@ -70,6 +72,7 @@ public class VerifySponsorshipTaskTests
         var message = engine.Warnings[0].Message!;
         await Assert.That(message).Contains("https://github.com/sponsors/acmecorp");
         await Assert.That(message).DoesNotContain("opensourcemaintenancefee.org");
+        await Verify(engine);
     }
 
     [Test]
@@ -89,6 +92,7 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Message!).Contains("https://opensourcemaintenancefee.org/");
+        await Verify(engine);
     }
 
     [Test]
@@ -108,6 +112,7 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Warnings).HasSingleItem();
         await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC003");
+        await Verify(engine);
     }
 
     [Test]
@@ -141,6 +146,7 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+        await Verify(engine);
     }
 
     [Test]
@@ -189,6 +195,7 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC005");
+        await Verify(engine);
     }
 
     [Test]
@@ -206,6 +213,7 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        await Verify(engine);
     }
 
     [Test]
@@ -224,6 +232,7 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC002");
+        await Verify(engine);
     }
 
     [Test]
@@ -279,6 +288,7 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Messages.Any(_ => _.Message?.Contains("trusting unverified sponsor") == true)).IsTrue();
+        await Verify(engine);
     }
 
     [Test]
@@ -300,6 +310,7 @@ public class VerifySponsorshipTaskTests
         };
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+        await Verify(engine);
     }
 
     // Guards the contract: a hash present at pack time grandfathers the consumer for that version even after they stop sponsoring.
@@ -337,6 +348,7 @@ public class VerifySponsorshipTaskTests
         };
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+        await Verify(engine);
     }
 
     [Test]
@@ -356,6 +368,7 @@ public class VerifySponsorshipTaskTests
         };
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC014");
+        await Verify(engine);
     }
 
     [Test]
@@ -375,6 +388,7 @@ public class VerifySponsorshipTaskTests
         };
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC013");
+        await Verify(engine);
     }
 
     [Test]

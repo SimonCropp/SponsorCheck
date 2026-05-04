@@ -1,0 +1,16 @@
+﻿{
+  Errors: [
+    {
+      Subcategory: SponsorCheck,
+      Code: SC004,
+      File: ,
+      Message: Package 'MyOssLib': no supplied sponsor account matches the bundled list (tried: GitHubSponsors=carol).,
+      Timestamp: DateTime_1,
+      ThreadId: 15,
+      HelpKeyword: ,
+      SenderName: VerifySponsorshipTask
+    }
+  ],
+  ContinueOnError: false,
+  ProjectFileOfTaskNode: 
+}
