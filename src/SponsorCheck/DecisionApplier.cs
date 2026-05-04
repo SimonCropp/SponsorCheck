@@ -14,7 +14,7 @@
                     0,
                     0,
                     0,
-                    $"Package '{m.PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored=\"true\", a <Platform>SponsorAccount, or SponsorshipLicensedUntil=\"yyyy-MM\". {SponsorAt(sponsorUrls)}");
+                    $"Package '{m.PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored=\"true\", a <Platform>SponsorAccount, or SponsorshipLicensedUntil=\"yyyy-MM\". Sponsor at: {string.Join(", ", sponsorUrls)}.");
                 return false;
 
             case LicenseDecision.ConflictingModes c:
@@ -40,7 +40,7 @@
                     0,
                     0,
                     0,
-                    $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but you are not honoring the OSS Maintenance Fee. {SponsorAt(sponsorUrls)}");
+                    $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but you are in breach of the license of the package. Sponsor at: {string.Join(", ", sponsorUrls)}.");
                 return true;
 
             case LicenseDecision.Sponsor s:
@@ -208,11 +208,6 @@
 
     static bool TryParseDate(string value, out DateTime date) =>
         DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out date);
-
-    static string SponsorAt(IReadOnlyList<string> sponsorUrls) =>
-        sponsorUrls.Count == 0
-            ? "See https://opensourcemaintenancefee.org/."
-            : $"Sponsor at: {string.Join(", ", sponsorUrls)}.";
 
     static DateTime? TryReadPackDate(string path)
     {

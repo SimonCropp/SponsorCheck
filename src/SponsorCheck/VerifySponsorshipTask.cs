@@ -4,7 +4,7 @@ public sealed class VerifySponsorshipTask :
     [Required] public string ThePackageId { get; set; } = "";
     [Required] public string SponsorHashListPath { get; set; } = "";
     [Required] public string PackDatePath { get; set; } = "";
-    public string AuthorAccountsPath { get; set; } = "";
+    [Required] public string AuthorAccountsPath { get; set; } = "";
 
     public string IgnoredFromRef { get; set; } = "";
     public string IgnoredFromVer { get; set; } = "";
@@ -51,11 +51,6 @@ public sealed class VerifySponsorshipTask :
 
     public static IReadOnlyList<string> ResolveSponsorUrls(string authorAccountsPath)
     {
-        if (string.IsNullOrWhiteSpace(authorAccountsPath))
-        {
-            return [];
-        }
-
         var entries = AuthorAccountsFile.Read(authorAccountsPath);
         var urls = new List<string>(entries.Count);
         foreach (var entry in entries)

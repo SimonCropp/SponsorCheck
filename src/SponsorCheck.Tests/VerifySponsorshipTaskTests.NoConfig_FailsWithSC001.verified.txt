@@ -1,12 +1,11 @@
-﻿{
+{
   Errors: [
     {
       Subcategory: SponsorCheck,
       Code: SC001,
       File: ,
-      Message: Package 'MyOssLib' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored="true", a <Platform>SponsorAccount, or SponsorshipLicensedUntil="yyyy-MM". See https://opensourcemaintenancefee.org/.,
+      Message: Package 'MyOssLib' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored="true", a <Platform>SponsorAccount, or SponsorshipLicensedUntil="yyyy-MM". Sponsor at: https://github.com/sponsors/acmecorp.,
       Timestamp: DateTime_1,
-      ThreadId: 12,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask
     }

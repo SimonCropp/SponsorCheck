@@ -1,4 +1,4 @@
-﻿{
+{
   Errors: [
     {
       Subcategory: SponsorCheck,
@@ -6,7 +6,6 @@
       File: ,
       Message: Package 'MyOssLib': no supplied sponsor account matches the bundled list (tried: GitHubSponsors=carol).,
       Timestamp: DateTime_1,
-      ThreadId: 9,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask
     }

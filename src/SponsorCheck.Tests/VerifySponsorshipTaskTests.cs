@@ -7,6 +7,13 @@ public class VerifySponsorshipTaskTests
         return path;
     }
 
+    static string WriteAuthorAccounts(TempDirectory dir, params (string platform, string account)[] entries)
+    {
+        var path = Path.Combine(dir, "AuthorAccounts.txt");
+        AuthorAccountsFile.Write(path, entries.Select(e => new KeyValuePair<string, string>(e.platform, e.account)));
+        return path;
+    }
+
     [Test]
     public async Task NoConfig_FailsWithSC001()
     {
@@ -16,20 +23,14 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
-            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice"))
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"))
         };
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
         await Verify(engine);
-    }
-
-    static string WriteAuthorAccounts(TempDirectory dir, params (string platform, string account)[] entries)
-    {
-        var path = Path.Combine(dir, "AuthorAccounts.txt");
-        AuthorAccountsFile.Write(path, entries.Select(e => new KeyValuePair<string, string>(e.platform, e.account)));
-        return path;
     }
 
     [Test]
@@ -76,26 +77,6 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task SC001_FallsBackToMaintenanceFeeUrlWhenAuthorAccountsMissing()
-    {
-        // Old packages bundled before this feature shipped won't have AuthorAccounts.txt. The
-        // verifier should still produce a coherent message in that case rather than swallowing the
-        // help link entirely.
-        using var dir = new TempDirectory();
-        var engine = new StubBuildEngine();
-        var task = new VerifySponsorshipTask
-        {
-            BuildEngine = engine,
-            ThePackageId = "MyOssLib",
-            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice"))
-        };
-
-        await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Message!).Contains("https://opensourcemaintenancefee.org/");
-        await Verify(engine);
-    }
-
-    [Test]
     public async Task IgnoredTrue_PassesWithSC003Warning()
     {
         using var dir = new TempDirectory();
@@ -105,6 +86,7 @@ public class VerifySponsorshipTaskTests
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             IgnoredFromRef = "true"
         };
 

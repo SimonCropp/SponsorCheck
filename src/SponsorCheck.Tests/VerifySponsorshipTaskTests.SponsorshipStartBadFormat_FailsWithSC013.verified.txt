@@ -1,4 +1,4 @@
-﻿{
+{
   Errors: [
     {
       Subcategory: SponsorCheck,
@@ -6,7 +6,6 @@
       File: ,
       Message: Package 'MyOssLib': SponsorshipStart='yesterday' is not in 'yyyy-MM-dd' format.,
       Timestamp: DateTime_1,
-      ThreadId: 14,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask
     }
