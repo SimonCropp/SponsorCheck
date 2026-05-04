@@ -83,7 +83,7 @@ The 2024-01-01 backdate is what enables `Consumer.RecentSponsor` to test the `Sp
 - `SC0xx` — consumer-side (verifier). 001-007 are license-mode errors; 008 is the `SponsorshipStart` trust-attestation info message; 010 is corrupt install; 013-014 are `SponsorshipStart` errors.
 - `SC1xx` — author-side (bundler). 100 = catch-all for `MaintenanceFeeException` (HTTP/GraphQL errors); 102 = no platform metadata; 103 = required platform credential missing (typed via `MissingCredentialException`); 104 = user-secrets read warning.
 
-When adding a new code, update both `VerifySponsorshipTask`/`BundleSponsorListTask` AND the diagnostic codes table in `readme.md`.
+Any time a code is added, removed, or its message text changes, update the per-code section in `readme.md` (Meaning / Syntax / Example) alongside `VerifySponsorshipTask`/`BundleSponsorListTask`. The Syntax line must mirror the actual interpolated format string and the Example must be a plausible rendering — these double as the public reference and as a reviewer cross-check.
 
 ## MSBuild task batching trap
 

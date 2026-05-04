@@ -40,7 +40,7 @@
                     0,
                     0,
                     0,
-                    $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but you are in breach of the license of the package. Sponsor at: {string.Join(", ", sponsorUrls)}.");
+                    $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but is in breach of the license of the package. Sponsor at: {string.Join(", ", sponsorUrls)}.");
                 return true;
 
             case LicenseDecision.Sponsor s:
@@ -140,7 +140,7 @@
         }
 
         var hint = string.IsNullOrWhiteSpace(s.SponsorshipStartRaw)
-            ? " If you started sponsoring after this package was released, add SponsorshipStart=\"yyyy-MM-dd\" metadata."
+            ? " If sponsorship started after this package was released, add SponsorshipStart=\"yyyy-MM-dd\" metadata."
             : "";
         log.LogError(
             "SponsorCheck",
