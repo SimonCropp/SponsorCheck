@@ -2,6 +2,8 @@
 
 Codes in the `SC1xx` range are emitted by the bundler at the OSS author's pack time.
 
+Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/BundlerDiagnosticCodes.md#<code>` appended automatically. The Syntax/Example entries below omit that suffix for readability.
+
 
 ### SC100
 

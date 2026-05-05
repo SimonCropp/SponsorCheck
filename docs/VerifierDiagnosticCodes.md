@@ -2,6 +2,8 @@
 
 Codes in the `SC0xx` range are emitted by the verifier in consumer projects.
 
+Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#<code>` appended automatically. The Syntax/Example entries below omit that suffix for readability.
+
 ```mermaid<!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
 flowchart TD
     Start([Consumer build]) --> Which{Which mode?}
@@ -17,7 +19,7 @@ flowchart TD
     HasStart -->|No| Match
     Match{Supplied account<br/>exists in hash list?}
     Match -->|Yes| PassSponsor([Build passes])
-    Match -->|No| SC004[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004'>SC004 Error<br/>Account is licensed for usage</a>]
+    Match -->|No| SC004[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004'>SC004 Error<br/>Account is not licensed for usage</a>]
 
     Which -->|Licensed Until| ParseYM{Valid<br/>yyyy-MM?}
     ParseYM -->|No| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 Error<br/>Invalid date format</a>]

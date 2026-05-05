@@ -4,7 +4,7 @@
       Subcategory: SponsorCheck,
       Code: SC004,
       File: ,
-      Message: Package 'MyOssLib': no supplied sponsor account matches the bundled list (tried: GitHubSponsors=mallory). If sponsorship started after this package was released, add SponsorshipStart="yyyy-MM-dd" metadata.,
+      Message: Package 'MyOssLib': no supplied sponsor account matches the bundled list (tried: GitHubSponsors=mallory). If sponsorship started after this package was released, add SponsorshipStart="yyyy-MM-dd" metadata. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask

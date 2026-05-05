@@ -39,7 +39,7 @@ public sealed class VerifySponsorshipTask :
         }
         catch (MaintenanceFeeException exception)
         {
-            Log.LogError("SponsorCheck", "SC006", "", "", 0, 0, 0, 0, exception.Message);
+            SponsorCheckLog.Error(Log, "SC006", exception.Message);
             return false;
         }
         catch (Exception exception)

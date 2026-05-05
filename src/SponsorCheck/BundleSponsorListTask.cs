@@ -32,15 +32,9 @@ public sealed class BundleSponsorListTask :
             var enabled = ResolveEnabledPlatforms();
             if (enabled.Count == 0)
             {
-                Log.LogError(
-                    "SponsorCheck",
+                SponsorCheckLog.Error(
+                    Log,
                     "SC101",
-                    "",
-                    "",
-                    0,
-                    0,
-                    0,
-                    0,
                     "SponsorCheck: at least one platform account metadata must be set on the PackageReference or PackageVersion (e.g. GitHubSponsorsAccount=\"acmecorp\").");
                 return false;
             }
@@ -92,12 +86,12 @@ public sealed class BundleSponsorListTask :
         }
         catch (MissingCredentialException exception)
         {
-            Log.LogError("SponsorCheck", "SC102", "", "", 0, 0, 0, 0, exception.Message);
+            SponsorCheckLog.Error(Log, "SC102", exception.Message);
             return false;
         }
         catch (MaintenanceFeeException exception)
         {
-            Log.LogError("SponsorCheck", "SC100", "", "", 0, 0, 0, 0, exception.Message);
+            SponsorCheckLog.Error(Log, "SC100", exception.Message);
             return false;
         }
         catch (Exception exception)
@@ -173,7 +167,7 @@ public sealed class BundleSponsorListTask :
         }
         catch (Exception exception)
         {
-            Log.LogWarning("SponsorCheck", "SC103", "", "", 0, 0, 0, 0,
+            SponsorCheckLog.Warning(Log, "SC103",
                 $"SponsorCheck: could not read user-secrets at '{UserSecretsReader.ResolvePath(UserSecretsId)}': {exception.Message}");
             return new Dictionary<string, string>();
         }

@@ -4,7 +4,7 @@
       Subcategory: SponsorCheck,
       Code: SC010,
       File: ,
-      Message: Package 'MyOssLib': SponsorshipStart='yesterday' is not in 'yyyy-MM-dd' format.,
+      Message: Package 'MyOssLib': SponsorshipStart='yesterday' is not in 'yyyy-MM-dd' format. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc010,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask

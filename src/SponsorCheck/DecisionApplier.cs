@@ -1,45 +1,27 @@
-﻿public static class DecisionApplier
+public static class DecisionApplier
 {
     public static bool Apply(LicenseDecision decision, string sponsorHashListPath, string packDatePath, IReadOnlyList<string> sponsorUrls, TaskLoggingHelper log, DateTime utcNow)
     {
         switch (decision)
         {
             case LicenseDecision.MissingConfig m:
-                log.LogError(
-                    "SponsorCheck",
+                SponsorCheckLog.Error(
+                    log,
                     "SC001",
-                    "",
-                    "",
-                    0,
-                    0,
-                    0,
-                    0,
                     $"Package '{m.PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored=\"true\", a <Platform>SponsorAccount, or SponsorshipLicensedUntil=\"yyyy-MM\". Sponsor at: {string.Join(", ", sponsorUrls)}.");
                 return false;
 
             case LicenseDecision.ConflictingModes c:
-                log.LogError(
-                    "SponsorCheck",
+                SponsorCheckLog.Error(
+                    log,
                     "SC002",
-                    "",
-                    "",
-                    0,
-                    0,
-                    0,
-                    0,
                     $"Package '{c.PackageId}': mutually exclusive license modes set ({string.Join(", ", c.Modes)}). Pick one.");
                 return false;
 
             case LicenseDecision.Ignored i:
-                log.LogWarning(
-                    "SponsorCheck",
+                SponsorCheckLog.Warning(
+                    log,
                     "SC003",
-                    "",
-                    "",
-                    0,
-                    0,
-                    0,
-                    0,
                     $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but is in breach of the license of the package. Sponsor at: {string.Join(", ", sponsorUrls)}.");
                 return true;
 
@@ -62,30 +44,18 @@
         {
             if (!TryParseDate(s.SponsorshipStartRaw!, out var startDate))
             {
-                log.LogError(
-                    "SponsorCheck",
+                SponsorCheckLog.Error(
+                    log,
                     "SC010",
-                    "",
-                    "",
-                    0,
-                    0,
-                    0,
-                    0,
                     $"Package '{s.PackageId}': SponsorshipStart='{s.SponsorshipStartRaw}' is not in 'yyyy-MM-dd' format.");
                 return false;
             }
 
             if (startDate > utcNow.Date)
             {
-                log.LogError(
-                    "SponsorCheck",
+                SponsorCheckLog.Error(
+                    log,
                     "SC011",
-                    "",
-                    "",
-                    0,
-                    0,
-                    0,
-                    0,
                     $"Package '{s.PackageId}': SponsorshipStart='{s.SponsorshipStartRaw}' is in the future.");
                 return false;
             }
@@ -95,16 +65,9 @@
             {
                 var attempts = string.Join(", ", s.AccountByPlatform.Select(p => $"{p.Key}={p.Value}"));
                 // Informational, not a warning: SponsorshipStart is a documented escape hatch and the consumer's build log is the only audit trail.
-                log.LogMessage(
-                    "SponsorCheck",
+                SponsorCheckLog.HighMessage(
+                    log,
                     "SC008",
-                    "",
-                    "",
-                    0,
-                    0,
-                    0,
-                    0,
-                    MessageImportance.High,
                     $"Package '{s.PackageId}': trusting unverified sponsor declaration ({attempts}): SponsorshipStart={startDate:yyyy-MM-dd} is later than package release {pd:yyyy-MM-dd}, so the bundled sponsor list cannot contain this account.");
                 return true;
             }
@@ -113,15 +76,9 @@
         // Fall through: enforce hash check.
         if (!File.Exists(sponsorHashListPath))
         {
-            log.LogError(
-                "SponsorCheck",
+            SponsorCheckLog.Error(
+                log,
                 "SC009",
-                "",
-                "",
-                0,
-                0,
-                0,
-                0,
                 $"Package '{s.PackageId}': bundled sponsor hash file not found at '{sponsorHashListPath}'.");
             return false;
         }
@@ -142,15 +99,9 @@
         var hint = string.IsNullOrWhiteSpace(s.SponsorshipStartRaw)
             ? " If sponsorship started after this package was released, add SponsorshipStart=\"yyyy-MM-dd\" metadata."
             : "";
-        log.LogError(
-            "SponsorCheck",
+        SponsorCheckLog.Error(
+            log,
             "SC004",
-            "",
-            "",
-            0,
-            0,
-            0,
-            0,
             $"Package '{s.PackageId}': no supplied sponsor account matches the bundled list (tried: {string.Join(", ", checkAttempts)}).{hint}");
         return false;
     }
@@ -159,15 +110,9 @@
     {
         if (!TryParseYearMonth(l.LicensedUntilRaw, out var year, out var month))
         {
-            log.LogError(
-                "SponsorCheck",
+            SponsorCheckLog.Error(
+                log,
                 "SC007",
-                "",
-                "",
-                0,
-                0,
-                0,
-                0,
                 $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' is not in 'yyyy-MM' format.");
             return false;
         }
@@ -176,15 +121,9 @@
         var endOfMonth = new DateTime(year, month, lastDay, 23, 59, 59, DateTimeKind.Utc);
         if (utcNow > endOfMonth)
         {
-            log.LogError(
-                "SponsorCheck",
+            SponsorCheckLog.Error(
+                log,
                 "SC005",
-                "",
-                "",
-                0,
-                0,
-                0,
-                0,
                 $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).");
             return false;
         }
