@@ -6,7 +6,8 @@ Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob
 
 The default severities below can be overridden by the OSS author at pack time via `<SponsorCheckSeverityOverrides>` metadata on their `<PackageReference Include="SponsorCheck">` (e.g. `SC001=warning;SC003=error`). Only `SC001`, `SC003`, `SC004`, and `SC005` are overrideable — the other codes are consumer-side configuration bugs that the consumer must fix and so cannot be downgraded. Allowed severities are `error`, `warning`, `message`.
 
-```mermaid<!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
+<!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
+```mermaid
 flowchart TD
     Start([Consumer build]) --> Which{Which mode?}
 

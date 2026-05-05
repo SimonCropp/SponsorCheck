@@ -82,4 +82,38 @@ public class AuthorPackTests
         await Assert.That(content).Contains("VerifySponsorshipTask");
         await Assert.That(content).Contains("_SponsorCheck_Verify_ThePackage");
     }
+
+    [Test]
+    public async Task SeverityOverrides_BundledIntoNupkg()
+    {
+        // ThePackageOverridden declares SponsorCheckSeverityOverrides="SC001=warning;SC003=error"
+        // on its SponsorCheck reference. The bundler should write the parsed pairs to the sidecar
+        // file packed at build/SponsorCheck.SeverityOverrides.txt — that's what the verifier reads
+        // at consumer build time.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOverridden");
+        var nupkg = Directory.GetFiles(feed, "ThePackageOverridden.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/SponsorCheck.SeverityOverrides.txt")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+        string[] expected = ["SC001=warning", "SC003=error"];
+        var lines = content.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
+        await Assert.That(lines).IsEquivalentTo(expected);
+    }
+
+    [Test]
+    public async Task SeverityOverrides_AbsentOnUnoverriddenPackage()
+    {
+        // The bundler always writes the sidecar (for determinism/path resolution) but it's empty
+        // when no override metadata is declared.
+        var feed = await ThePackageBuilder.EnsureBuilt();
+        var nupkg = Directory.GetFiles(feed, "ThePackage.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/SponsorCheck.SeverityOverrides.txt")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+        await Assert.That(content.Trim()).IsEqualTo("");
+    }
 }

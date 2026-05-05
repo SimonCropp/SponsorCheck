@@ -2,9 +2,9 @@ namespace SponsorCheck.IntegrationTests;
 
 public class ConsumerBuildTests
 {
-    static async Task<CliResult> BuildFixture(string fixtureName, string configuration = "Release")
+    static async Task<CliResult> BuildFixture(string fixtureName, string configuration = "Release", string authorFixture = "ThePackage")
     {
-        var feed = await ThePackageBuilder.EnsureBuilt();
+        var feed = await ThePackageBuilder.EnsureBuilt(authorFixture);
         var workDir = TestEnvironment.MakeWorkDir(fixtureName);
         TestEnvironment.CopyDirectory(Path.Combine(TestEnvironment.FixturesDir, fixtureName), workDir);
         TestEnvironment.WriteNugetConfig(workDir, feed);
@@ -138,5 +138,31 @@ public class ConsumerBuildTests
         var result = await BuildFixture("Consumer.FutureSponsorshipStart");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
         await Assert.That(result.Combined).Contains("SC011");
+    }
+
+    [Test]
+    public async Task SeverityOverride_SC001DowngradedToWarning_BuildsCleanly()
+    {
+        // Author bakes SponsorCheckSeverityOverrides="SC001=warning" into the package. A consumer
+        // that omits all license-mode metadata would normally fail with SC001 — here the build
+        // should succeed because the sidecar shipped in the nupkg flips the severity to warning.
+        var result = await BuildFixture(
+            "Consumer.OverrideSC001NoConfig",
+            authorFixture: "ThePackageOverridden");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC001");
+        await Assert.That(result.Combined).DoesNotContain("error SC001");
+    }
+
+    [Test]
+    public async Task SeverityOverride_SC003PromotedToError_BuildFails()
+    {
+        // Author bakes SC003=error. A consumer setting SponsorshipLicenseIgnored="true" — which
+        // would normally pass with a warning — must now fail because the override hardens the rule.
+        var result = await BuildFixture(
+            "Consumer.OverrideSC003Ignored",
+            authorFixture: "ThePackageOverridden");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("error SC003");
     }
 }

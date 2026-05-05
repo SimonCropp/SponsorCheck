@@ -1,3 +1,4 @@
+
 ```mermaid
 flowchart TD
     Start([Consumer build]) --> Which{Which mode?}
@@ -21,3 +22,4 @@ flowchart TD
     Expired -->|Yes| SC005[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>SC005 Error<br/>License expired</a>]
     Expired -->|No| PassLicense([Build passes])
 ```
+

@@ -282,7 +282,8 @@ The verifier runs in consumer projects on every build and:
 1. Merges metadata across both. Reads license-mode declarations (`SponsorshipLicenseIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
 1. Applies the appropriate decision: ignored (warn), sponsor (check hash list), license (check expiry), or fail with the relevant SC code.
 
-```mermaid<!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
+<!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
+```mermaid
 flowchart TD
     Start([Consumer build]) --> Which{Which mode?}
 
