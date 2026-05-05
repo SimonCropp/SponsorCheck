@@ -7,6 +7,7 @@
     <_SponsorCheck_HashListPath>$(MSBuildThisFileDirectory)SponsorCheck.SponsorHashes.txt</_SponsorCheck_HashListPath>
     <_SponsorCheck_PackDatePath>$(MSBuildThisFileDirectory)SponsorCheck.PackDate.txt</_SponsorCheck_PackDatePath>
     <_SponsorCheck_AuthorAccountsPath>$(MSBuildThisFileDirectory)SponsorCheck.AuthorAccounts.txt</_SponsorCheck_AuthorAccountsPath>
+    <_SponsorCheck_SeverityOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.SeverityOverrides.txt</_SponsorCheck_SeverityOverridesPath>
   </PropertyGroup>
 
   <UsingTask TaskName="VerifySponsorshipTask"
@@ -40,6 +41,7 @@
         SponsorHashListPath="$(_SponsorCheck_HashListPath)"
         PackDatePath="$(_SponsorCheck_PackDatePath)"
         AuthorAccountsPath="$(_SponsorCheck_AuthorAccountsPath)"
+        SeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
         IgnoredFromRef="$(_SponsorCheck___SC_PACKAGE_ID___IgnoredFromRef)"
         IgnoredFromVer="$(_SponsorCheck___SC_PACKAGE_ID___IgnoredFromVer)"
         LicensedUntilFromRef="$(_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromRef)"

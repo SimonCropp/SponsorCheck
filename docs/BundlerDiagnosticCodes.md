@@ -35,3 +35,11 @@ Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob
 - **Meaning:** User-secrets file present but couldn't be read at pack time.
 - **Syntax:** `SponsorCheck: could not read user-secrets at '{path}': {exception.Message}`
 - **Example:** `SponsorCheck: could not read user-secrets at 'C:\Users\me\AppData\Roaming\Microsoft\UserSecrets\abc-123\secrets.json': Unexpected character encountered while parsing value.`
+
+
+### SC104
+
+- **Level**: Error
+- **Meaning:** `SponsorCheckSeverityOverrides` metadata is malformed: bad token shape, non-overrideable code, or unrecognized severity. Overrideable codes are `SC001`, `SC003`, `SC004`, `SC005`; allowed severities are `error`, `warning`, `message`.
+- **Syntax:** Three variants: `SponsorCheckSeverityOverrides entry '{token}' is not in 'CODE=severity' form.`, `SponsorCheckSeverityOverrides code '{code}' is not overrideable. Allowed: SC001, SC003, SC004, SC005.`, or `SponsorCheckSeverityOverrides severity '{value}' for {code} is not recognized. Allowed: error, warning, message.`
+- **Example:** `SponsorCheckSeverityOverrides code 'SC002' is not overrideable. Allowed: SC001, SC003, SC004, SC005.`

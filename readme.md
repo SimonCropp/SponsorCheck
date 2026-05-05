@@ -126,6 +126,19 @@ Each csproj declares the bare reference:
 
 Each project still bundles independently at its own pack time (one platform fetch per packable project).
 
+### Tuning verifier severity
+
+By default the verifier emits `SC001` (no license mode set), `SC004` (sponsor account not in list), and `SC005` (license expired) as **errors** that fail the consumer build, and `SC003` (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement — can override severities at pack time via `SponsorCheckSeverityOverrides` metadata on the SponsorCheck reference:
+
+```xml
+<PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                  PrivateAssets="all"
+                  GitHubSponsorsAccount="acmecorp"
+                  SponsorCheckSeverityOverrides="SC001=warning;SC003=error" />
+```
+
+Allowed codes: `SC001`, `SC003`, `SC004`, `SC005`. Allowed severities: `error`, `warning`, `message`. Other codes are consumer-side configuration bugs and aren't overrideable. Bad values fail the pack with [SC104](docs/BundlerDiagnosticCodes.md#sc104). The chosen severities are baked into the produced nupkg — consumers can't tamper with them.
+
 For testing or offline builds, set `<SponsorListOverride>` to a JSON file path:
 
 <!-- snippet: sponsors-override.json -->
@@ -250,18 +263,24 @@ Build passes but emits the [license ignored - SC003](docs/VerifierDiagnosticCode
 
 ## How it works
 
+
+### Bundler
+
 The bundler runs at the OSS author's pack time (Release config, `IsPackable=true`). It:
 
 1. Reads `<Platform>Account` metadata from the SponsorCheck `PackageReference` / `PackageVersion`.
-2. For each enabled platform, calls the platform's API (or reads `SponsorListOverride` if set) to get the list of sponsor accounts.
-3. Hashes each as the first 12 hex chars (48 bits) of `SHA256(utf8("{platform-id}:{lowercase(account)}"))`. Platform-id prefix prevents cross-platform spoofing.
-4. Writes the sorted, deduped hashes to `build/SponsorCheck.SponsorHashes.txt` and a verifier `.targets` file to `build/<ThePackageId>.targets` inside the produced nupkg, plus the verifier task DLL under `tasks/`.
+1. For each enabled platform, calls the platform's API (or reads `SponsorListOverride` if set) to get the list of sponsor accounts.
+1. Hashes each as the first 12 hex chars (48 bits) of `SHA256(utf8("{platform-id}:{lowercase(account)}"))`. Platform-id prefix prevents cross-platform spoofing.
+1. Writes the sorted, deduped hashes to `build/SponsorCheck.SponsorHashes.txt` and a verifier `.targets` file to `build/<ThePackageId>.targets` inside the produced nupkg, plus the verifier task DLL under `tasks/`.
+
+
+### Verifier
 
 The verifier runs in consumer projects on every build and:
 
 1. Locates the consumer's `PackageReference` and `PackageVersion` for ThePackage by id.
-2. Merges metadata across both. Reads license-mode declarations (`SponsorshipLicenseIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
-3. Applies the appropriate decision: ignored (warn), sponsor (check hash list), license (check expiry), or fail with the relevant SC code.
+1. Merges metadata across both. Reads license-mode declarations (`SponsorshipLicenseIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
+1. Applies the appropriate decision: ignored (warn), sponsor (check hash list), license (check expiry), or fail with the relevant SC code.
 
 ```mermaid<!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
 flowchart TD
@@ -296,7 +315,7 @@ The hash is **light obfuscation, not real privacy.** Anyone with a wordlist of c
 What hashing actually buys:
 
 1. **Private GitHub sponsors don't ship as plaintext.** GitHub Sponsors lets sponsors opt to be private. The bundler still includes them (the token-owner can see them via the API), and the resulting file lands in every consumer's `~/.nuget/packages/<id>/<ver>/build/` after restore. Hashing means a private sponsor's username is not grep-able across every consumer's disk — an attacker has to specifically guess it and recompute the hash to confirm. Plaintext would effectively dox every private sponsor to every consumer.
-2. **Friction against casual scraping.** A flat list of usernames in a published nupkg is a free dataset for anyone running `nuget restore` on public CI. Hashing doesn't stop a determined deanonymizer but does stop incidental harvesting.
+1. **Friction against casual scraping.** A flat list of usernames in a published nupkg is a free dataset for anyone running `nuget restore` on public CI. Hashing doesn't stop a determined deanonymizer but does stop incidental harvesting.
 
 If a sponsor needs guarantees stronger than "annoying to reverse" — e.g. they're sponsoring under a pseudonym they're trying to keep separate from their GitHub identity — the OSS author should ask them up front and either skip the bundling entirely or accept the risk of targeted username guesses. The hash is a speed bump, not a wall.
 

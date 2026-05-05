@@ -13,6 +13,8 @@ public sealed class BundleSponsorListTask :
     public string PolarToken { get; set; } = "";
     public string UserSecretsId { get; set; } = "";
     public string OverrideListPath { get; set; } = "";
+    public string SeverityOverridesFromRef { get; set; } = "";
+    public string SeverityOverridesFromVer { get; set; } = "";
 
     [Required] public string VerifierTargetsTemplatePath { get; set; } = "";
     [Required] public string ThePackageId { get; set; } = "";
@@ -20,6 +22,7 @@ public sealed class BundleSponsorListTask :
     [Required] public string OutputVerifierTargetsPath { get; set; } = "";
     [Required] public string OutputPackDatePath { get; set; } = "";
     [Required] public string OutputAuthorAccountsPath { get; set; } = "";
+    [Required] public string OutputSeverityOverridesPath { get; set; } = "";
     public string OverridePackDate { get; set; } = "";
 
     public override bool Execute()
@@ -28,6 +31,17 @@ public sealed class BundleSponsorListTask :
         {
             EnsureDirectory(OutputHashListPath);
             EnsureDirectory(OutputVerifierTargetsPath);
+            EnsureDirectory(OutputSeverityOverridesPath);
+
+            var rawOverrides = PackageMetadataMerger.Merge("SponsorCheckSeverityOverrides", SeverityOverridesFromRef, SeverityOverridesFromVer) ?? "";
+            var severityOverrides = SeverityOverrideFile.ParseAuthorInput(rawOverrides, out var overrideError);
+            if (overrideError != null)
+            {
+                SponsorCheckLog.Error(Log, "SC104", overrideError);
+                return false;
+            }
+
+            SeverityOverrideFile.Write(OutputSeverityOverridesPath, severityOverrides);
 
             var enabled = ResolveEnabledPlatforms();
             if (enabled.Count == 0)

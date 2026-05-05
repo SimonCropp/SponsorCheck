@@ -5,6 +5,7 @@ public sealed class VerifySponsorshipTask :
     [Required] public string SponsorHashListPath { get; set; } = "";
     [Required] public string PackDatePath { get; set; } = "";
     [Required] public string AuthorAccountsPath { get; set; } = "";
+    public string SeverityOverridesPath { get; set; } = "";
 
     public string IgnoredFromRef { get; set; } = "";
     public string IgnoredFromVer { get; set; } = "";
@@ -35,7 +36,8 @@ public sealed class VerifySponsorshipTask :
 
             var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, sponsors, sponsorshipStart, ThePackageId);
             var sponsorUrls = ResolveSponsorUrls(AuthorAccountsPath);
-            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, sponsorUrls, Log, DateTime.UtcNow);
+            var severityOverrides = SeverityOverrideFile.Read(SeverityOverridesPath);
+            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, sponsorUrls, severityOverrides, Log, DateTime.UtcNow);
         }
         catch (MaintenanceFeeException exception)
         {

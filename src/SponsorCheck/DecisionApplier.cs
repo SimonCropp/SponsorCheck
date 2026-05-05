@@ -1,15 +1,23 @@
 public static class DecisionApplier
 {
-    public static bool Apply(LicenseDecision decision, string sponsorHashListPath, string packDatePath, IReadOnlyList<string> sponsorUrls, TaskLoggingHelper log, DateTime utcNow)
+    public static bool Apply(
+        LicenseDecision decision,
+        string sponsorHashListPath,
+        string packDatePath,
+        IReadOnlyList<string> sponsorUrls,
+        IReadOnlyDictionary<string, Severity> severityOverrides,
+        TaskLoggingHelper log,
+        DateTime utcNow)
     {
         switch (decision)
         {
             case LicenseDecision.MissingConfig m:
-                SponsorCheckLog.Error(
+                return SponsorCheckLog.Emit(
                     log,
                     "SC001",
+                    Severity.Error,
+                    severityOverrides,
                     $"Package '{m.PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored=\"true\", a <Platform>SponsorAccount, or SponsorshipLicensedUntil=\"yyyy-MM\". Sponsor at: {string.Join(", ", sponsorUrls)}.");
-                return false;
 
             case LicenseDecision.ConflictingModes c:
                 SponsorCheckLog.Error(
@@ -19,24 +27,31 @@ public static class DecisionApplier
                 return false;
 
             case LicenseDecision.Ignored i:
-                SponsorCheckLog.Warning(
+                return SponsorCheckLog.Emit(
                     log,
                     "SC003",
+                    Severity.Warning,
+                    severityOverrides,
                     $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but is in breach of the license of the package. Sponsor at: {string.Join(", ", sponsorUrls)}.");
-                return true;
 
             case LicenseDecision.Sponsor s:
-                return ApplySponsor(s, sponsorHashListPath, packDatePath, log, utcNow);
+                return ApplySponsor(s, sponsorHashListPath, packDatePath, severityOverrides, log, utcNow);
 
             case LicenseDecision.Licensed l:
-                return ApplyLicensed(l, log, utcNow);
+                return ApplyLicensed(l, severityOverrides, log, utcNow);
 
             default:
                 throw new InvalidOperationException($"Unknown decision: {decision.GetType().Name}");
         }
     }
 
-    static bool ApplySponsor(LicenseDecision.Sponsor s, string sponsorHashListPath, string packDatePath, TaskLoggingHelper log, DateTime utcNow)
+    static bool ApplySponsor(
+        LicenseDecision.Sponsor s,
+        string sponsorHashListPath,
+        string packDatePath,
+        IReadOnlyDictionary<string, Severity> severityOverrides,
+        TaskLoggingHelper log,
+        DateTime utcNow)
     {
         // If consumer declared SponsorshipStart, see if they signed up after the package was packed.
         // If so, the bundled hash couldn't possibly know about them — trust the declaration.
@@ -99,14 +114,19 @@ public static class DecisionApplier
         var hint = string.IsNullOrWhiteSpace(s.SponsorshipStartRaw)
             ? " If sponsorship started after this package was released, add SponsorshipStart=\"yyyy-MM-dd\" metadata."
             : "";
-        SponsorCheckLog.Error(
+        return SponsorCheckLog.Emit(
             log,
             "SC004",
+            Severity.Error,
+            severityOverrides,
             $"Package '{s.PackageId}': no supplied sponsor account matches the bundled list (tried: {string.Join(", ", checkAttempts)}).{hint}");
-        return false;
     }
 
-    static bool ApplyLicensed(LicenseDecision.Licensed l, TaskLoggingHelper log, DateTime utcNow)
+    static bool ApplyLicensed(
+        LicenseDecision.Licensed l,
+        IReadOnlyDictionary<string, Severity> severityOverrides,
+        TaskLoggingHelper log,
+        DateTime utcNow)
     {
         if (!TryParseYearMonth(l.LicensedUntilRaw, out var year, out var month))
         {
@@ -121,11 +141,12 @@ public static class DecisionApplier
         var endOfMonth = new DateTime(year, month, lastDay, 23, 59, 59, DateTimeKind.Utc);
         if (utcNow > endOfMonth)
         {
-            SponsorCheckLog.Error(
+            return SponsorCheckLog.Emit(
                 log,
                 "SC005",
+                Severity.Error,
+                severityOverrides,
                 $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).");
-            return false;
         }
 
         return true;

@@ -18,6 +18,7 @@
       <_SponsorCheck_GeneratedTargetsPath>$(IntermediateOutputPath)SponsorCheck\$(PackageId).targets</_SponsorCheck_GeneratedTargetsPath>
       <_SponsorCheck_PackDatePath>$(IntermediateOutputPath)SponsorCheck\PackDate.txt</_SponsorCheck_PackDatePath>
       <_SponsorCheck_AuthorAccountsPath>$(IntermediateOutputPath)SponsorCheck\AuthorAccounts.txt</_SponsorCheck_AuthorAccountsPath>
+      <_SponsorCheck_SeverityOverridesPath>$(IntermediateOutputPath)SponsorCheck\SeverityOverrides.txt</_SponsorCheck_SeverityOverridesPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -38,6 +39,8 @@
       <_SponsorCheck_OpenCollectiveFromVer>@(_SponsorCheck_SelfVer->'%(OpenCollectiveAccount)')</_SponsorCheck_OpenCollectiveFromVer>
       <_SponsorCheck_PolarFromRef>@(_SponsorCheck_Self->'%(PolarAccount)')</_SponsorCheck_PolarFromRef>
       <_SponsorCheck_PolarFromVer>@(_SponsorCheck_SelfVer->'%(PolarAccount)')</_SponsorCheck_PolarFromVer>
+      <_SponsorCheck_SeverityOverridesFromRef>@(_SponsorCheck_Self->'%(SponsorCheckSeverityOverrides)')</_SponsorCheck_SeverityOverridesFromRef>
+      <_SponsorCheck_SeverityOverridesFromVer>@(_SponsorCheck_SelfVer->'%(SponsorCheckSeverityOverrides)')</_SponsorCheck_SeverityOverridesFromVer>
     </PropertyGroup>
 
     <BundleSponsorListTask
@@ -47,6 +50,8 @@
         OpenCollectiveAccountFromVer="$(_SponsorCheck_OpenCollectiveFromVer)"
         PolarAccountFromRef="$(_SponsorCheck_PolarFromRef)"
         PolarAccountFromVer="$(_SponsorCheck_PolarFromVer)"
+        SeverityOverridesFromRef="$(_SponsorCheck_SeverityOverridesFromRef)"
+        SeverityOverridesFromVer="$(_SponsorCheck_SeverityOverridesFromVer)"
         GitHubToken="$(GitHubToken)"
         OpenCollectiveToken="$(OpenCollectiveToken)"
         PolarToken="$(PolarToken)"
@@ -58,6 +63,7 @@
         OutputVerifierTargetsPath="$(_SponsorCheck_GeneratedTargetsPath)"
         OutputPackDatePath="$(_SponsorCheck_PackDatePath)"
         OutputAuthorAccountsPath="$(_SponsorCheck_AuthorAccountsPath)"
+        OutputSeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
         OverridePackDate="$(SponsorCheck_PackDateOverride)" />
 
     <ItemGroup>
@@ -72,6 +78,10 @@
       <None Include="$(_SponsorCheck_AuthorAccountsPath)"
             Pack="true"
             PackagePath="build\SponsorCheck.AuthorAccounts.txt"
+            Visible="false" />
+      <None Include="$(_SponsorCheck_SeverityOverridesPath)"
+            Pack="true"
+            PackagePath="build\SponsorCheck.SeverityOverrides.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_GeneratedTargetsPath)"
             Pack="true"

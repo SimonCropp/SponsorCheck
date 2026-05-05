@@ -408,8 +408,120 @@ public class VerifySponsorshipTaskTests
             },
             null,
             "MyOssLib");
-        var ok = DecisionApplier.Apply(decision, path, "", [], new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        var ok = DecisionApplier.Apply(decision, path, "", [], new Dictionary<string, Severity>(), new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsTrue();
+    }
+
+    static string WriteOverrides(TempDirectory dir, params (string code, Severity severity)[] entries)
+    {
+        var path = Path.Combine(dir, "SeverityOverrides.txt");
+        var dict = entries.ToDictionary(_ => _.code, _ => _.severity, StringComparer.Ordinal);
+        SeverityOverrideFile.Write(path, dict);
+        return path;
+    }
+
+    [Test]
+    public async Task SC001_DowngradedToWarning_BuildPasses()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            SeverityOverridesPath = WriteOverrides(dir, ("SC001", Severity.Warning))
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC001");
+    }
+
+    [Test]
+    public async Task SC003_PromotedToError_BuildFails()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromRef = "true",
+            SeverityOverridesPath = WriteOverrides(dir, ("SC003", Severity.Error))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Warnings).IsEmpty();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC003");
+    }
+
+    [Test]
+    public async Task SC004_DowngradedToWarning_BuildPasses()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            GitHubFromRef = "mallory",
+            SeverityOverridesPath = WriteOverrides(dir, ("SC004", Severity.Warning))
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC004");
+    }
+
+    [Test]
+    public async Task SC005_DowngradedToMessage_BuildPasses()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            LicensedUntilFromRef = "2000-01",
+            SeverityOverridesPath = WriteOverrides(dir, ("SC005", Severity.Message))
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings).IsEmpty();
+        await Assert.That(engine.Messages.Any(_ => _.Code == "SC005")).IsTrue();
+    }
+
+    [Test]
+    public async Task NonOverrideableCode_IgnoresEntryInSidecar()
+    {
+        // Verifier is tolerant of sidecar entries for non-overrideable codes (SC002 here) —
+        // bundler-side validation is the source of truth, so any sneaky entry is silently dropped.
+        using var dir = new TempDirectory();
+        var path = Path.Combine(dir, "SeverityOverrides.txt");
+        await File.WriteAllLinesAsync(path, ["SC002=warning"]);
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            IgnoredFromRef = "true",
+            GitHubFromRef = "alice",
+            SeverityOverridesPath = path
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC002");
     }
 }
 
