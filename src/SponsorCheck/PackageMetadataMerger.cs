@@ -1,7 +1,7 @@
 public static class PackageMetadataMerger
 {
     /// Merges the same metadatum sourced from PackageReference and PackageVersion under CPM.
-    /// Empty/whitespace counts as unset. Disagreement raises; agreement (case-insensitive) wins.
+    /// Empty/whitespace counts as unset. Setting on both raises, even when the values match.
     public static string? Merge(string metadataName, string? fromReference, string? fromVersion)
     {
         var r = Normalize(fromReference);
@@ -21,13 +21,8 @@ public static class PackageMetadataMerger
             return r;
         }
 
-        if (string.Equals(r, v, StringComparison.OrdinalIgnoreCase))
-        {
-            return r;
-        }
-
         throw new MaintenanceFeeException(
-            $"{metadataName}: conflicting values on PackageReference ('{r}') and PackageVersion ('{v}'). Set on only one.");
+            $"{metadataName}: set on both PackageReference ('{r}') and PackageVersion ('{v}'). Set on only one.");
     }
 
     static string? Normalize(string? value) =>

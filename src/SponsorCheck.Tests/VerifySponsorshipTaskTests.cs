@@ -218,7 +218,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task ConflictingMetadataAcrossRefAndVer_FailsWithSC006()
+    public async Task MetadataOnBothRefAndVer_FailsWithSC006()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -229,6 +229,24 @@ public class VerifySponsorshipTaskTests
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             GitHubFromRef = "alice",
             GitHubFromVer = "bob"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC006");
+    }
+
+    [Test]
+    public async Task MetadataOnBothRefAndVerWithSameValue_FailsWithSC006()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            GitHubFromRef = "alice",
+            GitHubFromVer = "alice"
         };
 
         await Assert.That(task.Execute()).IsFalse();

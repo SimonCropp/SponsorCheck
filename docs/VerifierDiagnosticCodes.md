@@ -46,9 +46,9 @@ Codes in the `SC0xx` range are emitted by the verifier in consumer projects.
 ### SC006
 
 - **Level**: Error
-- **Meaning:** Conflicting metadata between PackageReference and PackageVersion.
-- **Syntax:** `{metadataName}: conflicting values on PackageReference ('{r}') and PackageVersion ('{v}'). Set on only one.`
-- **Example:** `GitHubSponsorAccount: conflicting values on PackageReference ('alice') and PackageVersion ('bob'). Set on only one.`
+- **Meaning:** Metadata set on both PackageReference and PackageVersion. Pick one — even matching values are rejected so the source of truth is unambiguous.
+- **Syntax:** `{metadataName}: set on both PackageReference ('{r}') and PackageVersion ('{v}'). Set on only one.`
+- **Example:** `GitHubSponsorAccount: set on both PackageReference ('alice') and PackageVersion ('bob'). Set on only one.`
 
 
 ### SC007

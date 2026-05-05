@@ -29,14 +29,16 @@ public class PackageMetadataMergerTests
     }
 
     [Test]
-    public async Task BothAgreeCaseInsensitively()
+    public async Task BothSetWithSameValueThrows()
     {
-        var result = PackageMetadataMerger.Merge("X", "Alice", "alice");
-        await Assert.That(result).IsEqualTo("Alice");
+        var ex = Assert.Throws<MaintenanceFeeException>(() =>
+            PackageMetadataMerger.Merge("MyMeta", "alice", "alice"));
+        await Assert.That(ex.Message).Contains("MyMeta");
+        await Assert.That(ex.Message).Contains("alice");
     }
 
     [Test]
-    public async Task BothDisagreeThrows()
+    public async Task BothSetWithDifferentValuesThrows()
     {
         var ex = Assert.Throws<MaintenanceFeeException>(() =>
             PackageMetadataMerger.Merge("MyMeta", "alice", "bob"));
