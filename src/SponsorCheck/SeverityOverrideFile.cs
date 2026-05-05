@@ -1,59 +1,18 @@
 public static class SeverityOverrideFile
 {
-    static readonly HashSet<string> Overrideable = new(StringComparer.Ordinal)
-    {
-        "SC001", "SC003", "SC004", "SC005"
-    };
+    // Mapping of overrideable diagnostic codes to their human-readable metadata names. The
+    // metadata each consumer-facing property reads from the author's PackageReference is
+    // "<Name>SeverityOverride" — e.g. SC001 ⇄ NoLicenseSpecifiedSeverityOverride.
+    public static readonly (string Code, string MetadataName)[] OverrideableCodes =
+    [
+        ("SC001", "NoLicenseSpecifiedSeverityOverride"),
+        ("SC003", "LicenseIgnoredSeverityOverride"),
+        ("SC004", "InvalidAccountSeverityOverride"),
+        ("SC005", "LicenseExpiredSeverityOverride"),
+    ];
 
-    public static IReadOnlyList<string> OverrideableCodes =>
-        Overrideable.OrderBy(_ => _, StringComparer.Ordinal).ToList();
-
-    // Bundler-side: parse author-supplied metadata (e.g. "SC001=warning;SC003=error"). On failure
-    // returns an empty dict and sets `error` to a human-readable message naming the bad token.
-    public static IReadOnlyDictionary<string, Severity> ParseAuthorInput(string raw, out string? error)
-    {
-        error = null;
-        var result = new Dictionary<string, Severity>(StringComparer.Ordinal);
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return result;
-        }
-
-        foreach (var token in raw.Split([';', ','], StringSplitOptions.RemoveEmptyEntries))
-        {
-            var trimmed = token.Trim();
-            if (trimmed.Length == 0)
-            {
-                continue;
-            }
-
-            var eq = trimmed.IndexOf('=');
-            if (eq <= 0 || eq == trimmed.Length - 1)
-            {
-                error = $"SponsorCheckSeverityOverrides entry '{trimmed}' is not in 'CODE=severity' form.";
-                return new Dictionary<string, Severity>(StringComparer.Ordinal);
-            }
-
-            var code = trimmed.Substring(0, eq).Trim().ToUpperInvariant();
-            var severityRaw = trimmed.Substring(eq + 1).Trim();
-
-            if (!Overrideable.Contains(code))
-            {
-                error = $"SponsorCheckSeverityOverrides code '{code}' is not overrideable. Allowed: {string.Join(", ", OverrideableCodes)}.";
-                return new Dictionary<string, Severity>(StringComparer.Ordinal);
-            }
-
-            if (!TryParseSeverity(severityRaw, out var severity))
-            {
-                error = $"SponsorCheckSeverityOverrides severity '{severityRaw}' for {code} is not recognized. Allowed: error, warning, message.";
-                return new Dictionary<string, Severity>(StringComparer.Ordinal);
-            }
-
-            result[code] = severity;
-        }
-
-        return result;
-    }
+    static readonly HashSet<string> OverrideableSet =
+        new(OverrideableCodes.Select(_ => _.Code), StringComparer.Ordinal);
 
     public static void Write(string path, IReadOnlyDictionary<string, Severity> overrides)
     {
@@ -90,7 +49,7 @@ public static class SeverityOverrideFile
 
             var code = line.Substring(0, eq).Trim().ToUpperInvariant();
             var severityRaw = line.Substring(eq + 1).Trim();
-            if (Overrideable.Contains(code) && TryParseSeverity(severityRaw, out var severity))
+            if (OverrideableSet.Contains(code) && TryParseSeverity(severityRaw, out var severity))
             {
                 result[code] = severity;
             }
@@ -99,7 +58,7 @@ public static class SeverityOverrideFile
         return result;
     }
 
-    static bool TryParseSeverity(string raw, out Severity severity)
+    public static bool TryParseSeverity(string raw, out Severity severity)
     {
         switch (raw.ToLowerInvariant())
         {

@@ -309,7 +309,7 @@ public class BundleSponsorListTaskTests
     }
 
     [Test]
-    public async Task SeverityOverrides_Valid_WritesSidecarFile()
+    public async Task SeverityOverrides_PerCodeMetadata_WritesSidecarFile()
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
@@ -318,7 +318,10 @@ public class BundleSponsorListTaskTests
         {
             BuildEngine = new StubBuildEngine(),
             GitHubSponsorsAccountFromRef = "acmecorp",
-            SeverityOverridesFromRef = "SC001=warning;SC003=error",
+            NoLicenseSpecifiedSeverityOverrideFromRef = "warning",
+            LicenseIgnoredSeverityOverrideFromRef = "error",
+            InvalidAccountSeverityOverrideFromRef = "message",
+            LicenseExpiredSeverityOverrideFromRef = "warning",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
             OverrideListPath = override_,
@@ -333,6 +336,8 @@ public class BundleSponsorListTaskTests
         var parsed = SeverityOverrideFile.Read(task.OutputSeverityOverridesPath);
         await Assert.That(parsed["SC001"]).IsEqualTo(Severity.Warning);
         await Assert.That(parsed["SC003"]).IsEqualTo(Severity.Error);
+        await Assert.That(parsed["SC004"]).IsEqualTo(Severity.Message);
+        await Assert.That(parsed["SC005"]).IsEqualTo(Severity.Warning);
     }
 
     [Test]
@@ -363,7 +368,7 @@ public class BundleSponsorListTaskTests
     }
 
     [Test]
-    public async Task SeverityOverrides_NonOverrideableCode_FailsWithSC104()
+    public async Task SeverityOverrides_UnknownSeverity_FailsWithSC104()
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
@@ -373,7 +378,7 @@ public class BundleSponsorListTaskTests
         {
             BuildEngine = engine,
             GitHubSponsorsAccountFromRef = "acmecorp",
-            SeverityOverridesFromRef = "SC002=warning",
+            NoLicenseSpecifiedSeverityOverrideFromRef = "critical",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
             OverrideListPath = override_,
@@ -387,21 +392,23 @@ public class BundleSponsorListTaskTests
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC104");
-        await Assert.That(engine.Errors[0].Message).Contains("SC002");
+        await Assert.That(engine.Errors[0].Message).Contains("NoLicenseSpecifiedSeverityOverride");
+        await Assert.That(engine.Errors[0].Message).Contains("critical");
     }
 
     [Test]
-    public async Task SeverityOverrides_UnknownSeverity_FailsWithSC104()
+    public async Task SeverityOverrides_PackageVersionMetadata_AlsoSupported()
     {
+        // CPM authors put metadata on PackageVersion. Per-code overrides must flow through both
+        // ItemGroup batches the same way the platform-account metadata does.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
         var override_ = WriteOverride(dir, "[]");
-        var engine = new StubBuildEngine();
         var task = new BundleSponsorListTask
         {
-            BuildEngine = engine,
-            GitHubSponsorsAccountFromRef = "acmecorp",
-            SeverityOverridesFromRef = "SC001=critical",
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromVer = "acmecorp",
+            LicenseIgnoredSeverityOverrideFromVer = "error",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
             OverrideListPath = override_,
@@ -412,9 +419,9 @@ public class BundleSponsorListTaskTests
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
         };
 
-        await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC104");
-        await Assert.That(engine.Errors[0].Message).Contains("critical");
+        await Assert.That(task.Execute()).IsTrue();
+        var parsed = SeverityOverrideFile.Read(task.OutputSeverityOverridesPath);
+        await Assert.That(parsed["SC003"]).IsEqualTo(Severity.Error);
     }
 
     [Test]

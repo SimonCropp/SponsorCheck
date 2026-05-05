@@ -81,6 +81,40 @@ public static class ThePackageBuilder
         }
     }
 
+    /// Like EnsureBuilt, but returns the CLI result without throwing on failure. Use this in
+    /// tests that expect the pack to fail (e.g. SC104 on bad metadata) and want to inspect the
+    /// build output. Always uses a fresh feed dir — never cached.
+    public static async Task<CliResult> TryPack(string fixtureName)
+    {
+        var feed = Path.Combine(Path.GetTempPath(), "sponsorcheck-it-feed", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(feed);
+
+        var srcNugets = TestEnvironment.SrcNugetsDir;
+        var sponsorCheckNupkg = Directory.GetFiles(srcNugets, "SponsorCheck.*.nupkg").Single();
+        File.Copy(sponsorCheckNupkg, Path.Combine(feed, Path.GetFileName(sponsorCheckNupkg)), overwrite: true);
+        var sponsorCheckVersion = ExtractVersion(sponsorCheckNupkg);
+
+        var workDir = TestEnvironment.MakeWorkDir($"{fixtureName}-pack");
+        TestEnvironment.CopyDirectory(Path.Combine(TestEnvironment.FixturesDir, "_Shared", fixtureName), workDir);
+        TestEnvironment.WriteNugetConfig(workDir, feed);
+
+        var packagesDir = Path.Combine(feed, ".pkgs");
+        Directory.CreateDirectory(packagesDir);
+        return await DotnetCliRunner.Run(
+            "pack",
+            Path.Combine(workDir, $"{fixtureName}.csproj"),
+            "Release",
+            new Dictionary<string, string>
+            {
+                ["SponsorListOverride"] = TestEnvironment.OverrideListPath,
+                ["PackageOutputPath"] = feed,
+                ["SponsorCheckVersion"] = sponsorCheckVersion,
+                ["SponsorCheck_PackDateOverride"] = "2024-01-01"
+            },
+            workDir,
+            packagesDir).ConfigureAwait(false);
+    }
+
     static string ExtractVersion(string nupkgPath)
     {
         // SponsorCheck.0.1.1.nupkg -> 0.1.1; SponsorCheck.0.1.1-beta.1.nupkg -> 0.1.1-beta.1

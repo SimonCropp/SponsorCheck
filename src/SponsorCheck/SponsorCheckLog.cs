@@ -23,7 +23,7 @@ public static class SponsorCheckLog
 
     static void EmitInternal(TaskLoggingHelper log, string code, Severity severity, string message)
     {
-        var fullMessage = AppendDocsLink(code, message);
+        var fullMessage = $"{NameFor(code)}. {message} See: {DocsUrl(code)}";
         switch (severity)
         {
             case Severity.Error:
@@ -46,6 +46,24 @@ public static class SponsorCheckLog
         return $"{DocsBaseUrl}{doc}#{code.ToLowerInvariant()}";
     }
 
-    static string AppendDocsLink(string code, string message) =>
-        $"{message} See: {DocsUrl(code)}";
+    public static string NameFor(string code) => code switch
+    {
+        "SC001" => "No license specified",
+        "SC002" => "Conflicting license modes",
+        "SC003" => "License ignored",
+        "SC004" => "Invalid account",
+        "SC005" => "License expired",
+        "SC006" => "Metadata set on both PackageReference and PackageVersion",
+        "SC007" => "Invalid license date format",
+        "SC008" => "Sponsorship attestation trusted",
+        "SC009" => "Bundled sponsor hash file missing",
+        "SC010" => "Invalid SponsorshipStart format",
+        "SC011" => "SponsorshipStart in the future",
+        "SC100" => "Platform fetch failed",
+        "SC101" => "No platform account configured",
+        "SC102" => "Missing platform credential",
+        "SC103" => "User-secrets read failed",
+        "SC104" => "Invalid severity override",
+        _ => code
+    };
 }

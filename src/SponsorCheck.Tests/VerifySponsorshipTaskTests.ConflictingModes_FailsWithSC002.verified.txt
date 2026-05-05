@@ -4,7 +4,7 @@
       Subcategory: SponsorCheck,
       Code: SC002,
       File: ,
-      Message: Package 'MyOssLib': mutually exclusive license modes set (SponsorshipLicenseIgnored, Sponsor). Pick one. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc002,
+      Message: Conflicting license modes. Package 'MyOssLib': mutually exclusive license modes set (SponsorshipLicenseIgnored, Sponsor). Pick one. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc002,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask

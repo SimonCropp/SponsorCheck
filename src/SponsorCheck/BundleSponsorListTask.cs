@@ -13,8 +13,15 @@ public sealed class BundleSponsorListTask :
     public string PolarToken { get; set; } = "";
     public string UserSecretsId { get; set; } = "";
     public string OverrideListPath { get; set; } = "";
-    public string SeverityOverridesFromRef { get; set; } = "";
-    public string SeverityOverridesFromVer { get; set; } = "";
+
+    public string NoLicenseSpecifiedSeverityOverrideFromRef { get; set; } = "";
+    public string NoLicenseSpecifiedSeverityOverrideFromVer { get; set; } = "";
+    public string LicenseIgnoredSeverityOverrideFromRef { get; set; } = "";
+    public string LicenseIgnoredSeverityOverrideFromVer { get; set; } = "";
+    public string InvalidAccountSeverityOverrideFromRef { get; set; } = "";
+    public string InvalidAccountSeverityOverrideFromVer { get; set; } = "";
+    public string LicenseExpiredSeverityOverrideFromRef { get; set; } = "";
+    public string LicenseExpiredSeverityOverrideFromVer { get; set; } = "";
 
     [Required] public string VerifierTargetsTemplatePath { get; set; } = "";
     [Required] public string ThePackageId { get; set; } = "";
@@ -33,11 +40,8 @@ public sealed class BundleSponsorListTask :
             EnsureDirectory(OutputVerifierTargetsPath);
             EnsureDirectory(OutputSeverityOverridesPath);
 
-            var rawOverrides = PackageMetadataMerger.Merge("SponsorCheckSeverityOverrides", SeverityOverridesFromRef, SeverityOverridesFromVer) ?? "";
-            var severityOverrides = SeverityOverrideFile.ParseAuthorInput(rawOverrides, out var overrideError);
-            if (overrideError != null)
+            if (!TryResolveSeverityOverrides(out var severityOverrides))
             {
-                SponsorCheckLog.Error(Log, "SC104", overrideError);
                 return false;
             }
 
@@ -114,6 +118,42 @@ public sealed class BundleSponsorListTask :
             return false;
         }
     }
+
+    bool TryResolveSeverityOverrides(out Dictionary<string, Severity> overrides)
+    {
+        overrides = new(StringComparer.Ordinal);
+        foreach (var (code, metadataName) in SeverityOverrideFile.OverrideableCodes)
+        {
+            var (fromRef, fromVer) = ValuesFor(metadataName);
+            var raw = PackageMetadataMerger.Merge(metadataName, fromRef, fromVer);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                continue;
+            }
+
+            if (!SeverityOverrideFile.TryParseSeverity(raw!, out var severity))
+            {
+                SponsorCheckLog.Error(
+                    Log,
+                    "SC104",
+                    $"{metadataName}='{raw}' is not a recognized severity. Allowed: error, warning, message.");
+                return false;
+            }
+
+            overrides[code] = severity;
+        }
+
+        return true;
+    }
+
+    (string FromRef, string FromVer) ValuesFor(string metadataName) => metadataName switch
+    {
+        "NoLicenseSpecifiedSeverityOverride" => (NoLicenseSpecifiedSeverityOverrideFromRef, NoLicenseSpecifiedSeverityOverrideFromVer),
+        "LicenseIgnoredSeverityOverride" => (LicenseIgnoredSeverityOverrideFromRef, LicenseIgnoredSeverityOverrideFromVer),
+        "InvalidAccountSeverityOverride" => (InvalidAccountSeverityOverrideFromRef, InvalidAccountSeverityOverrideFromVer),
+        "LicenseExpiredSeverityOverride" => (LicenseExpiredSeverityOverrideFromRef, LicenseExpiredSeverityOverrideFromVer),
+        _ => throw new InvalidOperationException($"Unknown severity-override metadata name: {metadataName}")
+    };
 
     Dictionary<string, string> ResolveEnabledPlatforms()
     {

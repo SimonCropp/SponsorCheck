@@ -2,9 +2,9 @@
 
 Codes in the `SC0xx` range are emitted by the verifier in consumer projects.
 
-Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#<code>` appended automatically. The Syntax/Example entries below omit that suffix for readability.
+Every emitted message is prefixed with the code's short **Name** (e.g. `No license specified. Package 'MyOssLib'...`) and suffixed with ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#<code>`. The Syntax/Example entries below show the inner format string only — the name and link wrap is added at log time.
 
-The default severities below can be overridden by the OSS author at pack time via `<SponsorCheckSeverityOverrides>` metadata on their `<PackageReference Include="SponsorCheck">` (e.g. `SC001=warning;SC003=error`). Only `SC001`, `SC003`, `SC004`, and `SC005` are overrideable — the other codes are consumer-side configuration bugs that the consumer must fix and so cannot be downgraded. Allowed severities are `error`, `warning`, `message`.
+The default severities below can be overridden by the OSS author at pack time with one named metadatum per code on their `<PackageReference Include="SponsorCheck">`: `NoLicenseSpecifiedSeverityOverride` (SC001), `LicenseIgnoredSeverityOverride` (SC003), `InvalidAccountSeverityOverride` (SC004), `LicenseExpiredSeverityOverride` (SC005). Other codes are consumer-side configuration bugs that the consumer must fix and so cannot be downgraded. Allowed values are `error`, `warning`, `message`.
 
 <!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
 ```mermaid
@@ -34,6 +34,7 @@ flowchart TD
 
 ### SC001
 
+- **Name:** No license specified
 - **Level**: Error
 - **Meaning:** No license mode set on the PackageReference / PackageVersion.
 - **Syntax:** `Package '{PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored="true", a <Platform>SponsorAccount, or SponsorshipLicensedUntil="yyyy-MM". Sponsor at: {sponsorUrls}.`
@@ -42,6 +43,7 @@ flowchart TD
 
 ### SC002
 
+- **Name:** Conflicting license modes
 - **Level**: Error
 - **Meaning:** Multiple license modes set (mutually exclusive).
 - **Syntax:** `Package '{PackageId}': mutually exclusive license modes set ({modes}). Pick one.`
@@ -50,6 +52,7 @@ flowchart TD
 
 ### SC003
 
+- **Name:** License ignored
 - **Level**: Warning
 - **Meaning:** `SponsorshipLicenseIgnored="true"` — consumer has opted out.
 - **Syntax:** `Package '{PackageId}': SponsorshipLicenseIgnored="true". Build is allowed but is in breach of the license of the package. Sponsor at: {sponsorUrls}.`
@@ -58,6 +61,7 @@ flowchart TD
 
 ### SC004
 
+- **Name:** Invalid account
 - **Level**: Error
 - **Meaning:** None of the supplied platform accounts match the bundled hash list.
 - **Syntax:** `Package '{PackageId}': no supplied sponsor account matches the bundled list (tried: {attempts}).{hint}` (the hint ` If sponsorship started after this package was released, add SponsorshipStart="yyyy-MM-dd" metadata.` is appended only when `SponsorshipStart` is unset.)
@@ -66,6 +70,7 @@ flowchart TD
 
 ### SC005
 
+- **Name:** License expired
 - **Level**: Error
 - **Meaning:** `SponsorshipLicensedUntil` has expired.
 - **Syntax:** `Package '{PackageId}': SponsorshipLicensedUntil='{value}' has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).`
@@ -74,6 +79,7 @@ flowchart TD
 
 ### SC006
 
+- **Name:** Metadata set on both PackageReference and PackageVersion
 - **Level**: Error
 - **Meaning:** Metadata set on both PackageReference and PackageVersion. Pick one — even matching values are rejected so the source of truth is unambiguous.
 - **Syntax:** `{metadataName}: set on both PackageReference ('{r}') and PackageVersion ('{v}'). Set on only one.`
@@ -82,6 +88,7 @@ flowchart TD
 
 ### SC007
 
+- **Name:** Invalid license date format
 - **Level**: Error
 - **Meaning:** `SponsorshipLicensedUntil` not in `yyyy-MM` format.
 - **Syntax:** `Package '{PackageId}': SponsorshipLicensedUntil='{value}' is not in 'yyyy-MM' format.`
@@ -90,6 +97,7 @@ flowchart TD
 
 ### SC008
 
+- **Name:** Sponsorship attestation trusted
 - **Level**: Info
 - **Meaning:** `SponsorshipStart` is after pack date — verifier trusts the attestation (audit trail message).
 - **Syntax:** `Package '{PackageId}': trusting unverified sponsor declaration ({attempts}): SponsorshipStart={startDate:yyyy-MM-dd} is later than package release {packDate:yyyy-MM-dd}, so the bundled sponsor list cannot contain this account.`
@@ -98,6 +106,7 @@ flowchart TD
 
 ### SC009
 
+- **Name:** Bundled sponsor hash file missing
 - **Level**: Error
 - **Meaning:** Bundled sponsor hash file is missing from the package (corrupt install).
 - **Syntax:** `Package '{PackageId}': bundled sponsor hash file not found at '{path}'.`
@@ -106,6 +115,7 @@ flowchart TD
 
 ### SC010
 
+- **Name:** Invalid SponsorshipStart format
 - **Level**: Error
 - **Meaning:** `SponsorshipStart` not in `yyyy-MM-dd` format.
 - **Syntax:** `Package '{PackageId}': SponsorshipStart='{value}' is not in 'yyyy-MM-dd' format.`
@@ -114,6 +124,7 @@ flowchart TD
 
 ### SC011
 
+- **Name:** SponsorshipStart in the future
 - **Level**: Error
 - **Meaning:** `SponsorshipStart` is in the future.
 - **Syntax:** `Package '{PackageId}': SponsorshipStart='{value}' is in the future.`

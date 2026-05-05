@@ -1,64 +1,61 @@
 public class SeverityOverrideFileTests
 {
     [Test]
-    public async Task ParseAuthorInput_Empty()
+    public async Task TryParseSeverity_Error()
     {
-        var result = SeverityOverrideFile.ParseAuthorInput("", out var error);
-        await Assert.That(error).IsNull();
-        await Assert.That(result).IsEmpty();
+        var ok = SeverityOverrideFile.TryParseSeverity("error", out var sev);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(sev).IsEqualTo(Severity.Error);
     }
 
     [Test]
-    public async Task ParseAuthorInput_SingleEntry()
+    public async Task TryParseSeverity_Warning()
     {
-        var result = SeverityOverrideFile.ParseAuthorInput("SC001=warning", out var error);
-        await Assert.That(error).IsNull();
-        await Assert.That(result["SC001"]).IsEqualTo(Severity.Warning);
+        var ok = SeverityOverrideFile.TryParseSeverity("warning", out var sev);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(sev).IsEqualTo(Severity.Warning);
     }
 
     [Test]
-    public async Task ParseAuthorInput_MultipleEntriesSemicolon()
+    public async Task TryParseSeverity_Message()
     {
-        var result = SeverityOverrideFile.ParseAuthorInput("SC001=warning;SC003=error;SC004=message", out var error);
-        await Assert.That(error).IsNull();
-        await Assert.That(result["SC001"]).IsEqualTo(Severity.Warning);
-        await Assert.That(result["SC003"]).IsEqualTo(Severity.Error);
-        await Assert.That(result["SC004"]).IsEqualTo(Severity.Message);
+        var ok = SeverityOverrideFile.TryParseSeverity("message", out var sev);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(sev).IsEqualTo(Severity.Message);
     }
 
     [Test]
-    public async Task ParseAuthorInput_NormalizesCase()
+    public async Task TryParseSeverity_NormalizesCase()
     {
-        var result = SeverityOverrideFile.ParseAuthorInput("sc001=WARNING", out var error);
-        await Assert.That(error).IsNull();
-        await Assert.That(result["SC001"]).IsEqualTo(Severity.Warning);
+        var ok = SeverityOverrideFile.TryParseSeverity("WARNING", out var sev);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(sev).IsEqualTo(Severity.Warning);
     }
 
     [Test]
-    public async Task ParseAuthorInput_RejectsNonOverrideableCode()
+    public async Task TryParseSeverity_RejectsUnknown()
     {
-        var result = SeverityOverrideFile.ParseAuthorInput("SC002=warning", out var error);
-        await Assert.That(error).IsNotNull();
-        await Assert.That(error!).Contains("SC002");
-        await Assert.That(error!).Contains("not overrideable");
-        await Assert.That(result).IsEmpty();
+        var ok = SeverityOverrideFile.TryParseSeverity("critical", out _);
+        await Assert.That(ok).IsFalse();
     }
 
     [Test]
-    public async Task ParseAuthorInput_RejectsUnknownSeverity()
+    public async Task OverrideableCodes_HasExpectedMapping()
     {
-        var result = SeverityOverrideFile.ParseAuthorInput("SC001=critical", out var error);
-        await Assert.That(error).IsNotNull();
-        await Assert.That(error!).Contains("critical");
-        await Assert.That(result).IsEmpty();
-    }
-
-    [Test]
-    public async Task ParseAuthorInput_RejectsMalformedToken()
-    {
-        var result = SeverityOverrideFile.ParseAuthorInput("SC001warning", out var error);
-        await Assert.That(error).IsNotNull();
-        await Assert.That(result).IsEmpty();
+        // Mapping is the single source of truth — bundler properties, targets file, docs all
+        // derive from it. This guard catches accidental mapping reshuffles or new entries that
+        // forget the property/targets plumbing.
+        var pairs = SeverityOverrideFile.OverrideableCodes
+            .Select(_ => $"{_.Code}={_.MetadataName}")
+            .ToArray();
+        string[] expected =
+        [
+            "SC001=NoLicenseSpecifiedSeverityOverride",
+            "SC003=LicenseIgnoredSeverityOverride",
+            "SC004=InvalidAccountSeverityOverride",
+            "SC005=LicenseExpiredSeverityOverride"
+        ];
+        await Assert.That(pairs).IsEquivalentTo(expected);
     }
 
     [Test]
@@ -99,7 +96,8 @@ public class SeverityOverrideFileTests
             ["SC001"] = Severity.Error,
             ["SC003"] = Severity.Message
         });
+        string[] expected = ["SC001=error", "SC003=message", "SC004=warning"];
         var lines = await File.ReadAllLinesAsync(path);
-        await Assert.That(lines).IsEquivalentTo(new[] { "SC001=error", "SC003=message", "SC004=warning" });
+        await Assert.That(lines).IsEquivalentTo(expected);
     }
 }

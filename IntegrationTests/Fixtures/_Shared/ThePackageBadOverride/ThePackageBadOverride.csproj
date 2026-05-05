@@ -8,7 +8,6 @@
                       GitHubSponsorsAccount="acmecorp"
                       OpenCollectiveAccount="acme-org"
                       PolarAccount="acme"
-                      NoLicenseSpecifiedSeverityOverride="warning"
-                      LicenseIgnoredSeverityOverride="error" />
+                      NoLicenseSpecifiedSeverityOverride="critical" />
   </ItemGroup>
 </Project>

@@ -116,4 +116,16 @@ public class AuthorPackTests
         var content = await reader.ReadToEndAsync();
         await Assert.That(content.Trim()).IsEqualTo("");
     }
+
+    [Test]
+    public async Task SeverityOverrides_InvalidValue_FailsPackWithSC104()
+    {
+        // ThePackageBadOverride declares NoLicenseSpecifiedSeverityOverride="critical" — not a
+        // recognized severity. Pack should fail with SC104, naming the offending metadata.
+        var result = await ThePackageBuilder.TryPack("ThePackageBadOverride");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC104");
+        await Assert.That(result.Combined).Contains("NoLicenseSpecifiedSeverityOverride");
+        await Assert.That(result.Combined).Contains("critical");
+    }
 }

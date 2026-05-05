@@ -2,11 +2,12 @@
 
 Codes in the `SC1xx` range are emitted by the bundler at the OSS author's pack time.
 
-Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/BundlerDiagnosticCodes.md#<code>` appended automatically. The Syntax/Example entries below omit that suffix for readability.
+Every emitted message is prefixed with the code's short **Name** (e.g. `Platform fetch failed. Polar HTTP 500: ...`) and suffixed with ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/BundlerDiagnosticCodes.md#<code>`. The Syntax/Example entries below show the inner format string only — the name and link wrap is added at log time.
 
 
 ### SC100
 
+- **Name:** Platform fetch failed
 - **Level**: Error
 - **Meaning:** Bundler-side platform error (HTTP failure, GraphQL error, etc.) — message is the underlying `MaintenanceFeeException`.
 - **Syntax:** `{exception.Message}`
@@ -15,6 +16,7 @@ Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob
 
 ### SC101
 
+- **Name:** No platform account configured
 - **Level**: Error
 - **Meaning:** OSS author has no `<Platform>Account` metadata on SponsorCheck.
 - **Syntax:** `SponsorCheck: at least one platform account metadata must be set on the PackageReference or PackageVersion (e.g. GitHubSponsorsAccount="acmecorp").`
@@ -23,6 +25,7 @@ Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob
 
 ### SC102
 
+- **Name:** Missing platform credential
 - **Level**: Error
 - **Meaning:** A platform that requires a credential is missing one (GitHub Sponsors, Polar). Setup advice flips between user-secrets-first (local) and env-var-only (CI) based on `BuildServerDetector`.
 - **Syntax:** `{platformLabel}: API token required. {advice}` where `advice` is `Run \`dotnet user-secrets set SponsorCheck:{Platform}Token <pat>\` (recommended for local dev), or set the <{Platform}Token> MSBuild property, or set the '{Platform}Token' env var.` locally, or `Set the '{Platform}Token' env var (CI providers should expose their encrypted secret under this name; MSBuild auto-imports it as the <{Platform}Token> property).` on CI.
@@ -31,6 +34,7 @@ Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob
 
 ### SC103
 
+- **Name:** User-secrets read failed
 - **Level**: Warning
 - **Meaning:** User-secrets file present but couldn't be read at pack time.
 - **Syntax:** `SponsorCheck: could not read user-secrets at '{path}': {exception.Message}`
@@ -39,7 +43,8 @@ Every emitted message has ` See: https://github.com/SimonCropp/SponsorCheck/blob
 
 ### SC104
 
+- **Name:** Invalid severity override
 - **Level**: Error
-- **Meaning:** `SponsorCheckSeverityOverrides` metadata is malformed: bad token shape, non-overrideable code, or unrecognized severity. Overrideable codes are `SC001`, `SC003`, `SC004`, `SC005`; allowed severities are `error`, `warning`, `message`.
-- **Syntax:** Three variants: `SponsorCheckSeverityOverrides entry '{token}' is not in 'CODE=severity' form.`, `SponsorCheckSeverityOverrides code '{code}' is not overrideable. Allowed: SC001, SC003, SC004, SC005.`, or `SponsorCheckSeverityOverrides severity '{value}' for {code} is not recognized. Allowed: error, warning, message.`
-- **Example:** `SponsorCheckSeverityOverrides code 'SC002' is not overrideable. Allowed: SC001, SC003, SC004, SC005.`
+- **Meaning:** A `<Code>SeverityOverride` metadatum on the SponsorCheck reference has an unrecognized value. Overrideable metadata: `NoLicenseSpecifiedSeverityOverride` (SC001), `LicenseIgnoredSeverityOverride` (SC003), `InvalidAccountSeverityOverride` (SC004), `LicenseExpiredSeverityOverride` (SC005). Allowed values are `error`, `warning`, `message`.
+- **Syntax:** `{metadataName}='{value}' is not a recognized severity. Allowed: error, warning, message.`
+- **Example:** `NoLicenseSpecifiedSeverityOverride='critical' is not a recognized severity. Allowed: error, warning, message.`
