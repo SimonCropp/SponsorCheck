@@ -263,7 +263,7 @@ The verifier runs in consumer projects on every build and:
 2. Merges metadata across both. Reads license-mode declarations (`SponsorshipLicenseIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
 3. Applies the appropriate decision: ignored (warn), sponsor (check hash list), license (check expiry), or fail with the relevant SC code.
 
-```mermaid
+```mermaid<!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
 flowchart TD
     Start([Consumer build]) --> Which{Which mode?}
 
@@ -286,6 +286,7 @@ flowchart TD
     Expired -->|Yes| SC005[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>SC005 Error<br/>License expired</a>]
     Expired -->|No| PassLicense([Build passes])
 ```
+<!-- endInclude -->
 
 
 ## Hashing — what it protects
