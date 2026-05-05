@@ -66,7 +66,7 @@ In `BundleSponsorListTask.TokenFor`:
 
 ## SponsorshipStart bypass
 
-A consumer who began sponsoring after a package's pack date can't possibly be in the bundled hash list. `SponsorshipStart="yyyy-MM-dd"` lets them attest to a start date. If `SponsorshipStart > PackDate`, the verifier skips the hash check and emits a high-priority build message naming the unverified sponsor (audit trail in the consumer's own log). Future `SponsorshipStart` fails with `SC014`.
+A consumer who began sponsoring after a package's pack date can't possibly be in the bundled hash list. `SponsorshipStart="yyyy-MM-dd"` lets them attest to a start date. If `SponsorshipStart > PackDate`, the verifier skips the hash check and emits a high-priority build message naming the unverified sponsor (audit trail in the consumer's own log). Future `SponsorshipStart` fails with `SC011`.
 
 This is why `OutputPackDatePath` exists in the bundler and `PackDatePath` is plumbed all the way to `DecisionApplier.Apply`.
 
@@ -80,14 +80,14 @@ The 2024-01-01 backdate is what enables `Consumer.RecentSponsor` to test the `Sp
 
 ## Diagnostic code conventions
 
-- `SC0xx` — consumer-side (verifier). 001-007 are license-mode errors; 008 is the `SponsorshipStart` trust-attestation info message; 010 is corrupt install; 013-014 are `SponsorshipStart` errors.
-- `SC1xx` — author-side (bundler). 100 = catch-all for `MaintenanceFeeException` (HTTP/GraphQL errors); 102 = no platform metadata; 103 = required platform credential missing (typed via `MissingCredentialException`); 104 = user-secrets read warning.
+- `SC0xx` — consumer-side (verifier). 001-007 are license-mode errors; 008 is the `SponsorshipStart` trust-attestation info message; 009 is corrupt install; 010-011 are `SponsorshipStart` errors.
+- `SC1xx` — author-side (bundler). 100 = catch-all for `MaintenanceFeeException` (HTTP/GraphQL errors); 101 = no platform metadata; 102 = required platform credential missing (typed via `MissingCredentialException`); 103 = user-secrets read warning.
 
-Any time a code is added, removed, or its message text changes, update the per-code section in `readme.md` (Meaning / Syntax / Example) alongside `VerifySponsorshipTask`/`BundleSponsorListTask`. The Syntax line must mirror the actual interpolated format string and the Example must be a plausible rendering — these double as the public reference and as a reviewer cross-check.
+Any time a code is added, removed, or its message text changes, update the per-code section in `docs/VerifierDiagnosticCodes.md` (SC0xx) or `docs/BundlerDiagnosticCodes.md` (SC1xx) alongside `VerifySponsorshipTask`/`BundleSponsorListTask`. The Syntax line must mirror the actual interpolated format string and the Example must be a plausible rendering — these double as the public reference and as a reviewer cross-check.
 
 ## MSBuild task batching trap
 
-`SponsorCheck.targets` and `ConsumerVerifier.targets` flatten item-metadata into scalar properties (`@(Items->'%(M)')`) before passing to the bundler/verifier task. Do not revert this to direct `%(ItemGroup.Metadata)` task parameters. With CPM both `@(PackageReference)` and `@(PackageVersion)` carry SponsorCheck items, and direct metadata accessors cause MSBuild to invoke the task once per ItemGroup batch. The PackageReference batch typically has no metadata under CPM (it lives on PackageVersion), so that batch fires SC102/SC001 even though the other one would succeed. Regression coverage: `AuthorPackTests.CpmMultiTargeted_MetadataOnPackageVersion_BundlesSuccessfully` (bundler) and `ConsumerBuildTests.CpmConsumer_LicenseMetadataOnPackageVersion_PassesWithoutBatchingError` (verifier).
+`SponsorCheck.targets` and `ConsumerVerifier.targets` flatten item-metadata into scalar properties (`@(Items->'%(M)')`) before passing to the bundler/verifier task. Do not revert this to direct `%(ItemGroup.Metadata)` task parameters. With CPM both `@(PackageReference)` and `@(PackageVersion)` carry SponsorCheck items, and direct metadata accessors cause MSBuild to invoke the task once per ItemGroup batch. The PackageReference batch typically has no metadata under CPM (it lives on PackageVersion), so that batch fires SC101/SC001 even though the other one would succeed. Regression coverage: `AuthorPackTests.CpmMultiTargeted_MetadataOnPackageVersion_BundlesSuccessfully` (bundler) and `ConsumerBuildTests.CpmConsumer_LicenseMetadataOnPackageVersion_PassesWithoutBatchingError` (verifier).
 
 ## Configuration gating
 
@@ -97,7 +97,7 @@ The bundler target is gated on `'$(Configuration)' == 'Release'` (it only runs a
 
 - File-scoped namespaces, `LangVersion=preview`, nullable enabled, `TreatWarningsAsErrors=true`, `EnforceCodeStyleInBuild=true` (see `src/Directory.Build.props`).
 - Tests use TUnit + Verify. `StubBuildEngine` and `TaskLoggingHelperFor` (in `VerifySponsorshipTaskTests.cs`) are the standard test plumbing for invoking tasks directly.
-- Live tests that need credentials use `LiveTokenResolver.ResolveOrSkip(envVar, secretKey, label, extra?)` — env var → user-secrets → `Skip.Test`. Skip messages flip between user-secrets-first (local) and env-var-only (CI) advice based on `BuildServerDetector.Detected`. The bundler's missing-credential errors (`SC103`) flip the same way via `TokenSetupAdvice.MissingTokenMessage`.
+- Live tests that need credentials use `LiveTokenResolver.ResolveOrSkip(envVar, secretKey, label, extra?)` — env var → user-secrets → `Skip.Test`. Skip messages flip between user-secrets-first (local) and env-var-only (CI) advice based on `BuildServerDetector.Detected`. The bundler's missing-credential errors (`SC102`) flip the same way via `TokenSetupAdvice.MissingTokenMessage`.
 - `src/SponsorCheck/BuildServerDetector.cs` is a verbatim duplicate of `VerifyTests/DiffEngine/src/DiffEngine/BuildServerDetector.cs`. If the upstream changes meaningfully, re-sync this copy rather than editing in place.
 
 ## readme is generated

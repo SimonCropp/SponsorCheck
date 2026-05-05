@@ -2,9 +2,9 @@
   Errors: [
     {
       Subcategory: SponsorCheck,
-      Code: SC014,
+      Code: SC010,
       File: ,
-      Message: Package 'MyOssLib': SponsorshipStart='2099-01-01' is in the future.,
+      Message: Package 'MyOssLib': SponsorshipStart='yesterday' is not in 'yyyy-MM-dd' format.,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask

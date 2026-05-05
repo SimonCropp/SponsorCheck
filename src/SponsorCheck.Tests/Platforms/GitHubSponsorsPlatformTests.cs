@@ -192,7 +192,7 @@ public class GitHubSponsorsPlatformTests
     public async Task MissingTokenThrowsTypedMissingCredentialException()
     {
         // GitHub's mandatory token check throws MissingCredentialException specifically (not the
-        // base MaintenanceFeeException), so the bundler maps it to SC103. Unauthenticated GitHub
+        // base MaintenanceFeeException), so the bundler maps it to SC102. Unauthenticated GitHub
         // API calls hit a low rate limit and cause SC100 failures on shared CI IPs.
         var platform = new GitHubSponsorsPlatform();
         var log = new TaskLoggingHelperFor(new StubBuildEngine());

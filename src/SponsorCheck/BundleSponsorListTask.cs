@@ -34,7 +34,7 @@ public sealed class BundleSponsorListTask :
             {
                 Log.LogError(
                     "SponsorCheck",
-                    "SC102",
+                    "SC101",
                     "",
                     "",
                     0,
@@ -92,7 +92,7 @@ public sealed class BundleSponsorListTask :
         }
         catch (MissingCredentialException exception)
         {
-            Log.LogError("SponsorCheck", "SC103", "", "", 0, 0, 0, 0, exception.Message);
+            Log.LogError("SponsorCheck", "SC102", "", "", 0, 0, 0, 0, exception.Message);
             return false;
         }
         catch (MaintenanceFeeException exception)
@@ -173,7 +173,7 @@ public sealed class BundleSponsorListTask :
         }
         catch (Exception exception)
         {
-            Log.LogWarning("SponsorCheck", "SC104", "", "", 0, 0, 0, 0,
+            Log.LogWarning("SponsorCheck", "SC103", "", "", 0, 0, 0, 0,
                 $"SponsorCheck: could not read user-secrets at '{UserSecretsReader.ResolvePath(UserSecretsId)}': {exception.Message}");
             return new Dictionary<string, string>();
         }

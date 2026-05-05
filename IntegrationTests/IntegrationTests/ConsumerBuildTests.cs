@@ -133,10 +133,10 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task FutureSponsorshipStart_FailsWithSC014()
+    public async Task FutureSponsorshipStart_FailsWithSC011()
     {
         var result = await BuildFixture("Consumer.FutureSponsorshipStart");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("SC014");
+        await Assert.That(result.Combined).Contains("SC011");
     }
 }

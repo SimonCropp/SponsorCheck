@@ -82,7 +82,7 @@ public class PolarPlatformTests
     public async Task MissingTokenThrowsTypedMissingCredentialException()
     {
         // Polar's mandatory token check throws MissingCredentialException specifically (not the
-        // base MaintenanceFeeException), so the bundler can map it to SC103.
+        // base MaintenanceFeeException), so the bundler can map it to SC102.
         var platform = new PolarPlatform();
         var log = new TaskLoggingHelperFor(new StubBuildEngine());
 
@@ -98,9 +98,9 @@ public class PolarPlatformTests
 
         await Assert.That(caught).IsNotNull();
         await Assert.That(caught!.Message).Contains("Polar");
-        // The misleading "(SC103)" suffix in the message was removed when we made the diagnostic
-        // structured (caught by typed exception, mapped to SC103 by the bundler).
-        await Assert.That(caught.Message).DoesNotContain("(SC103)");
+        // The misleading "(SC102)" suffix in the message was removed when we made the diagnostic
+        // structured (caught by typed exception, mapped to SC102 by the bundler).
+        await Assert.That(caught.Message).DoesNotContain("(SC102)");
     }
 
     [Test]

@@ -29,7 +29,7 @@
          task parameters causes MSBuild to batch the task per unique item identity — and with two
          ItemGroups in scope (PackageReference + PackageVersion under CPM) the task gets invoked
          once per batch. The PackageReference batch typically has no SponsorCheck metadata under
-         CPM (it lives on PackageVersion), so that batch trips SC102 even though the other one
+         CPM (it lives on PackageVersion), so that batch trips SC101 even though the other one
          succeeds. Item transforms below produce a single string, which kills the batching. -->
     <PropertyGroup>
       <_SponsorCheck_GitHubFromRef>@(_SponsorCheck_Self->'%(GitHubSponsorsAccount)')</_SponsorCheck_GitHubFromRef>

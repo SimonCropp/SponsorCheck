@@ -57,7 +57,7 @@ public class AuthorPackTests
         // Regression: when SponsorCheck metadata lives on <PackageVersion> (CPM) and the author project
         // multi-targets, MSBuild *task batches* on `%(ItemGroup.Metadata)` parameters when two ItemGroups
         // are in scope (PackageReference batch + PackageVersion batch). The PackageReference batch under
-        // CPM has no SponsorCheck metadata, so that invocation tripped SC102 even though the PackageVersion
+        // CPM has no SponsorCheck metadata, so that invocation tripped SC101 even though the PackageVersion
         // batch succeeded. Fix: SponsorCheck.targets flattens metadata into scalar properties first
         // (`@(Items->'%(M)')`), which kills the batching. Same fix in ConsumerVerifier.targets — see
         // ConsumerBuildTests.CpmConsumer_LicenseMetadataOnPackageVersion_PassesWithoutBatchingError.

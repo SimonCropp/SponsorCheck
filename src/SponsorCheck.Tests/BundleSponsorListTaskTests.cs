@@ -73,10 +73,10 @@ public class BundleSponsorListTaskTests
     }
 
     [Test]
-    public async Task PolarMissingTokenSurfacesAsSC103()
+    public async Task PolarMissingTokenSurfacesAsSC102()
     {
         // Polar requires a token. Missing token throws MissingCredentialException,
-        // which the task catches and surfaces as SC103 (distinct from the generic SC100).
+        // which the task catches and surfaces as SC102 (distinct from the generic SC100).
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
         var engine = new StubBuildEngine();
@@ -97,11 +97,11 @@ public class BundleSponsorListTaskTests
 
         await Assert.That(ok).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC103");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC102");
         await Assert.That(engine.Errors[0].Message).Contains("Polar");
-        // Confirm the misleading "(SC103)" suffix in the message was removed when we made the
+        // Confirm the misleading "(SC102)" suffix in the message was removed when we made the
         // diagnostic structured rather than text-tagged.
-        await Assert.That(engine.Errors[0].Message).DoesNotContain("(SC103)");
+        await Assert.That(engine.Errors[0].Message).DoesNotContain("(SC102)");
     }
 
     [Test]
@@ -125,7 +125,7 @@ public class BundleSponsorListTaskTests
 
         await Assert.That(ok).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC102");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC101");
     }
 
     [Test]

@@ -64,7 +64,7 @@
             {
                 log.LogError(
                     "SponsorCheck",
-                    "SC013",
+                    "SC010",
                     "",
                     "",
                     0,
@@ -79,7 +79,7 @@
             {
                 log.LogError(
                     "SponsorCheck",
-                    "SC014",
+                    "SC011",
                     "",
                     "",
                     0,
@@ -115,7 +115,7 @@
         {
             log.LogError(
                 "SponsorCheck",
-                "SC010",
+                "SC009",
                 "",
                 "",
                 0,

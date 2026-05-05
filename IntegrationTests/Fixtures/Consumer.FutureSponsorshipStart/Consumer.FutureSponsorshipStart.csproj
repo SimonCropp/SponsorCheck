@@ -3,7 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <!-- SponsorshipStart in the obvious-lie zone — should fail with SC014. -->
+    <!-- SponsorshipStart in the obvious-lie zone — should fail with SC011. -->
     <PackageReference Include="ThePackage" Version="1.0.0"
                       GitHubSponsorAccount="carol"
                       SponsorshipStart="9999-12-31" />

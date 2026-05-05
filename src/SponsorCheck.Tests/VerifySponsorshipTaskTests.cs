@@ -334,7 +334,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task SponsorshipStartInFuture_FailsWithSC014()
+    public async Task SponsorshipStartInFuture_FailsWithSC011()
     {
         using var dir = new TempDirectory();
         var hashes = WriteHashes(dir, ("GitHubSponsors", "alice"));
@@ -349,12 +349,12 @@ public class VerifySponsorshipTaskTests
             SponsorshipStartFromRef = "2099-01-01"
         };
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC014");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC011");
         await Verify(engine);
     }
 
     [Test]
-    public async Task SponsorshipStartBadFormat_FailsWithSC013()
+    public async Task SponsorshipStartBadFormat_FailsWithSC010()
     {
         using var dir = new TempDirectory();
         var hashes = WriteHashes(dir, ("GitHubSponsors", "alice"));
@@ -369,7 +369,7 @@ public class VerifySponsorshipTaskTests
             SponsorshipStartFromRef = "yesterday"
         };
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC013");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC010");
         await Verify(engine);
     }
 

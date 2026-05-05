@@ -186,7 +186,7 @@ The bundled hash list is frozen at the package's pack date. When sponsorship beg
 
 If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits an `SC008` high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date (including equal — the boundary is strict), the hash check is enforced as normal: claiming to be a sponsor at release time means the account should already be in the bundled list.
 
-`SponsorshipStart` in the future fails with SC014. Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
+`SponsorshipStart` in the future fails with SC011. Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
 
 
 #### Sponsorship lifecycle: what happens after sponsorship lapses
@@ -242,80 +242,8 @@ Build passes but emits `SC003` warning on every build, flagging that the build i
 
 ## Diagnostic codes
 
-### SC001 — Error
-- **Meaning:** No license mode set on the PackageReference / PackageVersion.
-- **Syntax:** `Package '{PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored="true", a <Platform>SponsorAccount, or SponsorshipLicensedUntil="yyyy-MM". Sponsor at: {sponsorUrls}.`
-- **Example:** `Package 'MyOssLib' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored="true", a <Platform>SponsorAccount, or SponsorshipLicensedUntil="yyyy-MM". Sponsor at: https://github.com/sponsors/acmecorp.`
-
-### SC002 — Error
-- **Meaning:** Multiple license modes set (mutually exclusive).
-- **Syntax:** `Package '{PackageId}': mutually exclusive license modes set ({modes}). Pick one.`
-- **Example:** `Package 'MyOssLib': mutually exclusive license modes set (SponsorshipLicenseIgnored, Sponsor). Pick one.`
-
-### SC003 — Warning
-- **Meaning:** `SponsorshipLicenseIgnored="true"` — consumer has opted out.
-- **Syntax:** `Package '{PackageId}': SponsorshipLicenseIgnored="true". Build is allowed but is in breach of the license of the package. Sponsor at: {sponsorUrls}.`
-- **Example:** `Package 'MyOssLib': SponsorshipLicenseIgnored="true". Build is allowed but is in breach of the license of the package. Sponsor at: https://github.com/sponsors/acmecorp.`
-
-### SC004 — Error
-- **Meaning:** None of the supplied platform accounts match the bundled hash list.
-- **Syntax:** `Package '{PackageId}': no supplied sponsor account matches the bundled list (tried: {attempts}).{hint}` (the hint ` If sponsorship started after this package was released, add SponsorshipStart="yyyy-MM-dd" metadata.` is appended only when `SponsorshipStart` is unset.)
-- **Example:** `Package 'MyOssLib': no supplied sponsor account matches the bundled list (tried: GitHubSponsors=mallory). If sponsorship started after this package was released, add SponsorshipStart="yyyy-MM-dd" metadata.`
-
-### SC005 — Error
-- **Meaning:** `SponsorshipLicensedUntil` has expired.
-- **Syntax:** `Package '{PackageId}': SponsorshipLicensedUntil='{value}' has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).`
-- **Example:** `Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' has expired (end of month 2000-01-31 UTC).`
-
-### SC006 — Error
-- **Meaning:** Conflicting metadata between PackageReference and PackageVersion.
-- **Syntax:** `{metadataName}: conflicting values on PackageReference ('{r}') and PackageVersion ('{v}'). Set on only one.`
-- **Example:** `GitHubSponsorAccount: conflicting values on PackageReference ('alice') and PackageVersion ('bob'). Set on only one.`
-
-### SC007 — Error
-- **Meaning:** `SponsorshipLicensedUntil` not in `yyyy-MM` format.
-- **Syntax:** `Package '{PackageId}': SponsorshipLicensedUntil='{value}' is not in 'yyyy-MM' format.`
-- **Example:** `Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' is not in 'yyyy-MM' format.`
-
-### SC008 — Info
-- **Meaning:** `SponsorshipStart` is after pack date — verifier trusts the attestation (audit trail message).
-- **Syntax:** `Package '{PackageId}': trusting unverified sponsor declaration ({attempts}): SponsorshipStart={startDate:yyyy-MM-dd} is later than package release {packDate:yyyy-MM-dd}, so the bundled sponsor list cannot contain this account.`
-- **Example:** `Package 'MyOssLib': trusting unverified sponsor declaration (GitHubSponsors=carol): SponsorshipStart=2026-04-30 is later than package release 2026-04-15, so the bundled sponsor list cannot contain this account.`
-
-### SC010 — Error
-- **Meaning:** Bundled sponsor hash file is missing from the package (corrupt install).
-- **Syntax:** `Package '{PackageId}': bundled sponsor hash file not found at '{path}'.`
-- **Example:** `Package 'MyOssLib': bundled sponsor hash file not found at 'C:\Users\me\.nuget\packages\myosslib\1.0.0\build\SponsorCheck.SponsorHashes.txt'.`
-
-### SC013 — Error
-- **Meaning:** `SponsorshipStart` not in `yyyy-MM-dd` format.
-- **Syntax:** `Package '{PackageId}': SponsorshipStart='{value}' is not in 'yyyy-MM-dd' format.`
-- **Example:** `Package 'MyOssLib': SponsorshipStart='yesterday' is not in 'yyyy-MM-dd' format.`
-
-### SC014 — Error
-- **Meaning:** `SponsorshipStart` is in the future.
-- **Syntax:** `Package '{PackageId}': SponsorshipStart='{value}' is in the future.`
-- **Example:** `Package 'MyOssLib': SponsorshipStart='2099-01-01' is in the future.`
-
-### SC100 — Error
-- **Meaning:** Bundler-side platform error (HTTP failure, GraphQL error, etc.) — message is the underlying `MaintenanceFeeException`.
-- **Syntax:** `{exception.Message}`
-- **Example:** `Polar HTTP 500: {"detail":"server error"}`
-
-### SC102 — Error
-- **Meaning:** OSS author has no `<Platform>Account` metadata on SponsorCheck.
-- **Syntax:** `SponsorCheck: at least one platform account metadata must be set on the PackageReference or PackageVersion (e.g. GitHubSponsorsAccount="acmecorp").`
-- **Example:** `SponsorCheck: at least one platform account metadata must be set on the PackageReference or PackageVersion (e.g. GitHubSponsorsAccount="acmecorp").`
-
-### SC103 — Error
-- **Meaning:** A platform that requires a credential is missing one (GitHub Sponsors, Polar). Setup advice flips between user-secrets-first (local) and env-var-only (CI) based on `BuildServerDetector`.
-- **Syntax:** `{platformLabel}: API token required. {advice}` where `advice` is `Run \`dotnet user-secrets set SponsorCheck:{Platform}Token <pat>\` (recommended for local dev), or set the <{Platform}Token> MSBuild property, or set the '{Platform}Token' env var.` locally, or `Set the '{Platform}Token' env var (CI providers should expose their encrypted secret under this name; MSBuild auto-imports it as the <{Platform}Token> property).` on CI.
-- **Example:** `GitHub Sponsors: API token required. Run \`dotnet user-secrets set SponsorCheck:GitHubToken <pat>\` (recommended for local dev), or set the <GitHubToken> MSBuild property, or set the 'GitHubToken' env var.`
-
-### SC104 — Warning
-- **Meaning:** User-secrets file present but couldn't be read at pack time.
-- **Syntax:** `SponsorCheck: could not read user-secrets at '{path}': {exception.Message}`
-- **Example:** `SponsorCheck: could not read user-secrets at 'C:\Users\me\AppData\Roaming\Microsoft\UserSecrets\abc-123\secrets.json': Unexpected character encountered while parsing value.`
+- [Verifier diagnostic codes (SC0xx)](docs/VerifierDiagnosticCodes.md) — emitted in consumer projects.
+- [Bundler diagnostic codes (SC1xx)](docs/BundlerDiagnosticCodes.md) — emitted at the OSS author's pack time.
 
 
 ## How it works
@@ -347,7 +275,7 @@ flowchart TD
 
     Which -->|Supplied sponsor account| HasStart{Sponsorship<br/>Start set?}
     HasStart -->|Yes| Future{Start in<br/>future?}
-    Future -->|Yes| SC014[SC014 Error<br/>future date]
+    Future -->|Yes| SC011[SC011 Error<br/>future date]
     Future -->|No| AfterPack{Start &gt;<br/>PackDate?}
     AfterPack -->|Yes| PassAttest([Build passes<br/>SC008 audit message])
     AfterPack -->|No| Match
