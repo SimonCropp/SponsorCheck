@@ -267,12 +267,6 @@ flowchart TD
 
     Which -->|Ignored| SC003[SC003 Warning<br/>build passes]
 
-    Which -->|Licensed Until| ParseYM{Valid<br/>yyyy-MM?}
-    ParseYM -->|No| SC007[SC007 Error<br/>bad format]
-    ParseYM -->|Yes| Expired{End of month<br/>in the past?}
-    Expired -->|Yes| SC005[SC005 Error<br/>expired]
-    Expired -->|No| PassLicense([Build passes])
-
     Which -->|Supplied sponsor account| HasStart{Sponsorship<br/>Start set?}
     HasStart -->|Yes| Future{Start in<br/>future?}
     Future -->|Yes| SC011[SC011 Error<br/>future date]
@@ -280,10 +274,15 @@ flowchart TD
     AfterPack -->|Yes| PassAttest([Build passes<br/>SC008 audit message])
     AfterPack -->|No| Match
     HasStart -->|No| Match
-
     Match{Supplied account<br/>exists in hash list?}
     Match -->|Yes| PassSponsor([Build passes])
     Match -->|No| SC004[SC004 Error<br/>no match]
+
+    Which -->|Licensed Until| ParseYM{Valid<br/>yyyy-MM?}
+    ParseYM -->|No| SC007[SC007 Error<br/>bad format]
+    ParseYM -->|Yes| Expired{End of month<br/>in the past?}
+    Expired -->|Yes| SC005[SC005 Error<br/>expired]
+    Expired -->|No| PassLicense([Build passes])
 ```
 
 
