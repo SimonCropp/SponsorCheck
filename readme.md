@@ -150,7 +150,7 @@ For testing or offline builds, set `<SponsorListOverride>` to a JSON file path:
 
 ## Consumer license modes (per package, mutually exclusive)
 
-Pick exactly one mode per `<PackageReference>` (or set the metadata on the matching `<PackageVersion>` under CPM). The verifier reads metadata from both and merges (agree → use; disagree → error SC006).
+Pick exactly one mode per `<PackageReference>` (or set the metadata on the matching `<PackageVersion>` under CPM). The verifier reads metadata from both and merges (agree → use; disagree → [conflicting metadata - SC006](docs/VerifierDiagnosticCodes.md#sc006)).
 
 
 ### Sponsor account match (any platform)
@@ -184,9 +184,9 @@ The bundled hash list is frozen at the package's pack date. When sponsorship beg
                   SponsorshipStart="2026-04-30" />
 ```
 
-If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits an `SC008` high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date (including equal — the boundary is strict), the hash check is enforced as normal: claiming to be a sponsor at release time means the account should already be in the bundled list.
+If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits a [trusted SponsorshipStart - SC008](docs/VerifierDiagnosticCodes.md#sc008) high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date (including equal — the boundary is strict), the hash check is enforced as normal: claiming to be a sponsor at release time means the account should already be in the bundled list.
 
-`SponsorshipStart` in the future fails with SC011. Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
+`SponsorshipStart` in the future fails with [SC011](docs/VerifierDiagnosticCodes.md#sc011). Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
 
 
 #### Sponsorship lifecycle: what happens after sponsorship lapses
@@ -194,8 +194,8 @@ If `SponsorshipStart` is **after** the package's pack date, the verifier trusts 
 The bundled hash list is frozen per package version. The verifier has no notion of "currently sponsoring" — it only checks whether the consumer's account hash was in the list at pack time, or whether the consumer has attested to a `SponsorshipStart` after that pack date. That has three practical consequences when sponsorship lapses:
 
 1. **Already-bundled versions stay buildable forever.** If the consumer's account hash was bundled into v1.1 at the time it was packed, the verifier keeps accepting it for v1.1 builds even after the consumer stops sponsoring. Versions paid for stay paid for; the OSS author has no recall mechanism short of yanking the package.
-2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with `SC004`. To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipLicenseIgnored="true"` (which emits the `SC003` warning on every build).
-3. **`SponsorshipStart` is honor-system but self-expiring.** The verifier cannot tell whether the consumer is currently sponsoring; it only checks that the attested start date is `> PackDate` and `<= today`. While the consumer stays on the package version where the attestation was added, leaving it in after a lapse keeps the build passing — same shape as bullet 1 (paid versions stay paid). On upgrade, the newer `PackDate` overtakes the attested start, the bypass stops firing, and bullet 2 takes over (lapsed sponsors fail with `SC004`). So `SponsorshipStart` doesn't need to be cleaned up proactively — leaving it in place is harmless. The only audit signal while the bypass is active is the `SC008` message in the consumer's own build log; the OSS author never sees it.
+2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with [`SC004`](docs/VerifierDiagnosticCodes.md#sc004). To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipLicenseIgnored="true"` (which emits the [`SC003`](docs/VerifierDiagnosticCodes.md#sc003) warning on every build).
+3. **`SponsorshipStart` is honor-system but self-expiring.** The verifier cannot tell whether the consumer is currently sponsoring; it only checks that the attested start date is `> PackDate` and `<= today`. While the consumer stays on the package version where the attestation was added, leaving it in after a lapse keeps the build passing — same shape as bullet 1 (paid versions stay paid). On upgrade, the newer `PackDate` overtakes the attested start, the bypass stops firing, and bullet 2 takes over (lapsed sponsors fail with [`SC004`](docs/VerifierDiagnosticCodes.md#sc004)). So `SponsorshipStart` doesn't need to be cleaned up proactively — leaving it in place is harmless. The only audit signal while the bypass is active is the [`SC008`](docs/VerifierDiagnosticCodes.md#sc008) message in the consumer's own build log; the OSS author never sees it.
 
 
 ### Time-bounded private license
@@ -237,7 +237,7 @@ For private B2B licensing arrangements outside of the platforms. Format is `yyyy
 <sup><a href='/IntegrationTests/Fixtures/Consumer.IgnoredLicense/Consumer.IgnoredLicense.csproj#L1-L9' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.IgnoredLicense.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Build passes but emits `SC003` warning on every build, flagging that the build is in breach of the package's license.
+Build passes but emits [`SC003`](docs/VerifierDiagnosticCodes.md#sc003) warning on every build, flagging that the build is in breach of the package's license.
 
 
 ## Diagnostic codes
