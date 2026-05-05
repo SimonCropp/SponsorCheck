@@ -31,7 +31,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         var ok = task.Execute();
@@ -64,7 +65,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -93,7 +95,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         var ok = task.Execute();
@@ -122,7 +125,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         var ok = task.Execute();
@@ -160,7 +164,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         var ok = task.Execute();
@@ -297,7 +302,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "Acme.Lib-2.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -329,7 +335,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -359,7 +366,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -386,7 +394,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         await Assert.That(task.Execute()).IsFalse();
@@ -394,6 +403,62 @@ public class BundleSponsorListTaskTests
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC104");
         await Assert.That(engine.Errors[0].Message).Contains("NoLicenseSpecifiedSeverityOverride");
         await Assert.That(engine.Errors[0].Message).Contains("critical");
+    }
+
+    [Test]
+    public async Task MessageOverrides_PerCodeMetadata_WritesSidecarFile()
+    {
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var override_ = WriteOverride(dir, "[]");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            NoLicenseSpecifiedMessageOverrideFromRef = "Please sponsor!",
+            LicenseIgnoredMessageOverrideFromRef = "You agreed not to free-ride.",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var parsed = MessageOverrideFile.Read(task.OutputMessageOverridesPath);
+        await Assert.That(parsed["SC001"]).IsEqualTo("Please sponsor!");
+        await Assert.That(parsed["SC003"]).IsEqualTo("You agreed not to free-ride.");
+    }
+
+    [Test]
+    public async Task MessageOverrides_Empty_WritesEmptyJsonObject()
+    {
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var override_ = WriteOverride(dir, "[]");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(File.Exists(task.OutputMessageOverridesPath)).IsTrue();
+        var content = File.ReadAllText(task.OutputMessageOverridesPath).Trim();
+        await Assert.That(content).IsEqualTo("{}");
     }
 
     [Test]
@@ -416,7 +481,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -449,7 +515,8 @@ public class BundleSponsorListTaskTests
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
-            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt")
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();

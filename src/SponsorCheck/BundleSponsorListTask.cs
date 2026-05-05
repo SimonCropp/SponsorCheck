@@ -23,6 +23,15 @@ public sealed class BundleSponsorListTask :
     public string LicenseExpiredSeverityOverrideFromRef { get; set; } = "";
     public string LicenseExpiredSeverityOverrideFromVer { get; set; } = "";
 
+    public string NoLicenseSpecifiedMessageOverrideFromRef { get; set; } = "";
+    public string NoLicenseSpecifiedMessageOverrideFromVer { get; set; } = "";
+    public string LicenseIgnoredMessageOverrideFromRef { get; set; } = "";
+    public string LicenseIgnoredMessageOverrideFromVer { get; set; } = "";
+    public string InvalidAccountMessageOverrideFromRef { get; set; } = "";
+    public string InvalidAccountMessageOverrideFromVer { get; set; } = "";
+    public string LicenseExpiredMessageOverrideFromRef { get; set; } = "";
+    public string LicenseExpiredMessageOverrideFromVer { get; set; } = "";
+
     [Required] public string VerifierTargetsTemplatePath { get; set; } = "";
     [Required] public string ThePackageId { get; set; } = "";
     [Required] public string OutputHashListPath { get; set; } = "";
@@ -30,6 +39,7 @@ public sealed class BundleSponsorListTask :
     [Required] public string OutputPackDatePath { get; set; } = "";
     [Required] public string OutputAuthorAccountsPath { get; set; } = "";
     [Required] public string OutputSeverityOverridesPath { get; set; } = "";
+    [Required] public string OutputMessageOverridesPath { get; set; } = "";
     public string OverridePackDate { get; set; } = "";
 
     public override bool Execute()
@@ -39,6 +49,7 @@ public sealed class BundleSponsorListTask :
             EnsureDirectory(OutputHashListPath);
             EnsureDirectory(OutputVerifierTargetsPath);
             EnsureDirectory(OutputSeverityOverridesPath);
+            EnsureDirectory(OutputMessageOverridesPath);
 
             if (!TryResolveSeverityOverrides(out var severityOverrides))
             {
@@ -46,6 +57,13 @@ public sealed class BundleSponsorListTask :
             }
 
             SeverityOverrideFile.Write(OutputSeverityOverridesPath, severityOverrides);
+
+            if (!TryResolveMessageOverrides(out var messageOverrides))
+            {
+                return false;
+            }
+
+            MessageOverrideFile.Write(OutputMessageOverridesPath, messageOverrides);
 
             var enabled = ResolveEnabledPlatforms();
             if (enabled.Count == 0)
@@ -122,10 +140,10 @@ public sealed class BundleSponsorListTask :
     bool TryResolveSeverityOverrides(out Dictionary<string, Severity> overrides)
     {
         overrides = new(StringComparer.Ordinal);
-        foreach (var (code, metadataName) in SeverityOverrideFile.OverrideableCodes)
+        foreach (var entry in OverrideableCodes.All)
         {
-            var (fromRef, fromVer) = ValuesFor(metadataName);
-            var raw = PackageMetadataMerger.Merge(metadataName, fromRef, fromVer);
+            var (fromRef, fromVer) = SeverityValuesFor(entry.Stem);
+            var raw = PackageMetadataMerger.Merge(entry.SeverityMetadataName, fromRef, fromVer);
             if (string.IsNullOrWhiteSpace(raw))
             {
                 continue;
@@ -136,23 +154,48 @@ public sealed class BundleSponsorListTask :
                 SponsorCheckLog.Error(
                     Log,
                     "SC104",
-                    $"{metadataName}='{raw}' is not a recognized severity. Allowed: error, warning, message.");
+                    $"{entry.SeverityMetadataName}='{raw}' is not a recognized severity. Allowed: error, warning, message.");
                 return false;
             }
 
-            overrides[code] = severity;
+            overrides[entry.Code] = severity;
         }
 
         return true;
     }
 
-    (string FromRef, string FromVer) ValuesFor(string metadataName) => metadataName switch
+    bool TryResolveMessageOverrides(out Dictionary<string, string> overrides)
     {
-        "NoLicenseSpecifiedSeverityOverride" => (NoLicenseSpecifiedSeverityOverrideFromRef, NoLicenseSpecifiedSeverityOverrideFromVer),
-        "LicenseIgnoredSeverityOverride" => (LicenseIgnoredSeverityOverrideFromRef, LicenseIgnoredSeverityOverrideFromVer),
-        "InvalidAccountSeverityOverride" => (InvalidAccountSeverityOverrideFromRef, InvalidAccountSeverityOverrideFromVer),
-        "LicenseExpiredSeverityOverride" => (LicenseExpiredSeverityOverrideFromRef, LicenseExpiredSeverityOverrideFromVer),
-        _ => throw new InvalidOperationException($"Unknown severity-override metadata name: {metadataName}")
+        overrides = new(StringComparer.Ordinal);
+        foreach (var entry in OverrideableCodes.All)
+        {
+            var (fromRef, fromVer) = MessageValuesFor(entry.Stem);
+            var raw = PackageMetadataMerger.Merge(entry.MessageMetadataName, fromRef, fromVer);
+            if (!string.IsNullOrWhiteSpace(raw))
+            {
+                overrides[entry.Code] = raw!;
+            }
+        }
+
+        return true;
+    }
+
+    (string FromRef, string FromVer) SeverityValuesFor(string stem) => stem switch
+    {
+        "NoLicenseSpecified" => (NoLicenseSpecifiedSeverityOverrideFromRef, NoLicenseSpecifiedSeverityOverrideFromVer),
+        "LicenseIgnored" => (LicenseIgnoredSeverityOverrideFromRef, LicenseIgnoredSeverityOverrideFromVer),
+        "InvalidAccount" => (InvalidAccountSeverityOverrideFromRef, InvalidAccountSeverityOverrideFromVer),
+        "LicenseExpired" => (LicenseExpiredSeverityOverrideFromRef, LicenseExpiredSeverityOverrideFromVer),
+        _ => throw new InvalidOperationException($"Unknown override stem: {stem}")
+    };
+
+    (string FromRef, string FromVer) MessageValuesFor(string stem) => stem switch
+    {
+        "NoLicenseSpecified" => (NoLicenseSpecifiedMessageOverrideFromRef, NoLicenseSpecifiedMessageOverrideFromVer),
+        "LicenseIgnored" => (LicenseIgnoredMessageOverrideFromRef, LicenseIgnoredMessageOverrideFromVer),
+        "InvalidAccount" => (InvalidAccountMessageOverrideFromRef, InvalidAccountMessageOverrideFromVer),
+        "LicenseExpired" => (LicenseExpiredMessageOverrideFromRef, LicenseExpiredMessageOverrideFromVer),
+        _ => throw new InvalidOperationException($"Unknown override stem: {stem}")
     };
 
     Dictionary<string, string> ResolveEnabledPlatforms()

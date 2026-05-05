@@ -45,15 +45,15 @@ public class SeverityOverrideFileTests
         // Mapping is the single source of truth — bundler properties, targets file, docs all
         // derive from it. This guard catches accidental mapping reshuffles or new entries that
         // forget the property/targets plumbing.
-        var pairs = SeverityOverrideFile.OverrideableCodes
-            .Select(_ => $"{_.Code}={_.MetadataName}")
+        var pairs = OverrideableCodes.All
+            .Select(_ => $"{_.Code}|{_.SeverityMetadataName}|{_.MessageMetadataName}")
             .ToArray();
         string[] expected =
         [
-            "SC001=NoLicenseSpecifiedSeverityOverride",
-            "SC003=LicenseIgnoredSeverityOverride",
-            "SC004=InvalidAccountSeverityOverride",
-            "SC005=LicenseExpiredSeverityOverride"
+            "SC001|NoLicenseSpecifiedSeverityOverride|NoLicenseSpecifiedMessageOverride",
+            "SC003|LicenseIgnoredSeverityOverride|LicenseIgnoredMessageOverride",
+            "SC004|InvalidAccountSeverityOverride|InvalidAccountMessageOverride",
+            "SC005|LicenseExpiredSeverityOverride|LicenseExpiredMessageOverride"
         ];
         await Assert.That(pairs).IsEquivalentTo(expected);
     }

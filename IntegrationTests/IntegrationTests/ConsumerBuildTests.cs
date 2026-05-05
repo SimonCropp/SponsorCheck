@@ -143,9 +143,9 @@ public class ConsumerBuildTests
     [Test]
     public async Task SeverityOverride_SC001DowngradedToWarning_BuildsCleanly()
     {
-        // Author bakes SponsorCheckSeverityOverrides="SC001=warning" into the package. A consumer
-        // that omits all license-mode metadata would normally fail with SC001 — here the build
-        // should succeed because the sidecar shipped in the nupkg flips the severity to warning.
+        // Author bakes NoLicenseSpecifiedSeverityOverride="warning". A consumer that omits all
+        // license-mode metadata would normally fail with SC001 — here the build should succeed
+        // because the sidecar shipped in the nupkg flips the severity to warning.
         var result = await BuildFixture(
             "Consumer.OverrideSC001NoConfig",
             authorFixture: "ThePackageOverridden");
@@ -155,14 +155,38 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task MessageOverride_SC001_CustomMessageReachesBuildLog()
+    {
+        // ThePackageOverridden also bakes NoLicenseSpecifiedMessageOverride="Please sponsor...".
+        // The consumer build should show the custom text, not the default "requires one
+        // license-mode metadata" boilerplate.
+        var result = await BuildFixture(
+            "Consumer.OverrideSC001NoConfig",
+            authorFixture: "ThePackageOverridden");
+        await Assert.That(result.Combined).Contains("Please sponsor ThePackageOverridden before using.");
+        await Assert.That(result.Combined).DoesNotContain("requires one license-mode metadata");
+    }
+
+    [Test]
     public async Task SeverityOverride_SC003PromotedToError_BuildFails()
     {
-        // Author bakes SC003=error. A consumer setting SponsorshipLicenseIgnored="true" — which
-        // would normally pass with a warning — must now fail because the override hardens the rule.
+        // Author bakes LicenseIgnoredSeverityOverride="error". A consumer setting
+        // SponsorshipLicenseIgnored="true" — which would normally pass with a warning — must
+        // now fail because the override hardens the rule.
         var result = await BuildFixture(
             "Consumer.OverrideSC003Ignored",
             authorFixture: "ThePackageOverridden");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
         await Assert.That(result.Combined).Contains("error SC003");
+    }
+
+    [Test]
+    public async Task MessageOverride_SC003_CustomMessageReachesBuildLog()
+    {
+        var result = await BuildFixture(
+            "Consumer.OverrideSC003Ignored",
+            authorFixture: "ThePackageOverridden");
+        await Assert.That(result.Combined).Contains("You agreed not to free-ride this library.");
+        await Assert.That(result.Combined).DoesNotContain("Build is allowed but is in breach");
     }
 }

@@ -12,11 +12,22 @@ public static class SponsorCheckLog
     public static void HighMessage(TaskLoggingHelper log, string code, string message) =>
         EmitInternal(log, code, Severity.Message, message);
 
-    // Emit honoring an author-supplied override. Returns true if the build can continue
-    // (severity is Warning or Message); false if it was emitted as an Error.
-    public static bool Emit(TaskLoggingHelper log, string code, Severity defaultSeverity, IReadOnlyDictionary<string, Severity>? overrides, string message)
+    // Emit honoring author-supplied severity and message overrides. Returns true if the build
+    // can continue (severity is Warning or Message); false if it was emitted as an Error.
+    public static bool Emit(
+        TaskLoggingHelper log,
+        string code,
+        Severity defaultSeverity,
+        IReadOnlyDictionary<string, Severity>? severityOverrides,
+        IReadOnlyDictionary<string, string>? messageOverrides,
+        string defaultMessage)
     {
-        var severity = overrides != null && overrides.TryGetValue(code, out var s) ? s : defaultSeverity;
+        var severity = severityOverrides != null && severityOverrides.TryGetValue(code, out var s)
+            ? s
+            : defaultSeverity;
+        var message = messageOverrides != null && messageOverrides.TryGetValue(code, out var m)
+            ? m
+            : defaultMessage;
         EmitInternal(log, code, severity, message);
         return severity != Severity.Error;
     }

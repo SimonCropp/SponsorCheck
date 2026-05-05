@@ -408,7 +408,7 @@ public class VerifySponsorshipTaskTests
             },
             null,
             "MyOssLib");
-        var ok = DecisionApplier.Apply(decision, path, "", [], new Dictionary<string, Severity>(), new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        var ok = DecisionApplier.Apply(decision, path, "", [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsTrue();
     }
 
@@ -417,6 +417,14 @@ public class VerifySponsorshipTaskTests
         var path = Path.Combine(dir, "SeverityOverrides.txt");
         var dict = entries.ToDictionary(_ => _.code, _ => _.severity, StringComparer.Ordinal);
         SeverityOverrideFile.Write(path, dict);
+        return path;
+    }
+
+    static string WriteMessageOverrides(TempDirectory dir, params (string code, string message)[] entries)
+    {
+        var path = Path.Combine(dir, "MessageOverrides.json");
+        var dict = entries.ToDictionary(_ => _.code, _ => _.message, StringComparer.Ordinal);
+        MessageOverrideFile.Write(path, dict);
         return path;
     }
 
@@ -499,6 +507,95 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Warnings).IsEmpty();
         await Assert.That(engine.Messages.Any(_ => _.Code == "SC005")).IsTrue();
+    }
+
+    [Test]
+    public async Task SC001_MessageOverride_ReplacesDefaultText()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            MessageOverridesPath = WriteMessageOverrides(dir, ("SC001", "Please sponsor MyOssLib!"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+        var message = engine.Errors[0].Message!;
+        // The Name prefix and docs URL suffix still wrap; the inner text is the override.
+        await Assert.That(message).Contains("No license specified.");
+        await Assert.That(message).Contains("Please sponsor MyOssLib!");
+        await Assert.That(message).DoesNotContain("requires one license-mode metadata");
+        await Assert.That(message).Contains("#sc001");
+    }
+
+    [Test]
+    public async Task SC003_MessageOverride_ReplacesDefaultText()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromRef = "true",
+            MessageOverridesPath = WriteMessageOverrides(dir, ("SC003", "You agreed not to free-ride."))
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Warnings[0].Message!).Contains("You agreed not to free-ride.");
+        await Assert.That(engine.Warnings[0].Message!).DoesNotContain("Build is allowed but is in breach");
+    }
+
+    [Test]
+    public async Task SeverityAndMessageOverride_BothApplied()
+    {
+        // Authors can combine: downgrade SC001 to warning AND replace its text.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            SeverityOverridesPath = WriteOverrides(dir, ("SC001", Severity.Warning)),
+            MessageOverridesPath = WriteMessageOverrides(dir, ("SC001", "soft nudge"))
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC001");
+        await Assert.That(engine.Warnings[0].Message!).Contains("soft nudge");
+    }
+
+    [Test]
+    public async Task MessageOverride_OnNonTrippedCode_HasNoEffect()
+    {
+        // SC001 message override is set, but the consumer trips SC004 — the SC001 override is
+        // never read.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            GitHubFromRef = "mallory",
+            MessageOverridesPath = WriteMessageOverrides(dir, ("SC001", "should not appear"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+        await Assert.That(engine.Errors[0].Message!).DoesNotContain("should not appear");
     }
 
     [Test]

@@ -86,10 +86,10 @@ public class AuthorPackTests
     [Test]
     public async Task SeverityOverrides_BundledIntoNupkg()
     {
-        // ThePackageOverridden declares SponsorCheckSeverityOverrides="SC001=warning;SC003=error"
-        // on its SponsorCheck reference. The bundler should write the parsed pairs to the sidecar
-        // file packed at build/SponsorCheck.SeverityOverrides.txt — that's what the verifier reads
-        // at consumer build time.
+        // ThePackageOverridden declares NoLicenseSpecifiedSeverityOverride="warning" and
+        // LicenseIgnoredSeverityOverride="error" on its SponsorCheck reference. The bundler
+        // should write the resolved pairs to build/SponsorCheck.SeverityOverrides.txt — that's
+        // what the verifier reads at consumer build time.
         var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOverridden");
         var nupkg = Directory.GetFiles(feed, "ThePackageOverridden.*.nupkg").Single();
         using var zip = ZipFile.OpenRead(nupkg);
@@ -100,6 +100,22 @@ public class AuthorPackTests
         string[] expected = ["SC001=warning", "SC003=error"];
         var lines = content.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
         await Assert.That(lines).IsEquivalentTo(expected);
+    }
+
+    [Test]
+    public async Task MessageOverrides_BundledIntoNupkg()
+    {
+        // ThePackageOverridden also declares NoLicenseSpecified/LicenseIgnoredMessageOverride —
+        // the JSON sidecar must contain the verbatim author-supplied strings.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOverridden");
+        var nupkg = Directory.GetFiles(feed, "ThePackageOverridden.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/SponsorCheck.MessageOverrides.json")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+        await Assert.That(content).Contains("Please sponsor ThePackageOverridden before using.");
+        await Assert.That(content).Contains("You agreed not to free-ride this library.");
     }
 
     [Test]
@@ -115,6 +131,19 @@ public class AuthorPackTests
         using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync();
         await Assert.That(content.Trim()).IsEqualTo("");
+    }
+
+    [Test]
+    public async Task MessageOverrides_EmptyJsonOnUnoverriddenPackage()
+    {
+        var feed = await ThePackageBuilder.EnsureBuilt();
+        var nupkg = Directory.GetFiles(feed, "ThePackage.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/SponsorCheck.MessageOverrides.json")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+        await Assert.That(content.Trim()).IsEqualTo("{}");
     }
 
     [Test]

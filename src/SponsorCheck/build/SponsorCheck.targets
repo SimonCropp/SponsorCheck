@@ -19,6 +19,7 @@
       <_SponsorCheck_PackDatePath>$(IntermediateOutputPath)SponsorCheck\PackDate.txt</_SponsorCheck_PackDatePath>
       <_SponsorCheck_AuthorAccountsPath>$(IntermediateOutputPath)SponsorCheck\AuthorAccounts.txt</_SponsorCheck_AuthorAccountsPath>
       <_SponsorCheck_SeverityOverridesPath>$(IntermediateOutputPath)SponsorCheck\SeverityOverrides.txt</_SponsorCheck_SeverityOverridesPath>
+      <_SponsorCheck_MessageOverridesPath>$(IntermediateOutputPath)SponsorCheck\MessageOverrides.json</_SponsorCheck_MessageOverridesPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -39,14 +40,22 @@
       <_SponsorCheck_OpenCollectiveFromVer>@(_SponsorCheck_SelfVer->'%(OpenCollectiveAccount)')</_SponsorCheck_OpenCollectiveFromVer>
       <_SponsorCheck_PolarFromRef>@(_SponsorCheck_Self->'%(PolarAccount)')</_SponsorCheck_PolarFromRef>
       <_SponsorCheck_PolarFromVer>@(_SponsorCheck_SelfVer->'%(PolarAccount)')</_SponsorCheck_PolarFromVer>
-      <_SponsorCheck_NoLicenseSpecifiedFromRef>@(_SponsorCheck_Self->'%(NoLicenseSpecifiedSeverityOverride)')</_SponsorCheck_NoLicenseSpecifiedFromRef>
-      <_SponsorCheck_NoLicenseSpecifiedFromVer>@(_SponsorCheck_SelfVer->'%(NoLicenseSpecifiedSeverityOverride)')</_SponsorCheck_NoLicenseSpecifiedFromVer>
-      <_SponsorCheck_LicenseIgnoredFromRef>@(_SponsorCheck_Self->'%(LicenseIgnoredSeverityOverride)')</_SponsorCheck_LicenseIgnoredFromRef>
-      <_SponsorCheck_LicenseIgnoredFromVer>@(_SponsorCheck_SelfVer->'%(LicenseIgnoredSeverityOverride)')</_SponsorCheck_LicenseIgnoredFromVer>
-      <_SponsorCheck_InvalidAccountFromRef>@(_SponsorCheck_Self->'%(InvalidAccountSeverityOverride)')</_SponsorCheck_InvalidAccountFromRef>
-      <_SponsorCheck_InvalidAccountFromVer>@(_SponsorCheck_SelfVer->'%(InvalidAccountSeverityOverride)')</_SponsorCheck_InvalidAccountFromVer>
-      <_SponsorCheck_LicenseExpiredFromRef>@(_SponsorCheck_Self->'%(LicenseExpiredSeverityOverride)')</_SponsorCheck_LicenseExpiredFromRef>
-      <_SponsorCheck_LicenseExpiredFromVer>@(_SponsorCheck_SelfVer->'%(LicenseExpiredSeverityOverride)')</_SponsorCheck_LicenseExpiredFromVer>
+      <_SponsorCheck_NoLicenseSpecifiedSevFromRef>@(_SponsorCheck_Self->'%(NoLicenseSpecifiedSeverityOverride)')</_SponsorCheck_NoLicenseSpecifiedSevFromRef>
+      <_SponsorCheck_NoLicenseSpecifiedSevFromVer>@(_SponsorCheck_SelfVer->'%(NoLicenseSpecifiedSeverityOverride)')</_SponsorCheck_NoLicenseSpecifiedSevFromVer>
+      <_SponsorCheck_LicenseIgnoredSevFromRef>@(_SponsorCheck_Self->'%(LicenseIgnoredSeverityOverride)')</_SponsorCheck_LicenseIgnoredSevFromRef>
+      <_SponsorCheck_LicenseIgnoredSevFromVer>@(_SponsorCheck_SelfVer->'%(LicenseIgnoredSeverityOverride)')</_SponsorCheck_LicenseIgnoredSevFromVer>
+      <_SponsorCheck_InvalidAccountSevFromRef>@(_SponsorCheck_Self->'%(InvalidAccountSeverityOverride)')</_SponsorCheck_InvalidAccountSevFromRef>
+      <_SponsorCheck_InvalidAccountSevFromVer>@(_SponsorCheck_SelfVer->'%(InvalidAccountSeverityOverride)')</_SponsorCheck_InvalidAccountSevFromVer>
+      <_SponsorCheck_LicenseExpiredSevFromRef>@(_SponsorCheck_Self->'%(LicenseExpiredSeverityOverride)')</_SponsorCheck_LicenseExpiredSevFromRef>
+      <_SponsorCheck_LicenseExpiredSevFromVer>@(_SponsorCheck_SelfVer->'%(LicenseExpiredSeverityOverride)')</_SponsorCheck_LicenseExpiredSevFromVer>
+      <_SponsorCheck_NoLicenseSpecifiedMsgFromRef>@(_SponsorCheck_Self->'%(NoLicenseSpecifiedMessageOverride)')</_SponsorCheck_NoLicenseSpecifiedMsgFromRef>
+      <_SponsorCheck_NoLicenseSpecifiedMsgFromVer>@(_SponsorCheck_SelfVer->'%(NoLicenseSpecifiedMessageOverride)')</_SponsorCheck_NoLicenseSpecifiedMsgFromVer>
+      <_SponsorCheck_LicenseIgnoredMsgFromRef>@(_SponsorCheck_Self->'%(LicenseIgnoredMessageOverride)')</_SponsorCheck_LicenseIgnoredMsgFromRef>
+      <_SponsorCheck_LicenseIgnoredMsgFromVer>@(_SponsorCheck_SelfVer->'%(LicenseIgnoredMessageOverride)')</_SponsorCheck_LicenseIgnoredMsgFromVer>
+      <_SponsorCheck_InvalidAccountMsgFromRef>@(_SponsorCheck_Self->'%(InvalidAccountMessageOverride)')</_SponsorCheck_InvalidAccountMsgFromRef>
+      <_SponsorCheck_InvalidAccountMsgFromVer>@(_SponsorCheck_SelfVer->'%(InvalidAccountMessageOverride)')</_SponsorCheck_InvalidAccountMsgFromVer>
+      <_SponsorCheck_LicenseExpiredMsgFromRef>@(_SponsorCheck_Self->'%(LicenseExpiredMessageOverride)')</_SponsorCheck_LicenseExpiredMsgFromRef>
+      <_SponsorCheck_LicenseExpiredMsgFromVer>@(_SponsorCheck_SelfVer->'%(LicenseExpiredMessageOverride)')</_SponsorCheck_LicenseExpiredMsgFromVer>
     </PropertyGroup>
 
     <BundleSponsorListTask
@@ -56,14 +65,22 @@
         OpenCollectiveAccountFromVer="$(_SponsorCheck_OpenCollectiveFromVer)"
         PolarAccountFromRef="$(_SponsorCheck_PolarFromRef)"
         PolarAccountFromVer="$(_SponsorCheck_PolarFromVer)"
-        NoLicenseSpecifiedSeverityOverrideFromRef="$(_SponsorCheck_NoLicenseSpecifiedFromRef)"
-        NoLicenseSpecifiedSeverityOverrideFromVer="$(_SponsorCheck_NoLicenseSpecifiedFromVer)"
-        LicenseIgnoredSeverityOverrideFromRef="$(_SponsorCheck_LicenseIgnoredFromRef)"
-        LicenseIgnoredSeverityOverrideFromVer="$(_SponsorCheck_LicenseIgnoredFromVer)"
-        InvalidAccountSeverityOverrideFromRef="$(_SponsorCheck_InvalidAccountFromRef)"
-        InvalidAccountSeverityOverrideFromVer="$(_SponsorCheck_InvalidAccountFromVer)"
-        LicenseExpiredSeverityOverrideFromRef="$(_SponsorCheck_LicenseExpiredFromRef)"
-        LicenseExpiredSeverityOverrideFromVer="$(_SponsorCheck_LicenseExpiredFromVer)"
+        NoLicenseSpecifiedSeverityOverrideFromRef="$(_SponsorCheck_NoLicenseSpecifiedSevFromRef)"
+        NoLicenseSpecifiedSeverityOverrideFromVer="$(_SponsorCheck_NoLicenseSpecifiedSevFromVer)"
+        LicenseIgnoredSeverityOverrideFromRef="$(_SponsorCheck_LicenseIgnoredSevFromRef)"
+        LicenseIgnoredSeverityOverrideFromVer="$(_SponsorCheck_LicenseIgnoredSevFromVer)"
+        InvalidAccountSeverityOverrideFromRef="$(_SponsorCheck_InvalidAccountSevFromRef)"
+        InvalidAccountSeverityOverrideFromVer="$(_SponsorCheck_InvalidAccountSevFromVer)"
+        LicenseExpiredSeverityOverrideFromRef="$(_SponsorCheck_LicenseExpiredSevFromRef)"
+        LicenseExpiredSeverityOverrideFromVer="$(_SponsorCheck_LicenseExpiredSevFromVer)"
+        NoLicenseSpecifiedMessageOverrideFromRef="$(_SponsorCheck_NoLicenseSpecifiedMsgFromRef)"
+        NoLicenseSpecifiedMessageOverrideFromVer="$(_SponsorCheck_NoLicenseSpecifiedMsgFromVer)"
+        LicenseIgnoredMessageOverrideFromRef="$(_SponsorCheck_LicenseIgnoredMsgFromRef)"
+        LicenseIgnoredMessageOverrideFromVer="$(_SponsorCheck_LicenseIgnoredMsgFromVer)"
+        InvalidAccountMessageOverrideFromRef="$(_SponsorCheck_InvalidAccountMsgFromRef)"
+        InvalidAccountMessageOverrideFromVer="$(_SponsorCheck_InvalidAccountMsgFromVer)"
+        LicenseExpiredMessageOverrideFromRef="$(_SponsorCheck_LicenseExpiredMsgFromRef)"
+        LicenseExpiredMessageOverrideFromVer="$(_SponsorCheck_LicenseExpiredMsgFromVer)"
         GitHubToken="$(GitHubToken)"
         OpenCollectiveToken="$(OpenCollectiveToken)"
         PolarToken="$(PolarToken)"
@@ -76,6 +93,7 @@
         OutputPackDatePath="$(_SponsorCheck_PackDatePath)"
         OutputAuthorAccountsPath="$(_SponsorCheck_AuthorAccountsPath)"
         OutputSeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
+        OutputMessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
         OverridePackDate="$(SponsorCheck_PackDateOverride)" />
 
     <ItemGroup>
@@ -94,6 +112,10 @@
       <None Include="$(_SponsorCheck_SeverityOverridesPath)"
             Pack="true"
             PackagePath="build\SponsorCheck.SeverityOverrides.txt"
+            Visible="false" />
+      <None Include="$(_SponsorCheck_MessageOverridesPath)"
+            Pack="true"
+            PackagePath="build\SponsorCheck.MessageOverrides.json"
             Visible="false" />
       <None Include="$(_SponsorCheck_GeneratedTargetsPath)"
             Pack="true"

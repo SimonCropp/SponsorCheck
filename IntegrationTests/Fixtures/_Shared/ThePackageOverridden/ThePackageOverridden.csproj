@@ -9,6 +9,8 @@
                       OpenCollectiveAccount="acme-org"
                       PolarAccount="acme"
                       NoLicenseSpecifiedSeverityOverride="warning"
-                      LicenseIgnoredSeverityOverride="error" />
+                      NoLicenseSpecifiedMessageOverride="Please sponsor ThePackageOverridden before using."
+                      LicenseIgnoredSeverityOverride="error"
+                      LicenseIgnoredMessageOverride="You agreed not to free-ride this library." />
   </ItemGroup>
 </Project>

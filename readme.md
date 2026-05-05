@@ -126,28 +126,29 @@ Each csproj declares the bare reference:
 
 Each project still bundles independently at its own pack time (one platform fetch per packable project).
 
-### Tuning verifier severity
+### Tuning verifier severity and message text
 
-By default the verifier emits `SC001` (no license mode set), `SC004` (sponsor account not in list), and `SC005` (license expired) as **errors** that fail the consumer build, and `SC003` (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement — can override severities at pack time with one named metadatum per code on the SponsorCheck reference:
+By default the verifier emits `SC001` (no license mode set), `SC004` (sponsor account not in list), and `SC005` (license expired) as **errors** that fail the consumer build, and `SC003` (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement, or a custom-worded message — can override the severity and/or the message text at pack time:
 
 ```xml
 <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
                   PrivateAssets="all"
                   GitHubSponsorsAccount="acmecorp"
                   NoLicenseSpecifiedSeverityOverride="warning"
+                  NoLicenseSpecifiedMessageOverride="Please sponsor MyOssLib before shipping."
                   LicenseIgnoredSeverityOverride="error" />
 ```
 
-Available metadata (one per overrideable code):
+Available metadata (severity + message pair per overrideable code):
 
-| Metadata | Code | Default |
-| --- | --- | --- |
-| `NoLicenseSpecifiedSeverityOverride` | [SC001](docs/VerifierDiagnosticCodes.md#sc001) | error |
-| `LicenseIgnoredSeverityOverride` | [SC003](docs/VerifierDiagnosticCodes.md#sc003) | warning |
-| `InvalidAccountSeverityOverride` | [SC004](docs/VerifierDiagnosticCodes.md#sc004) | error |
-| `LicenseExpiredSeverityOverride` | [SC005](docs/VerifierDiagnosticCodes.md#sc005) | error |
+| Code | Severity metadata | Message metadata | Default severity |
+| --- | --- | --- | --- |
+| [SC001](docs/VerifierDiagnosticCodes.md#sc001) | `NoLicenseSpecifiedSeverityOverride` | `NoLicenseSpecifiedMessageOverride` | error |
+| [SC003](docs/VerifierDiagnosticCodes.md#sc003) | `LicenseIgnoredSeverityOverride` | `LicenseIgnoredMessageOverride` | warning |
+| [SC004](docs/VerifierDiagnosticCodes.md#sc004) | `InvalidAccountSeverityOverride` | `InvalidAccountMessageOverride` | error |
+| [SC005](docs/VerifierDiagnosticCodes.md#sc005) | `LicenseExpiredSeverityOverride` | `LicenseExpiredMessageOverride` | error |
 
-Allowed values: `error`, `warning`, `message`. Other codes are consumer-side configuration bugs and aren't overrideable. Unrecognized values fail the pack with [SC104](docs/BundlerDiagnosticCodes.md#sc104). The chosen severities are baked into the produced nupkg — consumers can't tamper with them.
+Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name still prefixes and the docs link still suffixes). Other codes are consumer-side configuration bugs and aren't overrideable. Unrecognized severity values fail the pack with [SC104](docs/BundlerDiagnosticCodes.md#sc104). The chosen severities and messages are baked into the produced nupkg — consumers can't tamper with them.
 
 For testing or offline builds, set `<SponsorListOverride>` to a JSON file path:
 

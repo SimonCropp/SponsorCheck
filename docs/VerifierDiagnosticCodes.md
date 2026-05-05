@@ -4,7 +4,7 @@ Codes in the `SC0xx` range are emitted by the verifier in consumer projects.
 
 Every emitted message is prefixed with the code's short **Name** (e.g. `No license specified. Package 'MyOssLib'...`) and suffixed with ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#<code>`. The Syntax/Example entries below show the inner format string only — the name and link wrap is added at log time.
 
-The default severities below can be overridden by the OSS author at pack time with one named metadatum per code on their `<PackageReference Include="SponsorCheck">`: `NoLicenseSpecifiedSeverityOverride` (SC001), `LicenseIgnoredSeverityOverride` (SC003), `InvalidAccountSeverityOverride` (SC004), `LicenseExpiredSeverityOverride` (SC005). Other codes are consumer-side configuration bugs that the consumer must fix and so cannot be downgraded. Allowed values are `error`, `warning`, `message`.
+The default severities below can be overridden by the OSS author at pack time, and the message body can be replaced with custom text, via paired metadata on `<PackageReference Include="SponsorCheck">`: `<Code>SeverityOverride` and `<Code>MessageOverride` for each of `NoLicenseSpecified` (SC001), `LicenseIgnored` (SC003), `InvalidAccount` (SC004), `LicenseExpired` (SC005). Other codes are consumer-side configuration bugs that the consumer must fix and so cannot be tuned. Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name and the docs link wrap still apply).
 
 <!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
 ```mermaid

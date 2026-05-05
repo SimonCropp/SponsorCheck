@@ -6,6 +6,7 @@ public static class DecisionApplier
         string packDatePath,
         IReadOnlyList<string> sponsorUrls,
         IReadOnlyDictionary<string, Severity> severityOverrides,
+        IReadOnlyDictionary<string, string> messageOverrides,
         TaskLoggingHelper log,
         DateTime utcNow)
     {
@@ -17,6 +18,7 @@ public static class DecisionApplier
                     "SC001",
                     Severity.Error,
                     severityOverrides,
+                    messageOverrides,
                     $"Package '{m.PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored=\"true\", a <Platform>SponsorAccount, or SponsorshipLicensedUntil=\"yyyy-MM\". Sponsor at: {string.Join(", ", sponsorUrls)}.");
 
             case LicenseDecision.ConflictingModes c:
@@ -32,13 +34,14 @@ public static class DecisionApplier
                     "SC003",
                     Severity.Warning,
                     severityOverrides,
+                    messageOverrides,
                     $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but is in breach of the license of the package. Sponsor at: {string.Join(", ", sponsorUrls)}.");
 
             case LicenseDecision.Sponsor s:
-                return ApplySponsor(s, sponsorHashListPath, packDatePath, severityOverrides, log, utcNow);
+                return ApplySponsor(s, sponsorHashListPath, packDatePath, severityOverrides, messageOverrides, log, utcNow);
 
             case LicenseDecision.Licensed l:
-                return ApplyLicensed(l, severityOverrides, log, utcNow);
+                return ApplyLicensed(l, severityOverrides, messageOverrides, log, utcNow);
 
             default:
                 throw new InvalidOperationException($"Unknown decision: {decision.GetType().Name}");
@@ -50,6 +53,7 @@ public static class DecisionApplier
         string sponsorHashListPath,
         string packDatePath,
         IReadOnlyDictionary<string, Severity> severityOverrides,
+        IReadOnlyDictionary<string, string> messageOverrides,
         TaskLoggingHelper log,
         DateTime utcNow)
     {
@@ -119,12 +123,14 @@ public static class DecisionApplier
             "SC004",
             Severity.Error,
             severityOverrides,
+            messageOverrides,
             $"Package '{s.PackageId}': no supplied sponsor account matches the bundled list (tried: {string.Join(", ", checkAttempts)}).{hint}");
     }
 
     static bool ApplyLicensed(
         LicenseDecision.Licensed l,
         IReadOnlyDictionary<string, Severity> severityOverrides,
+        IReadOnlyDictionary<string, string> messageOverrides,
         TaskLoggingHelper log,
         DateTime utcNow)
     {
@@ -146,6 +152,7 @@ public static class DecisionApplier
                 "SC005",
                 Severity.Error,
                 severityOverrides,
+                messageOverrides,
                 $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).");
         }
 
