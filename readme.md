@@ -21,12 +21,6 @@ Add `SponsorCheck` as a `PrivateAssets="all"` development dependency on the libr
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>ThePackage</PackageId>
-    <Version>1.0.0</Version>
-    <Authors>Acme Corp</Authors>
-    <Description>Sample library used by SponsorCheck integration tests.</Description>
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
-    <NoWarn>$(NoWarn);NU5128</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
@@ -37,7 +31,7 @@ Add `SponsorCheck` as a `PrivateAssets="all"` development dependency on the libr
   </ItemGroup>
 </Project>
 ```
-<sup><a href='/IntegrationTests/Fixtures/_Shared/ThePackage/ThePackage.csproj#L1-L18' title='Snippet source file'>snippet source</a> | <a href='#snippet-ThePackage.csproj' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/IntegrationTests/Fixtures/_Shared/ThePackage/ThePackage.csproj#L1-L12' title='Snippet source file'>snippet source</a> | <a href='#snippet-ThePackage.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 
