@@ -265,23 +265,23 @@ The verifier runs in consumer projects on every build and:
 flowchart TD
     Start([Consumer build]) --> Which{Which mode?}
 
-    Which -->|Ignored| SC003[<a href='docs/VerifierDiagnosticCodes.md#sc003'>SC003 Warning<br/>build passes</a>]
+    Which -->|Ignored| SC003[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc003'>SC003 Warning<br/>build passes</a>]
 
     Which -->|Supplied sponsor account| HasStart{Sponsorship<br/>Start set?}
     HasStart -->|Yes| Future{Start in<br/>future?}
-    Future -->|Yes| SC011[<a href='docs/VerifierDiagnosticCodes.md#sc011'>SC011 Error<br/>future date</a>]
+    Future -->|Yes| SC011[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011'>SC011 Error<br/>future date</a>]
     Future -->|No| AfterPack{Start &gt;<br/>PackDate?}
-    AfterPack -->|Yes| PassAttest([<a href='docs/VerifierDiagnosticCodes.md#sc008'>Build passes<br/>SC008 audit message</a>])
+    AfterPack -->|Yes| PassAttest([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008'>Build passes<br/>SC008 audit message</a>])
     AfterPack -->|No| Match
     HasStart -->|No| Match
     Match{Supplied account<br/>exists in hash list?}
     Match -->|Yes| PassSponsor([Build passes])
-    Match -->|No| SC004[<a href='docs/VerifierDiagnosticCodes.md#sc004'>SC004 Error<br/>no match</a>]
+    Match -->|No| SC004[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004'>SC004 Error<br/>no match</a>]
 
     Which -->|Licensed Until| ParseYM{Valid<br/>yyyy-MM?}
-    ParseYM -->|No| SC007[<a href='docs/VerifierDiagnosticCodes.md#sc007'>SC007 Error<br/>bad format</a>]
+    ParseYM -->|No| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 Error<br/>bad format</a>]
     ParseYM -->|Yes| Expired{End of month<br/>in the past?}
-    Expired -->|Yes| SC005[<a href='docs/VerifierDiagnosticCodes.md#sc005'>SC005 Error<br/>expired</a>]
+    Expired -->|Yes| SC005[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>SC005 Error<br/>expired</a>]
     Expired -->|No| PassLicense([Build passes])
 ```
 
