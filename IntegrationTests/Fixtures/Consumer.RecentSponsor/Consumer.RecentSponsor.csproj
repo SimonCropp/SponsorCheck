@@ -6,8 +6,10 @@
     <!-- carol is NOT in the override list (alice/bob/acme-org/acme).
          The integration test's pack of ThePackage uses SponsorCheck_PackDateOverride=2024-01-01,
          so SponsorshipStart=2025-06-01 is AFTER pack date and BEFORE today -> verifier trusts. -->
-    <PackageReference Include="ThePackage" Version="1.0.0"
-                      GitHubSponsorAccount="carol"
-                      SponsorshipStart="2025-06-01" />
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      GitHubSponsorAccount="carol"
+      SponsorshipStart="2025-06-01" />
   </ItemGroup>
 </Project>

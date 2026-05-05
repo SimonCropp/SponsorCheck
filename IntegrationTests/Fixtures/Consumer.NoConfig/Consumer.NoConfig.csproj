@@ -3,6 +3,8 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ThePackage" Version="1.0.0" />
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0" />
   </ItemGroup>
 </Project>

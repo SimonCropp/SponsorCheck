@@ -68,8 +68,8 @@ public class BundleSponsorListTaskTests
         await Assert.That(task.Execute()).IsTrue();
         var entries = AuthorAccountsFile.Read(task.OutputAuthorAccountsPath);
         await Assert.That(entries.Count).IsEqualTo(2);
-        await Assert.That(entries.Any(p => p.Key == "GitHubSponsors" && p.Value == "acmecorp")).IsTrue();
-        await Assert.That(entries.Any(p => p.Key == "OpenCollective" && p.Value == "acme-org")).IsTrue();
+        await Assert.That(entries.Any(_ => _ is {Key: "GitHubSponsors", Value: "acmecorp"})).IsTrue();
+        await Assert.That(entries.Any(_ => _ is {Key: "OpenCollective", Value: "acme-org"})).IsTrue();
     }
 
     [Test]

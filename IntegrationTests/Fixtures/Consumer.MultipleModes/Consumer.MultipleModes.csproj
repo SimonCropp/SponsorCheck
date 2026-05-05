@@ -3,8 +3,10 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ThePackage" Version="1.0.0"
-                      SponsorshipLicenseIgnored="true"
-                      GitHubSponsorAccount="alice" />
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      SponsorshipLicenseIgnored="true"
+      GitHubSponsorAccount="alice" />
   </ItemGroup>
 </Project>

@@ -3,7 +3,9 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ThePackage" Version="1.0.0"
-                      SponsorshipLicensedUntil="2099-12" />
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      SponsorshipLicensedUntil="2099-12" />
   </ItemGroup>
 </Project>

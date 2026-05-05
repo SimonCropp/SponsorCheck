@@ -163,12 +163,14 @@ Pick exactly one mode per `<PackageReference>` (or set the metadata on the match
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ThePackage" Version="1.0.0"
-                      GitHubSponsorAccount="alice" />
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      GitHubSponsorAccount="alice" />
   </ItemGroup>
 </Project>
 ```
-<sup><a href='/IntegrationTests/Fixtures/Consumer.ValidGitHubSponsor/Consumer.ValidGitHubSponsor.csproj#L1-L9' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.ValidGitHubSponsor.csproj' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/IntegrationTests/Fixtures/Consumer.ValidGitHubSponsor/Consumer.ValidGitHubSponsor.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.ValidGitHubSponsor.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 When the package author accepts multiple platforms and the consumer sponsors on one of them, supply the matching `<Platform>SponsorAccount` metadata. Multiple values are allowed — the verifier passes if **any** account matches the bundled list.
@@ -179,9 +181,11 @@ When the package author accepts multiple platforms and the consumer sponsors on 
 The bundled hash list is frozen at the package's pack date. When sponsorship begins *after* the package was released, the account cannot possibly be in the list. Add `SponsorshipStart="yyyy-MM-dd"` to attest to the start date:
 
 ```xml
-<PackageReference Include="ThePackage" Version="1.0"
-                  GitHubSponsorAccount="carol"
-                  SponsorshipStart="2026-04-30" />
+<PackageReference
+  Include="ThePackage"
+  Version="1.0"
+  GitHubSponsorAccount="carol"
+  SponsorshipStart="2026-04-30" />
 ```
 
 If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits a [trusted SponsorshipStart - SC008](docs/VerifierDiagnosticCodes.md#sc008) high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date (including equal — the boundary is strict), the hash check is enforced as normal: claiming to be a sponsor at release time means the account should already be in the bundled list.
@@ -208,12 +212,14 @@ The bundled hash list is frozen per package version. The verifier has no notion 
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ThePackage" Version="1.0.0"
-                      SponsorshipLicensedUntil="2099-12" />
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      SponsorshipLicensedUntil="2099-12" />
   </ItemGroup>
 </Project>
 ```
-<sup><a href='/IntegrationTests/Fixtures/Consumer.FutureLicense/Consumer.FutureLicense.csproj#L1-L9' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.FutureLicense.csproj' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/IntegrationTests/Fixtures/Consumer.FutureLicense/Consumer.FutureLicense.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.FutureLicense.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 For private B2B licensing arrangements outside of the platforms. Format is `yyyy-MM`; the license is valid through the end of that month UTC.
@@ -229,12 +235,14 @@ For private B2B licensing arrangements outside of the platforms. Format is `yyyy
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ThePackage" Version="1.0.0"
-                      SponsorshipLicenseIgnored="true" />
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      SponsorshipLicenseIgnored="true" />
   </ItemGroup>
 </Project>
 ```
-<sup><a href='/IntegrationTests/Fixtures/Consumer.IgnoredLicense/Consumer.IgnoredLicense.csproj#L1-L9' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.IgnoredLicense.csproj' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/IntegrationTests/Fixtures/Consumer.IgnoredLicense/Consumer.IgnoredLicense.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.IgnoredLicense.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Build passes but emits the [license ignored - SC003](docs/VerifierDiagnosticCodes.md#sc003) warning on every build, flagging that the build is in breach of the package's license.
