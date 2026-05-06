@@ -8,7 +8,7 @@ Build-time sponsorship verification for NuGet packages — nudge consumers of an
 
 OSS authors install `SponsorCheck` as a development dependency in their library project. At pack time, a Bundler MSBuild task fetches the author's sponsor list from one or more configured **sponsorship platforms** (GitHub Sponsors, Open Collective, Polar), hashes each account, and bundles a build-time verifier into the produced NuGet package — *without* adding any runtime dependency to that package.
 
-When consumers reference the produced package, the bundled verifier runs on every build and requires one of three mutually exclusive license-mode metadata declarations per package: a sponsor account that matches the bundled list, a time-bounded private license, or an explicit "ignored" with a build warning.
+When consumers reference the produced package, the bundled verifier runs on every build and requires one of three license-mode: a sponsor account that matches the bundled list, a time-bounded private license, or an explicit "ignored" with a build warning.
 
 
 ## OSS author setup
