@@ -11,6 +11,40 @@ OSS authors install `SponsorCheck` as a development dependency in their library 
 When consumers reference the produced package, the bundled verifier runs on every build and requires one of three license-mode: a sponsor account that matches the bundled list, a time-bounded private license, or an explicit "ignored" with a build warning.
 
 
+## Why this approach
+
+OSS sustainability mechanisms sit on a spectrum. SponsorCheck targets a specific point on it; here's how it compares to the two extremes.
+
+
+### No checking, just a readme
+
+Ship the package, link to GitHub Sponsors / Open Collective / Polar in the readme, and hope consumers act on it.
+
+- **Maintainer cost:** zero. No tooling, no list to manage, no support burden.
+- **Consumer cost:** zero. Nothing to wire up.
+- **Outcome:** the conversion rate from *uses-the-package* to *sponsors-the-author* is small. The readme is read once at install and then forgotten — there's no signal in the day-to-day build loop that the package isn't free.
+
+
+### Full commercial licensing
+
+Require a license key per consumer, issued by the maintainer, validated at build or runtime.
+
+- **Maintainer cost:** large and ongoing. License-issuing system, key rotation, billing / dunning, refunds, evaluation-license exceptions, and a steady stream of license-key support traffic. Effectively a commercial product running alongside the OSS project.
+- **Consumer cost:** non-trivial. License keys to store securely in CI, plumb into Docker images, and rotate before expiry.
+- **Outcome:** strong enforcement and predictable revenue, at the cost of OSS-style frictionlessness on both sides. For a side-project maintainer, the per-license overhead can exceed the revenue captured.
+
+
+### SponsorCheck — build-time nudge against an existing platform
+
+The maintainer keeps using GitHub Sponsors / Open Collective / Polar and ships a bundled hash list with each pack. Consumers see an `SC0xx` entry in their build log if they aren't on the list, with documented escape hatches.
+
+- **Maintainer cost:** the platform still does all the work — signup, billing, rotation, the public list of supporters. No license keys ever issued. Onboarding a sponsor is "they click Sponsor"; offboarding is "they stop sponsoring" — the next pack picks up the change automatically.
+- **Consumer cost:** two metadata attributes on a `PackageReference` for sponsor-match mode, or a single `yyyy-MM` string for time-bounded private licenses. No keys, no servers, no rotation.
+- **Outcome:** every build either passes silently, emits a "please sponsor" error/warning the developer sees in their actual workflow, or — under `SponsorshipLicenseIgnored="true"` — passes with a visible breach-of-license warning that follows the build through CI and code review.
+
+The trade for staying frictionless is honesty: hashing is not a security boundary, `SponsorshipLicenseIgnored="true"` is the documented bypass, and anyone determined to free-ride can do so trivially. The intent is to convert the inattentive majority — teams that would happily sponsor if they knew the maintainer wanted them to — not to extract revenue from adversaries.
+
+
 ## OSS author setup
 
 Add `SponsorCheck` as a `PrivateAssets="all"` development dependency on the library project, with one `<Platform>Account` metadatum per supported platform.
