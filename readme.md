@@ -16,7 +16,7 @@ When consumers reference the produced package, the bundled verifier runs on ever
 OSS sustainability mechanisms sit on a spectrum. SponsorCheck targets a specific point on it; here's how it compares to the two extremes.
 
 
-### No checking, just a readme
+### No checking
 
 Ship the package, link to GitHub Sponsors / Open Collective / Polar in the readme, and hope consumers act on it.
 
