@@ -372,7 +372,7 @@ public class BundleSponsorListTaskTests
 
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(File.Exists(task.OutputSeverityOverridesPath)).IsTrue();
-        await Assert.That(File.ReadAllText(task.OutputSeverityOverridesPath)).IsEqualTo("");
+        await Assert.That(await File.ReadAllTextAsync(task.OutputSeverityOverridesPath)).IsEqualTo("");
     }
 
     [Test]
@@ -457,7 +457,7 @@ public class BundleSponsorListTaskTests
 
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(File.Exists(task.OutputMessageOverridesPath)).IsTrue();
-        var content = File.ReadAllText(task.OutputMessageOverridesPath).Trim();
+        var content = (await File.ReadAllTextAsync(task.OutputMessageOverridesPath)).Trim();
         await Assert.That(content).IsEqualTo("{}");
     }
 
