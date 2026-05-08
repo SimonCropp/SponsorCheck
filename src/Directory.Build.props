@@ -5,7 +5,7 @@
     <Version>0.3.0</Version>
     <LangVersion>preview</LangVersion>
     <AssemblyVersion>1.0.0</AssemblyVersion>
-    <Description>Enforce the Open Source Maintenance Fee at build time via pluggable sponsorship platforms (GitHub Sponsors, Open Collective, Polar).</Description>
+    <Description>Enforce the Licensing/Sponsorship Fee at build time via pluggable sponsorship platforms (GitHub Sponsors, Open Collective, Polar).</Description>
     <Authors>Simon Cropp</Authors>
     <Copyright>Copyright Simon Cropp</Copyright>
     <PackageProjectUrl>https://github.com/SimonCropp/SponsorCheck</PackageProjectUrl>
