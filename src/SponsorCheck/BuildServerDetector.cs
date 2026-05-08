@@ -70,12 +70,12 @@ public static class BuildServerDetector
     static bool ValueEquals(IDictionary variables, string key, string value)
     {
         var variable = variables[key];
-        if(variable == null)
+        if (variable == null)
         {
             return false;
         }
 
-        return string.Equals((string)variable, value, StringComparison.OrdinalIgnoreCase);
+        return string.Equals((string) variable, value, StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool Detected { get; }

@@ -264,7 +264,9 @@ public sealed class BundleSponsorListTask :
         }
         catch (Exception exception)
         {
-            SponsorCheckLog.Warning(Log, "SC103",
+            SponsorCheckLog.Warning(
+                Log,
+                "SC103",
                 $"SponsorCheck: could not read user-secrets at '{UserSecretsReader.ResolvePath(UserSecretsId)}': {exception.Message}");
             return new Dictionary<string, string>();
         }

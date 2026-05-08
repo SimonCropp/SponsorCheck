@@ -49,7 +49,7 @@ public static class DecisionApplier
     }
 
     static bool ApplySponsor(
-        LicenseDecision.Sponsor s,
+        LicenseDecision.Sponsor sponsor,
         string sponsorHashListPath,
         string packDatePath,
         IReadOnlyDictionary<string, Severity> severityOverrides,
@@ -59,14 +59,14 @@ public static class DecisionApplier
     {
         // If consumer declared SponsorshipStart, see if they signed up after the package was packed.
         // If so, the bundled hash couldn't possibly know about them — trust the declaration.
-        if (!string.IsNullOrWhiteSpace(s.SponsorshipStartRaw))
+        if (!string.IsNullOrWhiteSpace(sponsor.SponsorshipStartRaw))
         {
-            if (!TryParseDate(s.SponsorshipStartRaw!, out var startDate))
+            if (!TryParseDate(sponsor.SponsorshipStartRaw!, out var startDate))
             {
                 SponsorCheckLog.Error(
                     log,
                     "SC010",
-                    $"Package '{s.PackageId}': SponsorshipStart='{s.SponsorshipStartRaw}' is not in 'yyyy-MM-dd' format.");
+                    $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is not in 'yyyy-MM-dd' format.");
                 return false;
             }
 
@@ -75,7 +75,7 @@ public static class DecisionApplier
                 SponsorCheckLog.Error(
                     log,
                     "SC011",
-                    $"Package '{s.PackageId}': SponsorshipStart='{s.SponsorshipStartRaw}' is in the future.");
+                    $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is in the future.");
                 return false;
             }
 
@@ -83,12 +83,12 @@ public static class DecisionApplier
             if (packDate is { } pd &&
                 startDate > pd)
             {
-                var attempts = string.Join(", ", s.AccountByPlatform.Select(_ => $"{_.Key}={_.Value}"));
+                var attempts = string.Join(", ", sponsor.AccountByPlatform.Select(_ => $"{_.Key}={_.Value}"));
                 // Informational, not a warning: SponsorshipStart is a documented escape hatch and the consumer's build log is the only audit trail.
                 SponsorCheckLog.HighMessage(
                     log,
                     "SC008",
-                    $"Package '{s.PackageId}': trusting unverified sponsor declaration ({attempts}): SponsorshipStart={startDate:yyyy-MM-dd} is later than package release {pd:yyyy-MM-dd}, so the bundled sponsor list cannot contain this account.");
+                    $"Package '{sponsor.PackageId}': trusting unverified sponsor declaration ({attempts}): SponsorshipStart={startDate:yyyy-MM-dd} is later than package release {pd:yyyy-MM-dd}, so the bundled sponsor list cannot contain this account.");
                 return true;
             }
         }
@@ -99,13 +99,13 @@ public static class DecisionApplier
             SponsorCheckLog.Error(
                 log,
                 "SC009",
-                $"Package '{s.PackageId}': bundled sponsor hash file not found at '{sponsorHashListPath}'.");
+                $"Package '{sponsor.PackageId}': bundled sponsor hash file not found at '{sponsorHashListPath}'.");
             return false;
         }
 
         var hashes = new HashSet<string>(File.ReadAllLines(sponsorHashListPath), StringComparer.Ordinal);
         var checkAttempts = new List<string>();
-        foreach (var pair in s.AccountByPlatform)
+        foreach (var pair in sponsor.AccountByPlatform)
         {
             var hash = SponsorHasher.Hash(pair.Key, pair.Value);
             if (hashes.Contains(hash))
@@ -116,7 +116,7 @@ public static class DecisionApplier
             checkAttempts.Add($"{pair.Key}={pair.Value}");
         }
 
-        var hint = string.IsNullOrWhiteSpace(s.SponsorshipStartRaw)
+        var hint = string.IsNullOrWhiteSpace(sponsor.SponsorshipStartRaw)
             ? " If sponsorship started after this package was released, add SponsorshipStart=\"yyyy-MM-dd\" metadata."
             : "";
         return SponsorCheckLog.Emit(
@@ -125,7 +125,7 @@ public static class DecisionApplier
             Severity.Error,
             severityOverrides,
             messageOverrides,
-            $"Package '{s.PackageId}': no supplied sponsor account matches the bundled list (tried: {string.Join(", ", checkAttempts)}).{hint}");
+            $"Package '{sponsor.PackageId}': no supplied sponsor account matches the bundled list (tried: {string.Join(", ", checkAttempts)}).{hint}");
     }
 
     static bool ApplyLicensed(
@@ -167,7 +167,12 @@ public static class DecisionApplier
     {
         year = 0;
         month = 0;
-        if (!DateTime.TryParseExact(value, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+        if (!DateTime.TryParseExact(
+                value,
+                "yyyy-MM",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var parsed))
         {
             return false;
         }
@@ -178,7 +183,12 @@ public static class DecisionApplier
     }
 
     static bool TryParseDate(string value, out DateTime date) =>
-        DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out date);
+        DateTime.TryParseExact(
+            value,
+            "yyyy-MM-dd",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out date);
 
     static DateTime? TryReadPackDate(string path)
     {
