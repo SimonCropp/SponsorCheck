@@ -162,7 +162,8 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
     public static PageResult ParseResponse(string json)
     {
         using var doc = JsonDocument.Parse(json);
-        if (doc.RootElement.TryGetProperty("errors", out var errors) && errors.GetArrayLength() > 0)
+        if (doc.RootElement.TryGetProperty("errors", out var errors) &&
+            errors.GetArrayLength() > 0)
         {
             var fatal = new List<JsonElement>();
             foreach (var error in errors.EnumerateArray())

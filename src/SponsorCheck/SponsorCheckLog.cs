@@ -1,7 +1,7 @@
 public static class SponsorCheckLog
 {
-    const string Subcategory = "SponsorCheck";
-    const string DocsBaseUrl = "https://github.com/SimonCropp/SponsorCheck/blob/main/docs/";
+    const string subcategory = "SponsorCheck";
+    const string docsBaseUrl = "https://github.com/SimonCropp/SponsorCheck/blob/main/docs/";
 
     public static void Error(TaskLoggingHelper log, string code, string message) =>
         EmitInternal(log, code, Severity.Error, message);
@@ -22,14 +22,32 @@ public static class SponsorCheckLog
         IReadOnlyDictionary<string, string>? messageOverrides,
         string defaultMessage)
     {
-        var severity = severityOverrides != null && severityOverrides.TryGetValue(code, out var s)
-            ? s
-            : defaultSeverity;
-        var message = messageOverrides != null && messageOverrides.TryGetValue(code, out var m)
-            ? m
-            : defaultMessage;
+        var severity = GetSeverity(code, defaultSeverity, severityOverrides);
+        var message = GetMessage(code, messageOverrides, defaultMessage);
         EmitInternal(log, code, severity, message);
         return severity != Severity.Error;
+    }
+
+    static Severity GetSeverity(string code, Severity defaultSeverity, IReadOnlyDictionary<string, Severity>? severityOverrides)
+    {
+        if (severityOverrides != null &&
+            severityOverrides.TryGetValue(code, out var severity))
+        {
+            return severity;
+        }
+
+        return defaultSeverity;
+    }
+
+    static string GetMessage(string code, IReadOnlyDictionary<string, string>? messageOverrides, string defaultMessage)
+    {
+        if (messageOverrides != null &&
+            messageOverrides.TryGetValue(code, out var message))
+        {
+            return message;
+        }
+
+        return defaultMessage;
     }
 
     static void EmitInternal(TaskLoggingHelper log, string code, Severity severity, string message)
@@ -38,13 +56,13 @@ public static class SponsorCheckLog
         switch (severity)
         {
             case Severity.Error:
-                log.LogError(Subcategory, code, "", "", 0, 0, 0, 0, fullMessage);
+                log.LogError(subcategory, code, "", "", 0, 0, 0, 0, fullMessage);
                 break;
             case Severity.Warning:
-                log.LogWarning(Subcategory, code, "", "", 0, 0, 0, 0, fullMessage);
+                log.LogWarning(subcategory, code, "", "", 0, 0, 0, 0, fullMessage);
                 break;
             case Severity.Message:
-                log.LogMessage(Subcategory, code, "", "", 0, 0, 0, 0, MessageImportance.High, fullMessage);
+                log.LogMessage(subcategory, code, "", "", 0, 0, 0, 0, MessageImportance.High, fullMessage);
                 break;
         }
     }
@@ -54,7 +72,7 @@ public static class SponsorCheckLog
         var doc = code.StartsWith("SC1", StringComparison.Ordinal)
             ? "BundlerDiagnosticCodes.md"
             : "VerifierDiagnosticCodes.md";
-        return $"{DocsBaseUrl}{doc}#{code.ToLowerInvariant()}";
+        return $"{docsBaseUrl}{doc}#{code.ToLowerInvariant()}";
     }
 
     public static string NameFor(string code) => code switch

@@ -33,9 +33,10 @@ public static class SeverityOverrideFile
                 continue;
             }
 
-            var code = line.Substring(0, eq).Trim().ToUpperInvariant();
-            var severityRaw = line.Substring(eq + 1).Trim();
-            if (OverrideableCodes.Codes.Contains(code) && TryParseSeverity(severityRaw, out var severity))
+            var code = line[..eq].Trim().ToUpperInvariant();
+            var severityRaw = line[(eq + 1)..].Trim();
+            if (OverrideableCodes.Codes.Contains(code) &&
+                TryParseSeverity(severityRaw, out var severity))
             {
                 result[code] = severity;
             }

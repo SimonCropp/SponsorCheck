@@ -86,9 +86,9 @@ public sealed class BundleSponsorListTask :
             }
 
             var hashes = entries
-                .Select(e => SponsorHasher.Hash(e.Platform, e.Account))
+                .Select(_ => SponsorHasher.Hash(_.Platform, _.Account))
                 .Distinct(StringComparer.Ordinal)
-                .OrderBy(h => h, StringComparer.Ordinal)
+                .OrderBy(_ => _, StringComparer.Ordinal)
                 .ToList();
 
             File.WriteAllLines(OutputHashListPath, hashes);
@@ -117,7 +117,7 @@ public sealed class BundleSponsorListTask :
 
             Log.LogMessage(
                 MessageImportance.High,
-                $"SponsorCheck: bundled {hashes.Count} sponsor entries across {entries.Select(e => e.Platform).Distinct(StringComparer.OrdinalIgnoreCase).Count()} platform(s) into '{ThePackageId}'.");
+                $"SponsorCheck: bundled {hashes.Count} sponsor entries across {entries.Select(_ => _.Platform).Distinct(StringComparer.OrdinalIgnoreCase).Count()} platform(s) into '{ThePackageId}'.");
             return true;
         }
         catch (MissingCredentialException exception)
@@ -296,7 +296,8 @@ public sealed class BundleSponsorListTask :
         var key = platformId == "GitHubSponsors"
             ? "SponsorCheck:GitHubToken"
             : $"SponsorCheck:{platformId}Token";
-        return userSecrets.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
+        return userSecrets.TryGetValue(key, out var value) &&
+               !string.IsNullOrWhiteSpace(value) ? value : null;
     }
 
     static string Sanitize(string packageId)

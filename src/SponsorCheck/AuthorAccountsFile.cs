@@ -3,9 +3,10 @@ public static class AuthorAccountsFile
     public static void Write(string path, IEnumerable<KeyValuePair<string, string>> accounts)
     {
         var lines = accounts
-            .Where(p => !string.IsNullOrWhiteSpace(p.Key) && !string.IsNullOrWhiteSpace(p.Value))
-            .Select(p => $"{p.Key.Trim()}={p.Value.Trim()}")
-            .OrderBy(l => l, StringComparer.Ordinal);
+            .Where(_ => !string.IsNullOrWhiteSpace(_.Key) &&
+                        !string.IsNullOrWhiteSpace(_.Value))
+            .Select(_ => $"{_.Key.Trim()}={_.Value.Trim()}")
+            .OrderBy(_ => _, StringComparer.Ordinal);
         File.WriteAllLines(path, lines);
     }
 

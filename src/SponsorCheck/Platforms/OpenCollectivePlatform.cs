@@ -89,7 +89,8 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
     public static PageResult ParseResponse(string json)
     {
         using var doc = JsonDocument.Parse(json);
-        if (doc.RootElement.TryGetProperty("errors", out var errors) && errors.GetArrayLength() > 0)
+        if (doc.RootElement.TryGetProperty("errors", out var errors) &&
+            errors.GetArrayLength() > 0)
         {
             throw new MaintenanceFeeException($"Open Collective GraphQL errors: {errors}");
         }

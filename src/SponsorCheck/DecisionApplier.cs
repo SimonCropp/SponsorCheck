@@ -80,9 +80,10 @@ public static class DecisionApplier
             }
 
             var packDate = TryReadPackDate(packDatePath);
-            if (packDate is { } pd && startDate > pd)
+            if (packDate is { } pd &&
+                startDate > pd)
             {
-                var attempts = string.Join(", ", s.AccountByPlatform.Select(p => $"{p.Key}={p.Value}"));
+                var attempts = string.Join(", ", s.AccountByPlatform.Select(_ => $"{_.Key}={_.Value}"));
                 // Informational, not a warning: SponsorshipStart is a documented escape hatch and the consumer's build log is the only audit trail.
                 SponsorCheckLog.HighMessage(
                     log,
