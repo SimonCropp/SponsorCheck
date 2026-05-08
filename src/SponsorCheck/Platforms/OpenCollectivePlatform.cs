@@ -41,8 +41,12 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
                 slugs.Add(slug);
             }
 
-            offset += page.MemberSlugs.Count;
-            if (page.MemberSlugs.Count == 0 ||
+            // Advance by raw node count, not filtered slug count: a node whose `account.slug`
+            // is missing or empty gets dropped from MemberSlugs but still consumes one of the
+            // page's `limit` rows. Using the filtered count would re-fetch overlapping ranges
+            // and, if a full page filtered out, could terminate before reaching totalCount.
+            offset += page.RawItemCount;
+            if (page.RawItemCount == 0 ||
                 offset >= page.TotalCount)
             {
                 break;
@@ -80,7 +84,7 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
         return body;
     }
 
-    public readonly record struct PageResult(bool AccountExists, IReadOnlyList<string> MemberSlugs, int TotalCount);
+    public readonly record struct PageResult(bool AccountExists, IReadOnlyList<string> MemberSlugs, int RawItemCount, int TotalCount);
 
     public static PageResult ParseResponse(string json)
     {
@@ -94,23 +98,26 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
             !data.TryGetProperty("account", out var account) ||
             account.ValueKind == JsonValueKind.Null)
         {
-            return new(false, [], 0);
+            return new(false, [], 0, 0);
         }
 
         if (!account.TryGetProperty("members", out var members))
         {
-            return new(true, [], 0);
+            return new(true, [], 0, 0);
         }
 
         var totalCount = members.TryGetProperty("totalCount", out var t) &&
                          t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0;
         var slugs = new List<string>();
+        var rawItemCount = 0;
         if (members.TryGetProperty("nodes", out var nodes) &&
             nodes.ValueKind == JsonValueKind.Array)
         {
             foreach (var node in nodes.EnumerateArray())
             {
+                rawItemCount++;
                 if (!node.TryGetProperty("account", out var memberAccount) ||
+                    memberAccount.ValueKind != JsonValueKind.Object ||
                     !memberAccount.TryGetProperty("slug", out var slug) ||
                     slug.ValueKind != JsonValueKind.String)
                 {
@@ -125,6 +132,6 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
             }
         }
 
-        return new(true, slugs, totalCount);
+        return new(true, slugs, rawItemCount, totalCount);
     }
 }

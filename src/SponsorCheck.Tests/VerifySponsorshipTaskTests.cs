@@ -412,6 +412,58 @@ public class VerifySponsorshipTaskTests
         await Assert.That(ok).IsTrue();
     }
 
+    [Test]
+    public async Task LicenseInFinalSubSecondOfMonth_Passes()
+    {
+        // The cutoff is the start of the next month, not last-day 23:59:59. Any instant
+        // strictly before the next month — including 23:59:59.9999999 on the last day —
+        // must still pass. With the previous whole-second cutoff, a build at .500 would
+        // have been incorrectly flagged SC005.
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var decision = LicenseModeResolver.Resolve(
+            null,
+            "2026-05",
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = null,
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            null,
+            "MyOssLib");
+        var lastTickOfMonth = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(-1);
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(decision, path, "", [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), lastTickOfMonth);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task LicenseAtFirstInstantOfNextMonth_FailsWithSC005()
+    {
+        // Mirror of LicenseInFinalSubSecondOfMonth_Passes: the very next tick — start of
+        // the following month — is the first instant outside the licensed range.
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var decision = LicenseModeResolver.Resolve(
+            null,
+            "2026-05",
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = null,
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            null,
+            "MyOssLib");
+        var startOfNextMonth = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(decision, path, "", [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), startOfNextMonth);
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC005");
+    }
+
     static string WriteOverrides(TempDirectory dir, params (string code, Severity severity)[] entries)
     {
         var path = Path.Combine(dir, "SeverityOverrides.txt");

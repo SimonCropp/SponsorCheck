@@ -143,17 +143,20 @@ public static class DecisionApplier
             return false;
         }
 
-        var lastDay = DateTime.DaysInMonth(year, month);
-        var endOfMonth = new DateTime(year, month, lastDay, 23, 59, 59, DateTimeKind.Utc);
-        if (utcNow > endOfMonth)
+        // Cutoff is the start of the next month: a build at any instant within the licensed
+        // month — including the final fractional second — must still pass. Using the last day
+        // at 23:59:59 (whole-second precision) would incorrectly flag builds in the last second.
+        var startOfNextMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1);
+        if (utcNow >= startOfNextMonth)
         {
+            var lastDay = startOfNextMonth.AddDays(-1);
             return SponsorCheckLog.Emit(
                 log,
                 "SC005",
                 Severity.Error,
                 severityOverrides,
                 messageOverrides,
-                $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).");
+                $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {lastDay:yyyy-MM-dd} UTC).");
         }
 
         return true;
