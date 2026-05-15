@@ -1,6 +1,7 @@
 public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlatform
 {
     const string endpoint = "https://api.opencollective.com/graphql/v2";
+    const int pageLimit = 100;
     // BACKER is OpenCollective's recurring-contributor role; SPONSOR is the role typically
     // assigned to organizations and larger one-time/monthly contributors. Both should count
     // toward sponsorship — querying BACKER alone silently drops every org sponsor.
@@ -46,11 +47,12 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
 
             // Advance by raw node count, not filtered slug count: a node whose `account.slug`
             // is missing or empty gets dropped from MemberSlugs but still consumes one of the
-            // page's `limit` rows. Using the filtered count would re-fetch overlapping ranges
-            // and, if a full page filtered out, could terminate before reaching totalCount.
+            // page's `limit` rows. Using the filtered count would re-fetch overlapping ranges.
+            // Terminate on a short page rather than `offset >= totalCount` because the API can
+            // omit `totalCount`; ParseResponse defaults it to 0 and `offset >= 0` would exit
+            // after the first non-empty page, silently dropping subsequent pages.
             offset += page.RawItemCount;
-            if (page.RawItemCount == 0 ||
-                offset >= page.TotalCount)
+            if (page.RawItemCount < pageLimit)
             {
                 break;
             }

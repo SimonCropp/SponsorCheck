@@ -145,6 +145,50 @@ public class OpenCollectivePlatformTests
         await Assert.That(capture.LastRequestBody!).Contains("SPONSOR");
     }
 
+    [Test]
+    public async Task FetchSponsorAccounts_KeepsPagingWhenTotalCountMissing()
+    {
+        // If the GraphQL response omits `members.totalCount`, ParseResponse defaults TotalCount
+        // to 0. The pagination loop must not rely on `offset >= TotalCount` for termination —
+        // any positive offset is >= 0, which would silently drop subsequent pages. Termination
+        // must come from the page being shorter than the API's `limit` (100).
+        var pageOneNodes = string.Join(",", Enumerable.Range(0, 100).Select(_ => "{\"account\":{\"slug\":\"backer" + _.ToString("D3") + "\"}}"));
+        var pageOne = $$"""
+            {
+              "data": {
+                "account": {
+                  "members": {
+                    "nodes": [{{pageOneNodes}}]
+                  }
+                }
+              }
+            }
+            """;
+        var pageTwo = """
+            {
+              "data": {
+                "account": {
+                  "members": {
+                    "nodes": [
+                      { "account": { "slug": "lateBacker" } }
+                    ]
+                  }
+                }
+              }
+            }
+            """;
+        var handler = new SequenceHandler([pageOne, pageTwo]);
+        using var client = new HttpClient(handler);
+        var platform = new OpenCollectivePlatform(client);
+        var log = new TaskLoggingHelperFor(new StubBuildEngine());
+
+        var sponsors = await platform.FetchSponsorAccounts("anycollective", token: null, log, Cancel.None);
+
+        await Assert.That(sponsors).Contains("backer000");
+        await Assert.That(sponsors).Contains("backer099");
+        await Assert.That(sponsors).Contains("lateBacker");
+    }
+
     sealed class CapturingHandler(string body) : HttpMessageHandler
     {
         public string? LastRequestBody { get; private set; }
@@ -160,6 +204,21 @@ public class OpenCollectivePlatformTests
             {
                 Content = new StringContent(body, Encoding.UTF8, "application/json")
             };
+        }
+    }
+
+    sealed class SequenceHandler(IReadOnlyList<string> bodies) : HttpMessageHandler
+    {
+        int index;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
+        {
+            var body = index < bodies.Count ? bodies[index] : bodies[bodies.Count - 1];
+            index++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            });
         }
     }
 }

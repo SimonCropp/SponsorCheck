@@ -308,10 +308,36 @@ public class BundleSponsorListTaskTests
 
         await Assert.That(task.Execute()).IsTrue();
         var rendered = await File.ReadAllTextAsync(task.OutputVerifierTargetsPath);
-        await Assert.That(rendered).Contains("Name=\"_SponsorCheck_Verify_Acme_Lib_2\"");
+        var expectedSanitized = BundleSponsorListTask.Sanitize("Acme.Lib-2");
+        await Assert.That(rendered).Contains($"Name=\"_SponsorCheck_Verify_{expectedSanitized}\"");
         await Assert.That(rendered).Contains(">Acme.Lib-2<");
         await Assert.That(rendered).DoesNotContain("__SC_PACKAGE_ID__");
         await Assert.That(rendered).DoesNotContain("__SC_PACKAGE_ID_RAW__");
+    }
+
+    [Test]
+    public async Task Sanitize_DistinguishesIdsThatCollideUnderCharReplacement()
+    {
+        // Package ids that differ only by separator (. vs - vs _) all map to the same
+        // alphanumeric+underscore prefix. Without a stable tie-breaker, a consumer that
+        // PackageReferences two such packages would import two .targets files that each
+        // declare the same _SponsorCheck_Verify_<sanitized> target and fail to load.
+        var dotted = BundleSponsorListTask.Sanitize("Acme.Lib");
+        var dashed = BundleSponsorListTask.Sanitize("Acme-Lib");
+        var underscored = BundleSponsorListTask.Sanitize("Acme_Lib");
+
+        await Assert.That(dotted).IsNotEqualTo(dashed);
+        await Assert.That(dotted).IsNotEqualTo(underscored);
+        await Assert.That(dashed).IsNotEqualTo(underscored);
+
+        // Stable across calls — the generated targets file name is committed to the nupkg.
+        await Assert.That(BundleSponsorListTask.Sanitize("Acme.Lib")).IsEqualTo(dotted);
+
+        // Still MSBuild-identifier-safe: only letters, digits, underscores.
+        foreach (var character in dotted)
+        {
+            await Assert.That(char.IsLetterOrDigit(character) || character == '_').IsTrue();
+        }
     }
 
     [Test]
