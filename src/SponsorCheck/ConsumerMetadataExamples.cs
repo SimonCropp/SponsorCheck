@@ -22,10 +22,8 @@ public static class ConsumerMetadataExamples
             $"  {RenderItem(context, ("SponsorshipLicenseIgnored", "true"))}"
         };
 
-        var optionNumber = 0;
         foreach (var account in authorAccounts)
         {
-            optionNumber++;
             lines.Add("");
             lines.Add($"Option — Sponsor on {FriendlyPlatformName(account.PlatformId)} ({account.SponsorUrl}):");
             lines.Add($"  {RenderItem(context, (account.MetadataName, $"<your-{LowerHyphen(account.PlatformId)}-account>"))}");
@@ -57,8 +55,8 @@ public static class ConsumerMetadataExamples
         var pair = attemptedAccounts.FirstOrDefault();
         var existing = pair.Key is null
             ? Array.Empty<(string, string)>()
-            : new[] { (ConsumerMetadataNames.For(pair.Key), pair.Value) };
-        var attributes = existing.Concat(new[] { ("SponsorshipStart", "yyyy-MM-dd") }).ToArray();
+            : [(ConsumerMetadataNames.For(pair.Key), pair.Value)];
+        var attributes = existing.Concat([("SponsorshipStart", "yyyy-MM-dd")]).ToArray();
 
         return string.Join(newline,
         [
@@ -127,11 +125,11 @@ public static class ConsumerMetadataExamples
         // Both <PackageReference> (no-CPM) and <PackageVersion> (CPM) carry a Version attribute,
         // so always render it.
         var sb = new StringBuilder();
-        sb.Append('<').Append(context.ElementName).Append(" Include=\"").Append(context.PackageId).Append('"');
-        sb.Append(" Version=\"").Append(context.DisplayVersion).Append('"');
+        sb.Append($"<{context.ElementName} Include=\"{context.PackageId}\"");
+        sb.Append($" Version=\"{context.DisplayVersion}\"");
         foreach (var (attribute, value) in extraAttributes)
         {
-            sb.Append(' ').Append(attribute).Append("=\"").Append(value).Append('"');
+            sb.Append($" {attribute}=\"{value}\"");
         }
 
         sb.Append(" />");

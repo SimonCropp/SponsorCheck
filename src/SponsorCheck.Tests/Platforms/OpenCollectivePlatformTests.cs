@@ -197,7 +197,7 @@ public class OpenCollectivePlatformTests
         {
             if (request.Content != null)
             {
-                LastRequestBody = await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+                LastRequestBody = await request.Content.ReadAsStringAsync(cancel);
             }
 
             return new(HttpStatusCode.OK)
@@ -213,7 +213,7 @@ public class OpenCollectivePlatformTests
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
         {
-            var body = index < bodies.Count ? bodies[index] : bodies[bodies.Count - 1];
+            var body = index < bodies.Count ? bodies[index] : bodies[^1];
             index++;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
