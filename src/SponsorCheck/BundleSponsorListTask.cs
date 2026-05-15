@@ -307,12 +307,25 @@ public sealed class BundleSponsorListTask :
         return null;
     }
 
-    static string Sanitize(string packageId)
+    // MSBuild target/item names reject dots and dashes, so non-alphanumeric chars are
+    // replaced with '_'. That alone collides ids like "Acme.Lib", "Acme-Lib", and
+    // "Acme_Lib" (all -> "Acme_Lib"); a consumer that PackageReferences two such
+    // packages would get duplicate target/item names at MSBuild import time. Append a
+    // 32-bit SHA256 prefix of the raw id so each id maps to a unique sanitized name.
+    public static string Sanitize(string packageId)
     {
-        var builder = new StringBuilder(packageId.Length);
-        foreach (var c in packageId)
+        var builder = new StringBuilder(packageId.Length + 9);
+        foreach (var character in packageId)
         {
-            builder.Append(char.IsLetterOrDigit(c) ? c : '_');
+            builder.Append(char.IsLetterOrDigit(character) ? character : '_');
+        }
+
+        builder.Append('_');
+        using var sha = SHA256.Create();
+        var digest = sha.ComputeHash(Encoding.UTF8.GetBytes(packageId));
+        for (var i = 0; i < 4; i++)
+        {
+            builder.Append(digest[i].ToString("x2"));
         }
 
         return builder.ToString();
