@@ -202,7 +202,14 @@ For testing or offline builds, set `<SponsorListOverride>` to a JSON file path:
 
 ## Consumer license modes (per package, mutually exclusive)
 
-Pick exactly one mode per `<PackageReference>` (or set the metadata on the matching `<PackageVersion>` under CPM). The verifier reads metadata from both — set the value on only one of the two; setting it on both raises [set on both - SC006](docs/VerifierDiagnosticCodes.md#sc006), even when the values match.
+Pick exactly one mode per package. Placement depends on whether the consumer uses Central Package Management:
+
+- **Without CPM**, set the metadata on the consumer csproj's `<PackageReference>`.
+- **With CPM** (`ManagePackageVersionsCentrally=true`), set it on the matching `<PackageVersion>` in `Directory.Packages.props`.
+
+Setting the metadata on the wrong element raises [wrong location - SC012](docs/VerifierDiagnosticCodes.md#sc012) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC006](docs/VerifierDiagnosticCodes.md#sc006) is a defensive backstop for the rare case where SC012's check is bypassed.
+
+Verifier diagnostics that ask you to change consumer-side metadata (SC001, SC003, SC004, SC005, SC007, SC010, SC011) render a copy-pasteable XML snippet pre-filled with your package id, version, and the path of the file to edit.
 
 
 ### Sponsor account match (any platform)
