@@ -1,10 +1,36 @@
-{
+﻿{
   Errors: [
     {
       Subcategory: SponsorCheck,
       Code: SC001,
       File: ,
-      Message: No license specified. Package 'MyOssLib' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored="true", a <Platform>SponsorAccount, or SponsorshipLicensedUntil="yyyy-MM". Sponsor at: https://github.com/sponsors/acmecorp, https://opencollective.com/acme-org, https://polar.sh/acme. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001,
+      Message:
+No license specified. Package 'MyOssLib' is built with SponsorCheck and requires license metadata applied to the PackageReference.
+
+Add ONE of the following attributes to the existing <PackageReference> for 'MyOssLib' in:
+  C:/Consumer/MyApp.csproj
+
+Option — Mark as ignored (you accept that the build is in breach of the package license):
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
+
+Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
+  <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
+
+Option — Sponsor on Open Collective (https://opencollective.com/acme-org):
+  <PackageReference Include="MyOssLib" Version="1.2.3" OpenCollectiveSponsorAccount="<your-opencollective-account>" />
+
+Option — Sponsor on Polar (https://polar.sh/acme):
+  <PackageReference Include="MyOssLib" Version="1.2.3" PolarSponsorAccount="<your-polar-account>" />
+
+Option — Time-bounded license (replace yyyy-MM with the last covered month):
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+
+Sponsor at:
+  https://github.com/sponsors/acmecorp
+  https://opencollective.com/acme-org
+  https://polar.sh/acme
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask

@@ -23,6 +23,8 @@
 
     <!-- Flatten item-metadata into properties first so MSBuild doesn't task-batch. See SponsorCheck.targets for the full explanation. -->
     <PropertyGroup>
+      <_SponsorCheck___SC_PACKAGE_ID___VersionFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(Version)')</_SponsorCheck___SC_PACKAGE_ID___VersionFromRef>
+      <_SponsorCheck___SC_PACKAGE_ID___VersionFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(Version)')</_SponsorCheck___SC_PACKAGE_ID___VersionFromVer>
       <_SponsorCheck___SC_PACKAGE_ID___IgnoredFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipLicenseIgnored)')</_SponsorCheck___SC_PACKAGE_ID___IgnoredFromRef>
       <_SponsorCheck___SC_PACKAGE_ID___IgnoredFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipLicenseIgnored)')</_SponsorCheck___SC_PACKAGE_ID___IgnoredFromVer>
       <_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipLicensedUntil)')</_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromRef>
@@ -44,6 +46,11 @@
         AuthorAccountsPath="$(_SponsorCheck_AuthorAccountsPath)"
         SeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
         MessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
+        IsCpm="$(ManagePackageVersionsCentrally)"
+        ConsumerProjectPath="$(MSBuildProjectFullPath)"
+        DirectoryPackagesPropsPath="$(DirectoryPackagesPropsPath)"
+        PackageVersionFromRef="$(_SponsorCheck___SC_PACKAGE_ID___VersionFromRef)"
+        PackageVersionFromVer="$(_SponsorCheck___SC_PACKAGE_ID___VersionFromVer)"
         IgnoredFromRef="$(_SponsorCheck___SC_PACKAGE_ID___IgnoredFromRef)"
         IgnoredFromVer="$(_SponsorCheck___SC_PACKAGE_ID___IgnoredFromVer)"
         LicensedUntilFromRef="$(_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromRef)"

@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Version lives here (the right place under CPM) but the consumer mistakenly put the
+         SponsorshipLicenseIgnored attribute on PackageReference instead of here. -->
+    <PackageVersion Include="ThePackage" Version="1.0.0" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,24 @@
+﻿{
+  Errors: [
+    {
+      Subcategory: SponsorCheck,
+      Code: SC012,
+      File: ,
+      Message:
+Sponsor metadata in the wrong location. Package 'MyOssLib' is not using Central Package Management, so SponsorCheck metadata must live on <PackageReference> in the consumer csproj — not on <PackageVersion>.
+
+Move the following attribute(s) off the <PackageVersion> for 'MyOssLib'
+  - SponsorshipLicenseIgnored
+
+...and onto the <PackageReference> for 'MyOssLib' in:
+  C:/Consumer/MyApp.csproj
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc012,
+      Timestamp: DateTime_1,
+      HelpKeyword: ,
+      SenderName: VerifySponsorshipTask
+    }
+  ],
+  ContinueOnError: false,
+  ProjectFileOfTaskNode: 
+}

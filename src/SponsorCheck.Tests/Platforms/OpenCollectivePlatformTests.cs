@@ -114,11 +114,10 @@ public class OpenCollectivePlatformTests
     }
 
     [Test]
-    public async Task FetchSponsorAccounts_AsksApiForBothBackerAndSponsorRoles()
+    public async Task FetchSponsorAccounts_AsksApiForBackerRole()
     {
-        // OpenCollective uses BACKER for recurring small contributors and SPONSOR for orgs and
-        // larger contributors. Querying BACKER alone made the API filter SPONSORs out server-side,
-        // so org sponsors silently never reached the bundled hash list. The query must request both.
+        // Open Collective's MemberRole enum has no SPONSOR — orgs and individuals both come back
+        // as BACKER. Adding SPONSOR to the filter is rejected with GRAPHQL_VALIDATION_FAILED.
         var emptyPage = """
             {
               "data": {
@@ -139,10 +138,8 @@ public class OpenCollectivePlatformTests
         await platform.FetchSponsorAccounts("anycollective", token: null, log, Cancel.None);
 
         await Assert.That(capture.LastRequestBody).IsNotNull();
-        // The query is JSON-encoded inside the request body, so the bracketed list shows up
-        // escaped. Look for the substring that survives JSON encoding either way.
         await Assert.That(capture.LastRequestBody!).Contains("BACKER");
-        await Assert.That(capture.LastRequestBody!).Contains("SPONSOR");
+        await Assert.That(capture.LastRequestBody!).DoesNotContain("SPONSOR");
     }
 
     [Test]
@@ -197,7 +194,7 @@ public class OpenCollectivePlatformTests
         {
             if (request.Content != null)
             {
-                LastRequestBody = await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+                LastRequestBody = await request.Content.ReadAsStringAsync(cancel);
             }
 
             return new(HttpStatusCode.OK)
@@ -213,7 +210,7 @@ public class OpenCollectivePlatformTests
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
         {
-            var body = index < bodies.Count ? bodies[index] : bodies[bodies.Count - 1];
+            var body = index < bodies.Count ? bodies[index] : bodies[^1];
             index++;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {

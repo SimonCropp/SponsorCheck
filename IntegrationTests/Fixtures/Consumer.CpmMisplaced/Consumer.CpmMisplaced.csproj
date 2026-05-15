@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- CPM is enabled in Directory.Packages.props but the SponsorCheck metadata is wrongly placed
+         on PackageReference here instead of PackageVersion. The verifier must reject this with SC012. -->
+    <PackageReference Include="ThePackage" SponsorshipLicenseIgnored="true" />
+  </ItemGroup>
+</Project>

@@ -2,13 +2,13 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
 {
     const string endpoint = "https://api.opencollective.com/graphql/v2";
     const int pageLimit = 100;
-    // BACKER is OpenCollective's recurring-contributor role; SPONSOR is the role typically
-    // assigned to organizations and larger one-time/monthly contributors. Both should count
-    // toward sponsorship — querying BACKER alone silently drops every org sponsor.
+    // Open Collective's MemberRole enum has no SPONSOR value — both individual and organisation
+    // contributors come back as role=BACKER, with org status distinguished by accountType in the
+    // UI. Adding SPONSOR to the role filter is rejected server-side with a GRAPHQL_VALIDATION_FAILED.
     const string query = """
         query($slug: String!, $offset: Int!) {
           account(slug: $slug) {
-            members(role: [BACKER, SPONSOR], limit: 100, offset: $offset) {
+            members(role: [BACKER], limit: 100, offset: $offset) {
               totalCount
               nodes { account { slug } }
             }

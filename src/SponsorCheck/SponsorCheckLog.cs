@@ -52,7 +52,7 @@ public static class SponsorCheckLog
 
     static void EmitInternal(TaskLoggingHelper log, string code, Severity severity, string message)
     {
-        var fullMessage = $"{NameFor(code)}. {message} See: {DocsUrl(code)}";
+        var fullMessage = $"{NameFor(code)}. {message}\n\nSee: {DocsUrl(code)}";
         switch (severity)
         {
             case Severity.Error:
@@ -88,6 +88,7 @@ public static class SponsorCheckLog
         "SC009" => "Bundled sponsor hash file missing",
         "SC010" => "Invalid SponsorshipStart format",
         "SC011" => "SponsorshipStart in the future",
+        "SC012" => "Sponsor metadata in the wrong location",
         "SC100" => "Platform fetch failed",
         "SC101" => "No platform account configured",
         "SC102" => "Missing platform credential",

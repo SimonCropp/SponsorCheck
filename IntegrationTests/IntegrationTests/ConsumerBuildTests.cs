@@ -133,6 +133,18 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task CpmConsumer_LicenseMetadataOnPackageReference_FailsWithSC012()
+    {
+        // CPM is on but the consumer wrongly put SponsorCheck metadata on <PackageReference>
+        // instead of <PackageVersion>. The verifier must reject the placement with SC012 before
+        // it ever reaches the license-mode check (which would otherwise fire SC001).
+        var result = await BuildFixture("Consumer.CpmMisplaced");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC012");
+        await Assert.That(result.Combined).DoesNotContain("SC001");
+    }
+
+    [Test]
     public async Task FutureSponsorshipStart_FailsWithSC011()
     {
         var result = await BuildFixture("Consumer.FutureSponsorshipStart");
@@ -164,7 +176,7 @@ public class ConsumerBuildTests
             "Consumer.OverrideSC001NoConfig",
             authorFixture: "ThePackageOverridden");
         await Assert.That(result.Combined).Contains("Please sponsor ThePackageOverridden before using.");
-        await Assert.That(result.Combined).DoesNotContain("requires one license-mode metadata");
+        await Assert.That(result.Combined).DoesNotContain("requires license metadata applied to");
     }
 
     [Test]
