@@ -74,7 +74,7 @@ public static class DecisionApplier
                 return ApplySponsor(s, sponsorHashListPath, packDatePath, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
 
             case LicenseDecision.Licensed l:
-                return ApplyLicensed(l, context, severityOverrides, messageOverrides, log, utcNow);
+                return ApplyLicensed(l, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
 
             default:
                 throw new InvalidOperationException($"Unknown decision: {decision.GetType().Name}");
@@ -174,19 +174,11 @@ public static class DecisionApplier
             "",
             $"Tried: {string.Join(", ", checkAttempts)}"
         };
-        if (authorAccounts.Count == 1)
+        var sponsorAt = ConsumerMetadataExamples.RenderSponsorAtBlock(authorAccounts);
+        if (sponsorAt.Length > 0)
         {
             lines.Add("");
-            lines.Add($"Sponsor at {authorAccounts[0].SponsorUrl}");
-        }
-        else if (authorAccounts.Count > 1)
-        {
-            lines.Add("");
-            lines.Add("Sponsor at:");
-            foreach (var account in authorAccounts)
-            {
-                lines.Add($"  {account.SponsorUrl}");
-            }
+            lines.Add(sponsorAt);
         }
 
         if (string.IsNullOrWhiteSpace(sponsor.SponsorshipStartRaw))
@@ -207,6 +199,7 @@ public static class DecisionApplier
     static bool ApplyLicensed(
         LicenseDecision.Licensed l,
         ConsumerContext context,
+        IReadOnlyList<AuthorAccount> authorAccounts,
         IReadOnlyDictionary<string, Severity> severityOverrides,
         IReadOnlyDictionary<string, string> messageOverrides,
         TaskLoggingHelper log,
@@ -238,17 +231,26 @@ public static class DecisionApplier
             var (code, opener) = context.IsCpm
                 ? ("SC010", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props has expired (end of month {lastDay:yyyy-MM-dd} UTC).")
                 : ("SC009", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> has expired (end of month {lastDay:yyyy-MM-dd} UTC).");
+            var expiredLines = new List<string>
+            {
+                opener,
+                "",
+                ConsumerMetadataExamples.RenderLicensedUntilRenewal(context)
+            };
+            var expiredSponsorAt = ConsumerMetadataExamples.RenderSponsorAtBlock(authorAccounts);
+            if (expiredSponsorAt.Length > 0)
+            {
+                expiredLines.Add("");
+                expiredLines.Add(expiredSponsorAt);
+            }
+
             return SponsorCheckLog.Emit(
                 log,
                 code,
                 Severity.Error,
                 severityOverrides,
                 messageOverrides,
-                $"""
-                 {opener}
-
-                 {ConsumerMetadataExamples.RenderLicensedUntilRenewal(context)}
-                 """);
+                string.Join(newline, expiredLines));
         }
 
         return true;

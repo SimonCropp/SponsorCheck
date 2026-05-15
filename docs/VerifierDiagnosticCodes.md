@@ -222,7 +222,11 @@ flowchart TD
   Example format:
 
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
+
+  Sponsor at {sponsorUrl}     ← single-platform inline form
   ```
+
+  Or as an alternative to renewal, the consumer can switch to sponsorship — the "Sponsor at" block lists the author's configured sponsor URLs (inline for one platform, indented `Sponsor at:\n  url1\n  url2` block for multiple).
 - **Example:**
 
   ```
@@ -235,6 +239,8 @@ flowchart TD
   Example format:
 
     <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+
+  Sponsor at https://github.com/sponsors/acmecorp
   ```
 
 

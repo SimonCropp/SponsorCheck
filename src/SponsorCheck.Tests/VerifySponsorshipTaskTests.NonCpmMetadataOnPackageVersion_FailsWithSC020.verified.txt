@@ -8,8 +8,7 @@ Sponsor metadata in the wrong location. Package 'MyOssLib' is not using Central 
 Move the SponsorshipLicenseIgnored attribute from the <PackageVersion> for 'MyOssLib' to the <PackageReference> for 'MyOssLib' in:
   C:/Consumer/MyApp.csproj
 
-See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc020,
-      Timestamp: DateTime_1
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc020
     }
   ]
 }

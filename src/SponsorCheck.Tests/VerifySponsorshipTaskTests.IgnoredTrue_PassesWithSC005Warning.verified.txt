@@ -19,8 +19,7 @@ Option — Mark as ignored (you accept that the build is in breach of the packag
 
 Sponsor at https://github.com/sponsors/acmecorp
 
-See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005,
-      Timestamp: DateTime_1
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005
     }
   ]
 }

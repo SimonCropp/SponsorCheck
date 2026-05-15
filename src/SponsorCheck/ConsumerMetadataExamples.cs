@@ -36,19 +36,11 @@ public static class ConsumerMetadataExamples
         lines.Add("Option — Mark as ignored (you accept that the build is in breach of the package license):");
         lines.Add($"  {RenderItem(context, ("SponsorshipLicenseIgnored", "true"))}");
 
-        if (authorAccounts.Count == 1)
+        var sponsorAt = RenderSponsorAtBlock(authorAccounts);
+        if (sponsorAt.Length > 0)
         {
             lines.Add("");
-            lines.Add($"Sponsor at {authorAccounts[0].SponsorUrl}");
-        }
-        else if (authorAccounts.Count > 1)
-        {
-            lines.Add("");
-            lines.Add("Sponsor at:");
-            foreach (var account in authorAccounts)
-            {
-                lines.Add($"  {account.SponsorUrl}");
-            }
+            lines.Add(sponsorAt);
         }
 
         return string.Join(newline, lines);
@@ -75,6 +67,31 @@ public static class ConsumerMetadataExamples
 
                   {RenderItem(context, attributes)}
                 """;
+    }
+
+    // Renders the "Sponsor at..." block used in SC007-SC010 messages. Single-platform collapses
+    // to an inline "Sponsor at {url}" line; multiple platforms use a "Sponsor at:\n  {url1}\n  {url2}" block.
+    // Returns an empty string when there are no platforms (caller is responsible for not adding a
+    // leading blank line in that case).
+    public static string RenderSponsorAtBlock(IReadOnlyList<AuthorAccount> authorAccounts)
+    {
+        if (authorAccounts.Count == 0)
+        {
+            return "";
+        }
+
+        if (authorAccounts.Count == 1)
+        {
+            return $"Sponsor at {authorAccounts[0].SponsorUrl}";
+        }
+
+        var lines = new List<string> { "Sponsor at:" };
+        foreach (var account in authorAccounts)
+        {
+            lines.Add($"  {account.SponsorUrl}");
+        }
+
+        return string.Join(newline, lines);
     }
 
     public static string RenderLicensedUntilRenewal(ConsumerContext context) =>

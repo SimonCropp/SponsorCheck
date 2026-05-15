@@ -329,6 +329,30 @@ public class VerifySponsorshipTaskTests
             ConsumerProjectPath = consumerProject,
             PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            LicensedUntilFromRef = "2000-01"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task ExpiredLicense_MultiplePlatformsConfigured_ShowsAllSponsorUrls()
+    {
+        // Multi-platform variant: SC009 should also list every author sponsor URL so the consumer
+        // can choose to switch from time-bounded license to sponsorship instead of renewing.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
             LicensedUntilFromRef = "2000-01"
         };
 
@@ -351,6 +375,30 @@ public class VerifySponsorshipTaskTests
             DirectoryPackagesPropsPath = directoryPackagesProps,
             PackageVersionFromVer = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            LicensedUntilFromVer = "2000-01"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC010");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmExpiredLicense_MultiplePlatformsConfigured_ShowsAllSponsorUrls()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
             LicensedUntilFromVer = "2000-01"
         };
 

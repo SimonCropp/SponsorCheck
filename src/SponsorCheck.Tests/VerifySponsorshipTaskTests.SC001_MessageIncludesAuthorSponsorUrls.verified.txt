@@ -28,8 +28,7 @@ Sponsor at:
   https://opencollective.com/acme-org
   https://polar.sh/acme
 
-See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001,
-      Timestamp: DateTime_1
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001
     }
   ]
 }
