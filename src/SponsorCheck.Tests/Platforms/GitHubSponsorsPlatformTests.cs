@@ -67,7 +67,14 @@ public class GitHubSponsorsPlatformTests
     [Test]
     public async Task NeitherExists()
     {
-        var json = """{ "data": { "user": null, "organization": null } }""";
+        var json = """
+                   {
+                     "data": {
+                       "user": null,
+                       "organization": null
+                     }
+                   }
+                   """;
         var page = GitHubSponsorsPlatform.ParseResponse(json);
         await Assert.That(page.UserExists).IsFalse();
         await Assert.That(page.OrgExists).IsFalse();
@@ -76,7 +83,13 @@ public class GitHubSponsorsPlatformTests
     [Test]
     public void GraphQLErrorsThrow()
     {
-        var json = """{ "errors": [ { "message": "Bad credentials" } ] }""";
+        var json = """
+                   {
+                     "errors": [
+                       { "message": "Bad credentials" }
+                     ]
+                   }
+                   """;
         Assert.Throws<MaintenanceFeeException>(() => GitHubSponsorsPlatform.ParseResponse(json));
     }
 

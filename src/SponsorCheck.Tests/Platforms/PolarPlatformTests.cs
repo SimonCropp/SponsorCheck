@@ -43,7 +43,11 @@ public class PolarPlatformTests
     [Test]
     public async Task EmptyItems()
     {
-        var json = """{ "items": [] }""";
+        var json = """
+                   {
+                     "items": []
+                   }
+                   """;
         var page = PolarPlatform.ParseResponse(json);
         await Assert.That(page.SponsorAccounts.Count).IsEqualTo(0);
     }
@@ -51,7 +55,11 @@ public class PolarPlatformTests
     [Test]
     public async Task MissingItemsKey()
     {
-        var json = """{ "totalCount": 0 }""";
+        var json = """
+                   {
+                     "totalCount": 0
+                   }
+                   """;
         var page = PolarPlatform.ParseResponse(json);
         await Assert.That(page.SponsorAccounts.Count).IsEqualTo(0);
         await Assert.That(page.RawItemCount).IsEqualTo(0);

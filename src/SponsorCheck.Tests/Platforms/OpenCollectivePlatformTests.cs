@@ -20,20 +20,20 @@ public class OpenCollectivePlatformTests
     public async Task PublicCollectiveBackers()
     {
         var json = """
-        {
-          "data": {
-            "account": {
-              "members": {
-                "totalCount": 2,
-                "nodes": [
-                  { "account": { "slug": "alice" } },
-                  { "account": { "slug": "acme-org" } }
-                ]
-              }
-            }
-          }
-        }
-        """;
+                   {
+                     "data": {
+                       "account": {
+                         "members": {
+                           "totalCount": 2,
+                           "nodes": [
+                             { "account": { "slug": "alice" } },
+                             { "account": { "slug": "acme-org" } }
+                           ]
+                         }
+                       }
+                     }
+                   }
+                   """;
         var page = OpenCollectivePlatform.ParseResponse(json);
         await Assert.That(page.AccountExists).IsTrue();
         await Assert.That(page.MemberSlugs).Contains("alice");
@@ -51,23 +51,23 @@ public class OpenCollectivePlatformTests
         // every node was filtered would terminate the loop before reaching totalCount and
         // silently lose subsequent pages of sponsors.
         var json = """
-        {
-          "data": {
-            "account": {
-              "members": {
-                "totalCount": 5,
-                "nodes": [
-                  { "account": { "slug": "alice" } },
-                  { "account": { "slug": "" } },
-                  { "account": { "slug": null } },
-                  { "account": null },
-                  { "account": { "slug": "bob" } }
-                ]
-              }
-            }
-          }
-        }
-        """;
+                   {
+                     "data": {
+                       "account": {
+                         "members": {
+                           "totalCount": 5,
+                           "nodes": [
+                             { "account": { "slug": "alice" } },
+                             { "account": { "slug": "" } },
+                             { "account": { "slug": null } },
+                             { "account": null },
+                             { "account": { "slug": "bob" } }
+                           ]
+                         }
+                       }
+                     }
+                   }
+                   """;
         var page = OpenCollectivePlatform.ParseResponse(json);
         await Assert.That(page.AccountExists).IsTrue();
         await Assert.That(page.MemberSlugs.Count).IsEqualTo(2);
@@ -81,17 +81,17 @@ public class OpenCollectivePlatformTests
     public async Task EmptyNodesArray()
     {
         var json = """
-        {
-          "data": {
-            "account": {
-              "members": {
-                "totalCount": 0,
-                "nodes": []
-              }
-            }
-          }
-        }
-        """;
+                   {
+                     "data": {
+                       "account": {
+                         "members": {
+                           "totalCount": 0,
+                           "nodes": []
+                         }
+                       }
+                     }
+                   }
+                   """;
         var page = OpenCollectivePlatform.ParseResponse(json);
         await Assert.That(page.AccountExists).IsTrue();
         await Assert.That(page.MemberSlugs.Count).IsEqualTo(0);
@@ -101,7 +101,13 @@ public class OpenCollectivePlatformTests
     [Test]
     public async Task UnknownAccount()
     {
-        var json = """{ "data": { "account": null } }""";
+        var json = """
+                   {
+                     "data": {
+                       "account": null
+                     }
+                   }
+                   """;
         var page = OpenCollectivePlatform.ParseResponse(json);
         await Assert.That(page.AccountExists).IsFalse();
     }
@@ -109,7 +115,13 @@ public class OpenCollectivePlatformTests
     [Test]
     public void ErrorsThrow()
     {
-        var json = """{ "errors": [ { "message": "boom" } ] }""";
+        var json = """
+                   {
+                     "errors": [
+                       { "message": "boom" }
+                     ]
+                   }
+                   """;
         Assert.Throws<MaintenanceFeeException>(() => OpenCollectivePlatform.ParseResponse(json));
     }
 
@@ -119,17 +131,17 @@ public class OpenCollectivePlatformTests
         // Open Collective's MemberRole enum has no SPONSOR — orgs and individuals both come back
         // as BACKER. Adding SPONSOR to the filter is rejected with GRAPHQL_VALIDATION_FAILED.
         var emptyPage = """
-            {
-              "data": {
-                "account": {
-                  "members": {
-                    "totalCount": 0,
-                    "nodes": []
-                  }
-                }
-              }
-            }
-            """;
+                        {
+                          "data": {
+                            "account": {
+                              "members": {
+                                "totalCount": 0,
+                                "nodes": []
+                              }
+                            }
+                          }
+                        }
+                        """;
         var capture = new CapturingHandler(emptyPage);
         using var client = new HttpClient(capture);
         var platform = new OpenCollectivePlatform(client);
@@ -151,29 +163,29 @@ public class OpenCollectivePlatformTests
         // must come from the page being shorter than the API's `limit` (100).
         var pageOneNodes = string.Join(",", Enumerable.Range(0, 100).Select(_ => "{\"account\":{\"slug\":\"backer" + _.ToString("D3") + "\"}}"));
         var pageOne = $$"""
-            {
-              "data": {
-                "account": {
-                  "members": {
-                    "nodes": [{{pageOneNodes}}]
-                  }
-                }
-              }
-            }
-            """;
+                        {
+                          "data": {
+                            "account": {
+                              "members": {
+                                "nodes": [{{pageOneNodes}}]
+                              }
+                            }
+                          }
+                        }
+                        """;
         var pageTwo = """
-            {
-              "data": {
-                "account": {
-                  "members": {
-                    "nodes": [
-                      { "account": { "slug": "lateBacker" } }
-                    ]
-                  }
-                }
-              }
-            }
-            """;
+                      {
+                        "data": {
+                          "account": {
+                            "members": {
+                              "nodes": [
+                                { "account": { "slug": "lateBacker" } }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                      """;
         var handler = new SequenceHandler([pageOne, pageTwo]);
         using var client = new HttpClient(handler);
         var platform = new OpenCollectivePlatform(client);
@@ -212,10 +224,11 @@ public class OpenCollectivePlatformTests
         {
             var body = index < bodies.Count ? bodies[index] : bodies[^1];
             index++;
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(body, Encoding.UTF8, "application/json")
-            });
+            return Task.FromResult(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(body, Encoding.UTF8, "application/json")
+                });
         }
     }
 }
