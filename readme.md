@@ -10,7 +10,7 @@ OSS authors install `SponsorCheck` as a development dependency in their library 
 
 When consumers reference the produced package, the bundled verifier runs on every build and requires one of three license-mode: a sponsor account that matches the bundled list, a time-bounded private license, or an explicit "ignored" with a build warning.
 
-Jump to [OSS author setup](#oss-author-setup) or [consumer license modes](#license-modes).
+Jump to [OSS author setup](#oss-author-setup) or [Consumer Usage](#consumer-usage).
 
 
 ## Why this approach
@@ -47,7 +47,7 @@ The maintainer keeps using GitHub Sponsors / Open Collective / Polar and ships a
 The trade for staying frictionless is honesty: hashing is not a security boundary, `SponsorshipLicenseIgnored="true"` is the documented bypass, and anyone determined to free-ride can do so trivially. The intent is to convert the inattentive majority — teams that would happily sponsor if they knew the maintainer wanted them to — not to extract revenue from adversaries.
 
 
-## Consumers
+## Consumer Usage
 
 
 ### License modes
