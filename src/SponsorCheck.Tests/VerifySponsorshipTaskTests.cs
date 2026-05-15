@@ -1,5 +1,9 @@
 public class VerifySponsorshipTaskTests
 {
+    // Stable test paths so snapshots don't depend on the working directory or OS path style.
+    const string consumerProject = "C:/Consumer/MyApp.csproj";
+    const string directoryPackagesProps = "C:/Consumer/Directory.Packages.props";
+
     static string WriteHashes(TempDirectory dir, params (string platform, string account)[] entries)
     {
         var path = Path.Combine(dir, "hashes.txt");
@@ -14,6 +18,9 @@ public class VerifySponsorshipTaskTests
         return path;
     }
 
+    static ConsumerContext NonCpmContext(string packageId = "MyOssLib", string version = "1.2.3") =>
+        new(false, consumerProject, "", packageId, version);
+
     [Test]
     public async Task NoConfig_FailsWithSC001()
     {
@@ -23,6 +30,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"))
         };
@@ -42,6 +51,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme"))
         };
@@ -64,6 +75,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             IgnoredFromRef = "true"
@@ -85,6 +98,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             IgnoredFromRef = "true"
@@ -105,6 +120,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = new StubBuildEngine(),
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice"), ("GitHubSponsors", "bob")),
             GitHubFromRef = "alice"
         };
@@ -121,6 +137,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             GitHubFromRef = "mallory"
         };
@@ -139,6 +157,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = new StubBuildEngine(),
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("Polar", "acme")),
             GitHubFromRef = "not-a-sponsor",
             PolarFromRef = "acme"
@@ -155,6 +174,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = new StubBuildEngine(),
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             LicensedUntilFromRef = "2099-12"
         };
@@ -171,6 +191,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             LicensedUntilFromRef = "2000-01"
         };
@@ -189,6 +211,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             LicensedUntilFromRef = "not-a-date"
         };
@@ -207,6 +231,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             IgnoredFromRef = "true",
             GitHubFromRef = "alice"
@@ -218,39 +244,24 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task MetadataOnBothRefAndVer_FailsWithSC006()
+    public async Task MetadataOnBothRefAndVer_FailsWithSC012()
     {
+        // Under the post-v0.3 placement rule SC012 fires before SC006 ever has a chance to merge —
+        // the wrong-side value alone is a placement violation regardless of what the right side carries.
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
         var task = new VerifySponsorshipTask
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             GitHubFromRef = "alice",
             GitHubFromVer = "bob"
         };
 
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC006");
-    }
-
-    [Test]
-    public async Task MetadataOnBothRefAndVerWithSameValue_FailsWithSC006()
-    {
-        using var dir = new TempDirectory();
-        var engine = new StubBuildEngine();
-        var task = new VerifySponsorshipTask
-        {
-            BuildEngine = engine,
-            ThePackageId = "MyOssLib",
-            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
-            GitHubFromRef = "alice",
-            GitHubFromVer = "alice"
-        };
-
-        await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC006");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
     }
 
     [Test]
@@ -261,11 +272,262 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = new StubBuildEngine(),
             ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             GitHubFromVer = "alice"
         };
 
         await Assert.That(task.Execute()).IsTrue();
+    }
+
+    [Test]
+    public async Task CpmIgnored_Passes()
+    {
+        // CPM happy path for SponsorshipLicenseIgnored: metadata on PackageVersion is the right
+        // location and the build should warn (SC003) rather than error.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromVer = "true"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC003");
+    }
+
+    [Test]
+    public async Task CpmLicensedUntilFuture_Passes()
+    {
+        // CPM happy path for SponsorshipLicensedUntil on PackageVersion.
+        using var dir = new TempDirectory();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            LicensedUntilFromVer = "2099-12"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+    }
+
+    [Test]
+    public async Task CpmSponsorshipStartAfterPackDate_TrustsDeclaration()
+    {
+        // CPM happy path for SponsorshipStart on PackageVersion: same trust-attestation behaviour
+        // as the non-CPM equivalent, just routed via *FromVer.
+        using var dir = new TempDirectory();
+        var hashes = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var packDate = Path.Combine(dir, "packdate.txt");
+        await File.WriteAllTextAsync(packDate, "2026-04-15");
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            SponsorHashListPath = hashes,
+            PackDatePath = packDate,
+            GitHubFromVer = "carol",
+            SponsorshipStartFromVer = "2026-04-30"
+        };
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Messages.Any(_ => _.Code == "SC008")).IsTrue();
+    }
+
+    [Test]
+    public async Task CpmNoConfig_FailsWithSC001()
+    {
+        // Locks in that under CPM the SC001 message names <PackageVersion> and the props file
+        // path, with the rendered example using <PackageVersion Include=...>.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmMetadataOnBothRefAndVer_FailsWithSC012()
+    {
+        // Under CPM the PackageReference side is wrong regardless of what PackageVersion says.
+        // SC012 fires from the wrong-side check before the merger ever runs (so SC006 is unreachable here).
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            IgnoredFromRef = "true",
+            IgnoredFromVer = "true"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
+        // The right-side value didn't get to the merger so SC006 never fires.
+        await Assert.That(engine.Errors.Any(_ => _.Code == "SC006")).IsFalse();
+    }
+
+    [Test]
+    public async Task CpmMultipleMetadataMisplaced_FailsWithSingleSC012ListingAll()
+    {
+        // The placement check aggregates: if a CPM consumer wrongly puts two attributes on
+        // PackageReference, both names appear in one SC012 message rather than spamming the log.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            IgnoredFromRef = "true",
+            GitHubFromRef = "alice",
+            LicensedUntilFromRef = "2099-12"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains("SponsorshipLicenseIgnored");
+        await Assert.That(message).Contains("GitHubSponsorAccount");
+        await Assert.That(message).Contains("SponsorshipLicensedUntil");
+    }
+
+    [Test]
+    public async Task CpmRendering_PrefersPackageVersionVersionForExample()
+    {
+        // Under CPM the rendered example must use the <PackageVersion> Version, not the
+        // (potentially stale or missing) PackageReference Version. We seed both with distinct
+        // values so a regression that picked the wrong side would show "9.9.9" in the snippet.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromRef = "9.9.9",
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains("Version=\"1.2.3\"");
+        await Assert.That(message).DoesNotContain("Version=\"9.9.9\"");
+    }
+
+    [Test]
+    public async Task NonCpmRendering_PrefersPackageReferenceVersionForExample()
+    {
+        // Mirror of CpmRendering_PrefersPackageVersionVersionForExample: without CPM the
+        // PackageReference Version wins.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            PackageVersionFromVer = "9.9.9",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains("Version=\"1.2.3\"");
+        await Assert.That(message).DoesNotContain("Version=\"9.9.9\"");
+    }
+
+    [Test]
+    public async Task CpmMetadataOnPackageReference_FailsWithSC012()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            IgnoredFromRef = "true"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task NonCpmMetadataOnPackageVersion_FailsWithSC012()
+    {
+        // Mirror image: when CPM is off the metadata must live on PackageReference. Putting it on
+        // PackageVersion (which usually doesn't even resolve outside CPM) is a placement violation.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            IgnoredFromVer = "true"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
+        await Verify(engine);
     }
 
     [Test]
@@ -280,6 +542,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = hashes,
             PackDatePath = packDate,
             GitHubFromRef = "carol",
@@ -303,6 +566,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = hashes,
             PackDatePath = packDate,
             GitHubFromRef = "carol",
@@ -322,6 +587,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = new StubBuildEngine(),
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "bob")),
             GitHubFromRef = "bob"
         };
@@ -341,6 +607,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = hashes,
             PackDatePath = packDate,
             GitHubFromRef = "carol",
@@ -361,6 +629,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = hashes,
             PackDatePath = "",
             GitHubFromRef = "carol",
@@ -381,6 +651,8 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = hashes,
             PackDatePath = "",
             GitHubFromRef = "carol",
@@ -408,7 +680,7 @@ public class VerifySponsorshipTaskTests
             },
             null,
             "MyOssLib");
-        var ok = DecisionApplier.Apply(decision, path, "", [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsTrue();
     }
 
@@ -434,7 +706,7 @@ public class VerifySponsorshipTaskTests
             "MyOssLib");
         var lastTickOfMonth = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(-1);
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), lastTickOfMonth);
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), lastTickOfMonth);
         await Assert.That(ok).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
     }
@@ -459,7 +731,7 @@ public class VerifySponsorshipTaskTests
             "MyOssLib");
         var startOfNextMonth = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), startOfNextMonth);
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), startOfNextMonth);
         await Assert.That(ok).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC005");
     }
@@ -489,6 +761,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             SeverityOverridesPath = WriteOverrides(dir, ("SC001", Severity.Warning))
@@ -509,6 +782,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             IgnoredFromRef = "true",
@@ -530,6 +804,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             GitHubFromRef = "mallory",
             SeverityOverridesPath = WriteOverrides(dir, ("SC004", Severity.Warning))
@@ -550,6 +825,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             LicensedUntilFromRef = "2000-01",
             SeverityOverridesPath = WriteOverrides(dir, ("SC005", Severity.Message))
@@ -570,6 +846,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             MessageOverridesPath = WriteMessageOverrides(dir, ("SC001", "Please sponsor MyOssLib!"))
@@ -582,7 +859,7 @@ public class VerifySponsorshipTaskTests
         // The Name prefix and docs URL suffix still wrap; the inner text is the override.
         await Assert.That(message).Contains("No license specified.");
         await Assert.That(message).Contains("Please sponsor MyOssLib!");
-        await Assert.That(message).DoesNotContain("requires one license-mode metadata");
+        await Assert.That(message).DoesNotContain("requires license metadata applied to");
         await Assert.That(message).Contains("#sc001");
     }
 
@@ -595,6 +872,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             IgnoredFromRef = "true",
@@ -617,6 +895,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             SeverityOverridesPath = WriteOverrides(dir, ("SC001", Severity.Warning)),
@@ -640,6 +919,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             GitHubFromRef = "mallory",
             MessageOverridesPath = WriteMessageOverrides(dir, ("SC001", "should not appear"))
@@ -663,6 +943,7 @@ public class VerifySponsorshipTaskTests
         {
             BuildEngine = engine,
             ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             IgnoredFromRef = "true",
             GitHubFromRef = "alice",

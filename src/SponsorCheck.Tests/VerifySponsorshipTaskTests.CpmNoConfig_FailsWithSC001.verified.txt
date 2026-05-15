@@ -5,19 +5,19 @@
       Code: SC001,
       File: ,
       Message:
-No license specified. Package 'MyOssLib' is built with SponsorCheck and requires license metadata applied to the PackageReference.
+No license specified. Package 'MyOssLib' is built with SponsorCheck and requires license metadata applied to the PackageVersion.
 
-Add ONE of the following attributes to the existing <PackageReference> for 'MyOssLib' in:
-  C:/Consumer/MyApp.csproj
+Add ONE of the following attributes to the existing <PackageVersion> for 'MyOssLib' in:
+  C:/Consumer/Directory.Packages.props
 
 Option — Mark as ignored (you accept that the build is in breach of the package license):
-  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
+  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
 
 Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
-  <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
+  <PackageVersion Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
 
 Option — Time-bounded license (replace yyyy-MM with the last covered month):
-  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 
 Sponsor at:
   https://github.com/sponsors/acmecorp

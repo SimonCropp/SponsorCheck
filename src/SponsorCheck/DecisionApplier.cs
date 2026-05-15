@@ -1,10 +1,13 @@
 public static class DecisionApplier
 {
+    const string newline = "\n";
+
     public static bool Apply(
         LicenseDecision decision,
         string sponsorHashListPath,
         string packDatePath,
-        IReadOnlyList<string> sponsorUrls,
+        ConsumerContext context,
+        IReadOnlyList<AuthorAccount> authorAccounts,
         IReadOnlyDictionary<string, Severity> severityOverrides,
         IReadOnlyDictionary<string, string> messageOverrides,
         TaskLoggingHelper log,
@@ -19,13 +22,26 @@ public static class DecisionApplier
                     Severity.Error,
                     severityOverrides,
                     messageOverrides,
-                    $"Package '{m.PackageId}' is built with SponsorCheck and requires one license-mode metadata: SponsorshipLicenseIgnored=\"true\", a <Platform>SponsorAccount, or SponsorshipLicensedUntil=\"yyyy-MM\". Sponsor at: {string.Join(", ", sponsorUrls)}.");
+                    string.Join(newline,
+                    [
+                        $"Package '{m.PackageId}' is built with SponsorCheck and requires license metadata applied to the {context.ElementName}.",
+                        "",
+                        ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)
+                    ]));
 
             case LicenseDecision.ConflictingModes c:
                 SponsorCheckLog.Error(
                     log,
                     "SC002",
-                    $"Package '{c.PackageId}': mutually exclusive license modes set ({string.Join(", ", c.Modes)}). Pick one.");
+                    string.Join(newline,
+                    [
+                        $"Package '{c.PackageId}': mutually exclusive license modes are set ({string.Join(", ", c.Modes)}). Pick one.",
+                        "",
+                        $"Edit the <{context.ElementName}> for '{c.PackageId}' in:",
+                        $"  {context.TargetFilePath}",
+                        "",
+                        "Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil."
+                    ]));
                 return false;
 
             case LicenseDecision.Ignored i:
@@ -35,13 +51,18 @@ public static class DecisionApplier
                     Severity.Warning,
                     severityOverrides,
                     messageOverrides,
-                    $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but is in breach of the license of the package. Sponsor at: {string.Join(", ", sponsorUrls)}.");
+                    string.Join(newline,
+                    [
+                        $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but is in breach of the package license.",
+                        "",
+                        ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)
+                    ]));
 
             case LicenseDecision.Sponsor s:
-                return ApplySponsor(s, sponsorHashListPath, packDatePath, severityOverrides, messageOverrides, log, utcNow);
+                return ApplySponsor(s, sponsorHashListPath, packDatePath, context, severityOverrides, messageOverrides, log, utcNow);
 
             case LicenseDecision.Licensed l:
-                return ApplyLicensed(l, severityOverrides, messageOverrides, log, utcNow);
+                return ApplyLicensed(l, context, severityOverrides, messageOverrides, log, utcNow);
 
             default:
                 throw new InvalidOperationException($"Unknown decision: {decision.GetType().Name}");
@@ -52,6 +73,7 @@ public static class DecisionApplier
         LicenseDecision.Sponsor sponsor,
         string sponsorHashListPath,
         string packDatePath,
+        ConsumerContext context,
         IReadOnlyDictionary<string, Severity> severityOverrides,
         IReadOnlyDictionary<string, string> messageOverrides,
         TaskLoggingHelper log,
@@ -66,7 +88,12 @@ public static class DecisionApplier
                 SponsorCheckLog.Error(
                     log,
                     "SC010",
-                    $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is not in 'yyyy-MM-dd' format.");
+                    string.Join(newline,
+                    [
+                        $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is not in 'yyyy-MM-dd' format.",
+                        "",
+                        ConsumerMetadataExamples.RenderSponsorshipStartFix(context)
+                    ]));
                 return false;
             }
 
@@ -75,7 +102,12 @@ public static class DecisionApplier
                 SponsorCheckLog.Error(
                     log,
                     "SC011",
-                    $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is in the future.");
+                    string.Join(newline,
+                    [
+                        $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is in the future.",
+                        "",
+                        ConsumerMetadataExamples.RenderSponsorshipStartFix(context)
+                    ]));
                 return false;
             }
 
@@ -116,20 +148,30 @@ public static class DecisionApplier
             checkAttempts.Add($"{pair.Key}={pair.Value}");
         }
 
-        var hint = string.IsNullOrWhiteSpace(sponsor.SponsorshipStartRaw)
-            ? " If sponsorship started after this package was released, add SponsorshipStart=\"yyyy-MM-dd\" metadata."
-            : "";
+        var lines = new List<string>
+        {
+            $"Package '{sponsor.PackageId}': no supplied sponsor account matches the bundled list.",
+            "",
+            $"Tried: {string.Join(", ", checkAttempts)}"
+        };
+        if (string.IsNullOrWhiteSpace(sponsor.SponsorshipStartRaw))
+        {
+            lines.Add("");
+            lines.Add(ConsumerMetadataExamples.RenderSponsorshipStartHint(context, sponsor.AccountByPlatform));
+        }
+
         return SponsorCheckLog.Emit(
             log,
             "SC004",
             Severity.Error,
             severityOverrides,
             messageOverrides,
-            $"Package '{sponsor.PackageId}': no supplied sponsor account matches the bundled list (tried: {string.Join(", ", checkAttempts)}).{hint}");
+            string.Join(newline, lines));
     }
 
     static bool ApplyLicensed(
         LicenseDecision.Licensed l,
+        ConsumerContext context,
         IReadOnlyDictionary<string, Severity> severityOverrides,
         IReadOnlyDictionary<string, string> messageOverrides,
         TaskLoggingHelper log,
@@ -140,7 +182,12 @@ public static class DecisionApplier
             SponsorCheckLog.Error(
                 log,
                 "SC007",
-                $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' is not in 'yyyy-MM' format.");
+                string.Join(newline,
+                [
+                    $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' is not in 'yyyy-MM' format.",
+                    "",
+                    ConsumerMetadataExamples.RenderLicensedUntilRenewal(context)
+                ]));
             return false;
         }
 
@@ -157,7 +204,12 @@ public static class DecisionApplier
                 Severity.Error,
                 severityOverrides,
                 messageOverrides,
-                $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {lastDay:yyyy-MM-dd} UTC).");
+                string.Join(newline,
+                [
+                    $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {lastDay:yyyy-MM-dd} UTC).",
+                    "",
+                    ConsumerMetadataExamples.RenderLicensedUntilRenewal(context)
+                ]));
         }
 
         return true;

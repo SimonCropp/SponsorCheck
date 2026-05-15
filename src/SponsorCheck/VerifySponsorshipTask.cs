@@ -8,6 +8,13 @@ public sealed class VerifySponsorshipTask :
     public string SeverityOverridesPath { get; set; } = "";
     public string MessageOverridesPath { get; set; } = "";
 
+    public string IsCpm { get; set; } = "";
+    public string ConsumerProjectPath { get; set; } = "";
+    public string DirectoryPackagesPropsPath { get; set; } = "";
+
+    public string PackageVersionFromRef { get; set; } = "";
+    public string PackageVersionFromVer { get; set; } = "";
+
     public string IgnoredFromRef { get; set; } = "";
     public string IgnoredFromVer { get; set; } = "";
     public string LicensedUntilFromRef { get; set; } = "";
@@ -25,6 +32,16 @@ public sealed class VerifySponsorshipTask :
     {
         try
         {
+            var context = BuildConsumerContext();
+
+            // SC012 enforces that under CPM only <PackageVersion> carries SponsorCheck metadata,
+            // and conversely under non-CPM only <PackageReference> does. Run this before merging
+            // so a wrong-side value doesn't silently flow through the merge.
+            if (!CheckPlacement(context))
+            {
+                return false;
+            }
+
             var ignored = PackageMetadataMerger.Merge("SponsorshipLicenseIgnored", IgnoredFromRef, IgnoredFromVer);
             var licensedUntil = PackageMetadataMerger.Merge("SponsorshipLicensedUntil", LicensedUntilFromRef, LicensedUntilFromVer);
             var sponsorshipStart = PackageMetadataMerger.Merge("SponsorshipStart", SponsorshipStartFromRef, SponsorshipStartFromVer);
@@ -36,10 +53,10 @@ public sealed class VerifySponsorshipTask :
             };
 
             var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, sponsors, sponsorshipStart, ThePackageId);
-            var sponsorUrls = ResolveSponsorUrls(AuthorAccountsPath);
+            var authorAccounts = ResolveAuthorAccounts(AuthorAccountsPath);
             var severityOverrides = SeverityOverrideFile.Read(SeverityOverridesPath);
             var messageOverrides = MessageOverrideFile.Read(MessageOverridesPath);
-            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, sponsorUrls, severityOverrides, messageOverrides, Log, DateTime.UtcNow);
+            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, severityOverrides, messageOverrides, Log, DateTime.UtcNow);
         }
         catch (MaintenanceFeeException exception)
         {
@@ -53,18 +70,73 @@ public sealed class VerifySponsorshipTask :
         }
     }
 
-    public static IReadOnlyList<string> ResolveSponsorUrls(string authorAccountsPath)
+    ConsumerContext BuildConsumerContext()
+    {
+        var isCpm = string.Equals(IsCpm, "true", StringComparison.OrdinalIgnoreCase);
+        // Prefer the version from the side that's authoritative for CPM mode, but fall back to
+        // either side so we still render a useful example when the consumer's setup is mixed.
+        var resolvedVersion = isCpm
+            ? FirstNonEmpty(PackageVersionFromVer, PackageVersionFromRef)
+            : FirstNonEmpty(PackageVersionFromRef, PackageVersionFromVer);
+        return new(
+            isCpm,
+            ConsumerProjectPath,
+            DirectoryPackagesPropsPath,
+            ThePackageId,
+            resolvedVersion);
+    }
+
+    bool CheckPlacement(ConsumerContext context)
+    {
+        var pairs = new (string Name, string FromRef, string FromVer)[]
+        {
+            ("SponsorshipLicenseIgnored", IgnoredFromRef, IgnoredFromVer),
+            ("SponsorshipLicensedUntil", LicensedUntilFromRef, LicensedUntilFromVer),
+            ("SponsorshipStart", SponsorshipStartFromRef, SponsorshipStartFromVer),
+            ("GitHubSponsorAccount", GitHubFromRef, GitHubFromVer),
+            ("OpenCollectiveSponsorAccount", OpenCollectiveFromRef, OpenCollectiveFromVer),
+            ("PolarSponsorAccount", PolarFromRef, PolarFromVer)
+        };
+
+        var misplaced = new List<string>();
+        foreach (var (name, fromRef, fromVer) in pairs)
+        {
+            var wrong = context.IsCpm ? fromRef : fromVer;
+            if (!string.IsNullOrWhiteSpace(wrong))
+            {
+                misplaced.Add(name);
+            }
+        }
+
+        if (misplaced.Count == 0)
+        {
+            return true;
+        }
+
+        var body = ConsumerMetadataExamples.RenderPlacementError(context, misplaced);
+        SponsorCheckLog.Error(Log, "SC012", body);
+        return false;
+    }
+
+    static string FirstNonEmpty(string a, string b) =>
+        !string.IsNullOrWhiteSpace(a) ? a.Trim() : (string.IsNullOrWhiteSpace(b) ? "" : b.Trim());
+
+    public static IReadOnlyList<AuthorAccount> ResolveAuthorAccounts(string authorAccountsPath)
     {
         var entries = AuthorAccountsFile.Read(authorAccountsPath);
-        var urls = new List<string>(entries.Count);
+        var accounts = new List<AuthorAccount>(entries.Count);
         foreach (var entry in entries)
         {
             if (PlatformRegistry.TryGet(entry.Key, out var platform))
             {
-                urls.Add(platform!.SponsorPageUrl(entry.Value));
+                accounts.Add(new(
+                    entry.Key,
+                    entry.Value,
+                    platform!.SponsorPageUrl(entry.Value),
+                    ConsumerMetadataNames.For(entry.Key)));
             }
         }
 
-        return urls;
+        return accounts;
     }
 }

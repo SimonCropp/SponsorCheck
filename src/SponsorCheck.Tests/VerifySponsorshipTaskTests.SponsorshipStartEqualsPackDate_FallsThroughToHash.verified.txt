@@ -1,10 +1,15 @@
-{
+﻿{
   Errors: [
     {
       Subcategory: SponsorCheck,
       Code: SC004,
       File: ,
-      Message: Invalid account. Package 'MyOssLib': no supplied sponsor account matches the bundled list (tried: GitHubSponsors=carol). See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004,
+      Message:
+Invalid account. Package 'MyOssLib': no supplied sponsor account matches the bundled list.
+
+Tried: GitHubSponsors=carol
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask
