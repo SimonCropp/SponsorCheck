@@ -58,32 +58,37 @@ public static class ConsumerMetadataExamples
             : [(ConsumerMetadataNames.For(pair.Key), pair.Value)];
         var attributes = existing.Concat([("SponsorshipStart", "yyyy-MM-dd")]).ToArray();
 
-        return string.Join(newline,
-        [
-            "If sponsorship started after this package was released, attest to the start date in:",
-            $"  {context.TargetFilePath}",
-            "",
-            $"  {RenderItem(context, attributes)}"
-        ]);
+        return $"""
+                If sponsorship started after this package was released, attest to the start date in:
+                  {context.TargetFilePath}
+
+                  {RenderItem(context, attributes)}
+                """;
     }
 
     public static string RenderLicensedUntilRenewal(ConsumerContext context) =>
-        string.Join(newline,
-        [
-            "Renew the license in:",
-            $"  {context.TargetFilePath}",
-            "",
-            $"  {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}"
-        ]);
+        $"""
+         Renew the license in:
+           {context.TargetFilePath}
+
+           {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+         """;
+
+    public static string RenderLicensedUntilFormatFix(ConsumerContext context) =>
+        $"""
+         Fix the SponsorshipLicensedUntil attribute in:
+           {context.TargetFilePath}
+
+           {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+         """;
 
     public static string RenderSponsorshipStartFix(ConsumerContext context) =>
-        string.Join(newline,
-        [
-            "Fix the SponsorshipStart attribute in:",
-            $"  {context.TargetFilePath}",
-            "",
-            $"  {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}"
-        ]);
+        $"""
+         Fix the SponsorshipStart attribute in:
+           {context.TargetFilePath}
+
+           {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}
+         """;
 
     public static string RenderPlacementError(
         ConsumerContext context,

@@ -202,7 +202,7 @@ flowchart TD
   ```
   Package '{PackageId}': SponsorshipLicensedUntil='{value}' is not in 'yyyy-MM' format.
 
-  Renew the license in:
+  Fix the SponsorshipLicensedUntil attribute in:
     {targetFile}
 
     <{Element} Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
@@ -212,7 +212,7 @@ flowchart TD
   ```
   Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' is not in 'yyyy-MM' format.
 
-  Renew the license in:
+  Fix the SponsorshipLicensedUntil attribute in:
     /work/MyApp/MyApp.csproj
 
     <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />

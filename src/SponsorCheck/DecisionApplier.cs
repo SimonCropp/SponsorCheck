@@ -22,26 +22,24 @@ public static class DecisionApplier
                     Severity.Error,
                     severityOverrides,
                     messageOverrides,
-                    string.Join(newline,
-                    [
-                        $"Package '{m.PackageId}' is built with SponsorCheck and requires license metadata applied to the {context.ElementName}.",
-                        "",
-                        ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)
-                    ]));
+                    $"""
+                     Package '{m.PackageId}' is built with SponsorCheck and requires license metadata applied to the {context.ElementName}.
+
+                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)}
+                     """);
 
             case LicenseDecision.ConflictingModes c:
                 SponsorCheckLog.Error(
                     log,
                     "SC002",
-                    string.Join(newline,
-                    [
-                        $"Package '{c.PackageId}': mutually exclusive license modes are set ({string.Join(", ", c.Modes)}). Pick one.",
-                        "",
-                        $"Edit the <{context.ElementName}> for '{c.PackageId}' in:",
-                        $"  {context.TargetFilePath}",
-                        "",
-                        "Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil."
-                    ]));
+                    $"""
+                     Package '{c.PackageId}': mutually exclusive license modes are set ({string.Join(", ", c.Modes)}). Pick one.
+
+                     Edit the <{context.ElementName}> for '{c.PackageId}' in:
+                       {context.TargetFilePath}
+
+                     Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil.
+                     """);
                 return false;
 
             case LicenseDecision.Ignored i:
@@ -51,12 +49,11 @@ public static class DecisionApplier
                     Severity.Warning,
                     severityOverrides,
                     messageOverrides,
-                    string.Join(newline,
-                    [
-                        $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\". Build is allowed but is in breach of the package license.",
-                        "",
-                        ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)
-                    ]));
+                    $"""
+                     Package '{i.PackageId}': SponsorshipLicenseIgnored="true". Build is allowed but is in breach of the package license.
+
+                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)}
+                     """);
 
             case LicenseDecision.Sponsor s:
                 return ApplySponsor(s, sponsorHashListPath, packDatePath, context, severityOverrides, messageOverrides, log, utcNow);
@@ -88,12 +85,11 @@ public static class DecisionApplier
                 SponsorCheckLog.Error(
                     log,
                     "SC010",
-                    string.Join(newline,
-                    [
-                        $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is not in 'yyyy-MM-dd' format.",
-                        "",
-                        ConsumerMetadataExamples.RenderSponsorshipStartFix(context)
-                    ]));
+                    $"""
+                     Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is not in 'yyyy-MM-dd' format.
+
+                     {ConsumerMetadataExamples.RenderSponsorshipStartFix(context)}
+                     """);
                 return false;
             }
 
@@ -102,12 +98,11 @@ public static class DecisionApplier
                 SponsorCheckLog.Error(
                     log,
                     "SC011",
-                    string.Join(newline,
-                    [
-                        $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is in the future.",
-                        "",
-                        ConsumerMetadataExamples.RenderSponsorshipStartFix(context)
-                    ]));
+                    $"""
+                     Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is in the future.
+
+                     {ConsumerMetadataExamples.RenderSponsorshipStartFix(context)}
+                     """);
                 return false;
             }
 
@@ -182,12 +177,11 @@ public static class DecisionApplier
             SponsorCheckLog.Error(
                 log,
                 "SC007",
-                string.Join(newline,
-                [
-                    $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' is not in 'yyyy-MM' format.",
-                    "",
-                    ConsumerMetadataExamples.RenderLicensedUntilRenewal(context)
-                ]));
+                $"""
+                 Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' is not in 'yyyy-MM' format.
+
+                 {ConsumerMetadataExamples.RenderLicensedUntilFormatFix(context)}
+                 """);
             return false;
         }
 
@@ -204,12 +198,11 @@ public static class DecisionApplier
                 Severity.Error,
                 severityOverrides,
                 messageOverrides,
-                string.Join(newline,
-                [
-                    $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {lastDay:yyyy-MM-dd} UTC).",
-                    "",
-                    ConsumerMetadataExamples.RenderLicensedUntilRenewal(context)
-                ]));
+                $"""
+                 Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {lastDay:yyyy-MM-dd} UTC).
+
+                 {ConsumerMetadataExamples.RenderLicensedUntilRenewal(context)}
+                 """);
         }
 
         return true;
