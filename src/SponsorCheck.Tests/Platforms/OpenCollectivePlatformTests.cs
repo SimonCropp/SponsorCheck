@@ -1,3 +1,5 @@
+using System.Net;
+
 public class OpenCollectivePlatformTests
 {
     [Test]
@@ -109,5 +111,55 @@ public class OpenCollectivePlatformTests
     {
         var json = """{ "errors": [ { "message": "boom" } ] }""";
         Assert.Throws<MaintenanceFeeException>(() => OpenCollectivePlatform.ParseResponse(json));
+    }
+
+    [Test]
+    public async Task FetchSponsorAccounts_AsksApiForBothBackerAndSponsorRoles()
+    {
+        // OpenCollective uses BACKER for recurring small contributors and SPONSOR for orgs and
+        // larger contributors. Querying BACKER alone made the API filter SPONSORs out server-side,
+        // so org sponsors silently never reached the bundled hash list. The query must request both.
+        var emptyPage = """
+            {
+              "data": {
+                "account": {
+                  "members": {
+                    "totalCount": 0,
+                    "nodes": []
+                  }
+                }
+              }
+            }
+            """;
+        var capture = new CapturingHandler(emptyPage);
+        using var client = new HttpClient(capture);
+        var platform = new OpenCollectivePlatform(client);
+        var log = new TaskLoggingHelperFor(new StubBuildEngine());
+
+        await platform.FetchSponsorAccounts("anycollective", token: null, log, Cancel.None);
+
+        await Assert.That(capture.LastRequestBody).IsNotNull();
+        // The query is JSON-encoded inside the request body, so the bracketed list shows up
+        // escaped. Look for the substring that survives JSON encoding either way.
+        await Assert.That(capture.LastRequestBody!).Contains("BACKER");
+        await Assert.That(capture.LastRequestBody!).Contains("SPONSOR");
+    }
+
+    sealed class CapturingHandler(string body) : HttpMessageHandler
+    {
+        public string? LastRequestBody { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
+        {
+            if (request.Content != null)
+            {
+                LastRequestBody = await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+            }
+
+            return new(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+        }
     }
 }
