@@ -26,7 +26,7 @@ At least one `<Platform>Account` must be set. Credentials per platform come from
 <!-- Explicit time-bounded license -->
 <PackageReference Include="ThePackage" Version="1.0" SponsorshipLicensedUntil="2026-12" />
 
-<!-- Escape hatch (passes with warning SC003) -->
+<!-- Escape hatch (passes with warning SC005) -->
 <PackageReference Include="ThePackage" Version="1.0" SponsorshipLicenseIgnored="true" />
 ```
 

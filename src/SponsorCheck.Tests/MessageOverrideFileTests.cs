@@ -8,12 +8,12 @@ public class MessageOverrideFileTests
         var input = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["SC001"] = "Please sponsor before using",
-            ["SC003"] = "You're free-riding!"
+            ["SC005"] = "You're free-riding!"
         };
         MessageOverrideFile.Write(path, input);
         var output = MessageOverrideFile.Read(path);
         await Assert.That(output["SC001"]).IsEqualTo("Please sponsor before using");
-        await Assert.That(output["SC003"]).IsEqualTo("You're free-riding!");
+        await Assert.That(output["SC005"]).IsEqualTo("You're free-riding!");
     }
 
     [Test]
@@ -50,10 +50,10 @@ public class MessageOverrideFileTests
         // A sidecar with entries for codes outside the overrideable set is silently filtered.
         using var dir = new TempDirectory();
         var path = Path.Combine(dir, "overrides.json");
-        await File.WriteAllTextAsync(path, """{ "SC001": "valid", "SC002": "tampered", "SC999": "unknown" }""");
+        await File.WriteAllTextAsync(path, """{ "SC001": "valid", "SC003": "tampered", "SC999": "unknown" }""");
         var result = MessageOverrideFile.Read(path);
         await Assert.That(result.ContainsKey("SC001")).IsTrue();
-        await Assert.That(result.ContainsKey("SC002")).IsFalse();
+        await Assert.That(result.ContainsKey("SC003")).IsFalse();
         await Assert.That(result.ContainsKey("SC999")).IsFalse();
     }
 
@@ -62,10 +62,10 @@ public class MessageOverrideFileTests
     {
         using var dir = new TempDirectory();
         var path = Path.Combine(dir, "overrides.json");
-        await File.WriteAllTextAsync(path, """{ "SC001": "real", "SC003": "   " }""");
+        await File.WriteAllTextAsync(path, """{ "SC001": "real", "SC005": "   " }""");
         var result = MessageOverrideFile.Read(path);
         await Assert.That(result.ContainsKey("SC001")).IsTrue();
-        await Assert.That(result.ContainsKey("SC003")).IsFalse();
+        await Assert.That(result.ContainsKey("SC005")).IsFalse();
     }
 
     [Test]

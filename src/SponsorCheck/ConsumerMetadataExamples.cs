@@ -1,6 +1,6 @@
 // Renders the multi-line "here's what to paste" blocks that wrap each consumer-side diagnostic
 // message. Centralised so the choice of <PackageReference> vs <PackageVersion> and the target
-// file path stay consistent across SC001/SC003/SC004/SC005/SC007/SC010/SC011/SC012.
+// file path stay consistent across SC001/SC005/SC007/SC009/SC011/SC013/SC015/SC020.
 //
 // All blocks use \n joins. The MSBuild console logger preserves embedded newlines on its own
 // line; multi-line errors are common (e.g. C# compiler output) so this is well within MSBuild's

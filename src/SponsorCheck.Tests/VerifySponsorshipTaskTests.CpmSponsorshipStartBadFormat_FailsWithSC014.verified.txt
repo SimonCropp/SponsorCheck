@@ -1,0 +1,23 @@
+﻿{
+  Errors: [
+    {
+      Subcategory: SponsorCheck,
+      Code: SC014,
+      File: ,
+      Message:
+Invalid SponsorshipStart format (CPM). Package 'MyOssLib': SponsorshipStart='yesterday' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM-dd' format.
+
+Fix the SponsorshipStart attribute in:
+  C:/Consumer/Directory.Packages.props
+
+  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipStart="yyyy-MM-dd" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc014,
+      Timestamp: DateTime_1,
+      HelpKeyword: ,
+      SenderName: VerifySponsorshipTask
+    }
+  ],
+  ContinueOnError: false,
+  ProjectFileOfTaskNode: 
+}

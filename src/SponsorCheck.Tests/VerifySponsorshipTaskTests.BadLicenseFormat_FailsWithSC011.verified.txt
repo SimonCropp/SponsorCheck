@@ -2,17 +2,17 @@
   Errors: [
     {
       Subcategory: SponsorCheck,
-      Code: SC005,
+      Code: SC011,
       File: ,
       Message:
-License expired. Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' has expired (end of month 2000-01-31 UTC).
+Invalid license date format. Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' on the <PackageReference> is not in 'yyyy-MM' format.
 
-Renew the license in:
+Fix the SponsorshipLicensedUntil attribute in:
   C:/Consumer/MyApp.csproj
 
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 
-See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005,
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask

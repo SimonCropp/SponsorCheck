@@ -67,7 +67,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task SC003_MessageIncludesAuthorSponsorUrls()
+    public async Task SC005_MessageIncludesAuthorSponsorUrls()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -90,7 +90,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task IgnoredTrue_PassesWithSC003Warning()
+    public async Task IgnoredTrue_PassesWithSC005Warning()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -108,7 +108,7 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Warnings).HasSingleItem();
-        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC003");
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC005");
         await Verify(engine);
     }
 
@@ -129,7 +129,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task InvalidSponsor_FailsWithSC004()
+    public async Task InvalidSponsor_FailsWithSC007()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -145,7 +145,30 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmInvalidSponsor_FailsWithSC008()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            GitHubFromVer = "mallory"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC008");
         await Verify(engine);
     }
 
@@ -183,7 +206,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task ExpiredLicense_FailsWithSC005()
+    public async Task ExpiredLicense_FailsWithSC009()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -198,12 +221,34 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC005");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
         await Verify(engine);
     }
 
     [Test]
-    public async Task BadLicenseFormat_FailsWithSC007()
+    public async Task CpmExpiredLicense_FailsWithSC010()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            LicensedUntilFromVer = "2000-01"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC010");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BadLicenseFormat_FailsWithSC011()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -218,12 +263,36 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC011");
         await Verify(engine);
     }
 
     [Test]
-    public async Task ConflictingModes_FailsWithSC002()
+    public async Task CpmBadLicenseFormat_FailsWithSC012()
+    {
+        // CPM sibling of SC011: SponsorshipLicensedUntil sits on <PackageVersion> in
+        // Directory.Packages.props instead of <PackageReference> in the consumer csproj.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            LicensedUntilFromVer = "not-a-date"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task ConflictingModes_FailsWithSC003()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -239,14 +308,37 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC002");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC003");
         await Verify(engine);
     }
 
     [Test]
-    public async Task MetadataOnBothRefAndVer_FailsWithSC012()
+    public async Task CpmConflictingModes_FailsWithSC004()
     {
-        // Under the post-v0.3 placement rule SC012 fires before SC006 ever has a chance to merge —
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            IgnoredFromVer = "true",
+            GitHubFromVer = "alice"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task MetadataOnBothRefAndVer_FailsWithSC020()
+    {
+        // Under the post-v0.3 placement rule SC020 fires before SC019 ever has a chance to merge —
         // the wrong-side value alone is a placement violation regardless of what the right side carries.
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -261,7 +353,7 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC020");
     }
 
     [Test]
@@ -286,7 +378,7 @@ public class VerifySponsorshipTaskTests
     public async Task CpmIgnored_Passes()
     {
         // CPM happy path for SponsorshipLicenseIgnored: metadata on PackageVersion is the right
-        // location and the build should warn (SC003) rather than error.
+        // location and the build should warn (SC005) rather than error.
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
         var task = new VerifySponsorshipTask
@@ -304,7 +396,7 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Warnings).HasSingleItem();
-        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC003");
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC006");
     }
 
     [Test]
@@ -350,13 +442,13 @@ public class VerifySponsorshipTaskTests
         };
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
-        await Assert.That(engine.Messages.Any(_ => _.Code == "SC008")).IsTrue();
+        await Assert.That(engine.Messages.Any(_ => _.Code == "SC017")).IsTrue();
     }
 
     [Test]
-    public async Task CpmNoConfig_FailsWithSC001()
+    public async Task CpmNoConfig_FailsWithSC002()
     {
-        // Locks in that under CPM the SC001 message names <PackageVersion> and the props file
+        // Locks in that under CPM the SC002 message names <PackageVersion> and the props file
         // path, with the rendered example using <PackageVersion Include=...>.
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -374,15 +466,15 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC002");
         await Verify(engine);
     }
 
     [Test]
-    public async Task CpmMetadataOnBothRefAndVer_FailsWithSC012()
+    public async Task CpmMetadataOnBothRefAndVer_FailsWithSC020()
     {
         // Under CPM the PackageReference side is wrong regardless of what PackageVersion says.
-        // SC012 fires from the wrong-side check before the merger ever runs (so SC006 is unreachable here).
+        // SC020 fires from the wrong-side check before the merger ever runs (so SC019 is unreachable here).
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
         var task = new VerifySponsorshipTask
@@ -400,16 +492,16 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
-        // The right-side value didn't get to the merger so SC006 never fires.
-        await Assert.That(engine.Errors.Any(_ => _.Code == "SC006")).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC020");
+        // The right-side value didn't get to the merger so SC019 never fires.
+        await Assert.That(engine.Errors.Any(_ => _.Code == "SC019")).IsFalse();
     }
 
     [Test]
-    public async Task CpmMultipleMetadataMisplaced_FailsWithSingleSC012ListingAll()
+    public async Task CpmMultipleMetadataMisplaced_FailsWithSingleSC020ListingAll()
     {
         // The placement check aggregates: if a CPM consumer wrongly puts two attributes on
-        // PackageReference, both names appear in one SC012 message rather than spamming the log.
+        // PackageReference, both names appear in one SC020 message rather than spamming the log.
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
         var task = new VerifySponsorshipTask
@@ -428,7 +520,7 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC020");
         var message = engine.Errors[0].Message!;
         await Assert.That(message).Contains("SponsorshipLicenseIgnored");
         await Assert.That(message).Contains("GitHubSponsorAccount");
@@ -487,7 +579,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task CpmMetadataOnPackageReference_FailsWithSC012()
+    public async Task CpmMetadataOnPackageReference_FailsWithSC020()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -504,12 +596,12 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC020");
         await Verify(engine);
     }
 
     [Test]
-    public async Task NonCpmMetadataOnPackageVersion_FailsWithSC012()
+    public async Task NonCpmMetadataOnPackageVersion_FailsWithSC020()
     {
         // Mirror image: when CPM is off the metadata must live on PackageReference. Putting it on
         // PackageVersion (which usually doesn't even resolve outside CPM) is a placement violation.
@@ -526,7 +618,7 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC012");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC020");
         await Verify(engine);
     }
 
@@ -574,7 +666,7 @@ public class VerifySponsorshipTaskTests
             SponsorshipStartFromRef = "2026-04-15"
         };
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
         await Verify(engine);
     }
 
@@ -615,12 +707,12 @@ public class VerifySponsorshipTaskTests
             SponsorshipStartFromRef = "2026-04-01"
         };
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
         await Verify(engine);
     }
 
     [Test]
-    public async Task SponsorshipStartInFuture_FailsWithSC011()
+    public async Task SponsorshipStartInFuture_FailsWithSC015()
     {
         using var dir = new TempDirectory();
         var hashes = WriteHashes(dir, ("GitHubSponsors", "alice"));
@@ -637,12 +729,36 @@ public class VerifySponsorshipTaskTests
             SponsorshipStartFromRef = "2099-01-01"
         };
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC011");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC015");
         await Verify(engine);
     }
 
     [Test]
-    public async Task SponsorshipStartBadFormat_FailsWithSC010()
+    public async Task CpmSponsorshipStartInFuture_FailsWithSC016()
+    {
+        using var dir = new TempDirectory();
+        var hashes = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = hashes,
+            PackDatePath = "",
+            GitHubFromVer = "carol",
+            SponsorshipStartFromVer = "2099-01-01"
+        };
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC016");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task SponsorshipStartBadFormat_FailsWithSC013()
     {
         using var dir = new TempDirectory();
         var hashes = WriteHashes(dir, ("GitHubSponsors", "alice"));
@@ -659,7 +775,31 @@ public class VerifySponsorshipTaskTests
             SponsorshipStartFromRef = "yesterday"
         };
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC010");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC013");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmSponsorshipStartBadFormat_FailsWithSC014()
+    {
+        using var dir = new TempDirectory();
+        var hashes = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = hashes,
+            PackDatePath = "",
+            GitHubFromVer = "carol",
+            SponsorshipStartFromVer = "yesterday"
+        };
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC014");
         await Verify(engine);
     }
 
@@ -690,7 +830,7 @@ public class VerifySponsorshipTaskTests
         // The cutoff is the start of the next month, not last-day 23:59:59. Any instant
         // strictly before the next month — including 23:59:59.9999999 on the last day —
         // must still pass. With the previous whole-second cutoff, a build at .500 would
-        // have been incorrectly flagged SC005.
+        // have been incorrectly flagged SC009.
         using var dir = new TempDirectory();
         var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
         var decision = LicenseModeResolver.Resolve(
@@ -712,7 +852,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task LicenseAtFirstInstantOfNextMonth_FailsWithSC005()
+    public async Task LicenseAtFirstInstantOfNextMonth_FailsWithSC009()
     {
         // Mirror of LicenseInFinalSubSecondOfMonth_Passes: the very next tick — start of
         // the following month — is the first instant outside the licensed range.
@@ -733,7 +873,7 @@ public class VerifySponsorshipTaskTests
         var engine = new StubBuildEngine();
         var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), startOfNextMonth);
         await Assert.That(ok).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC005");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
     }
 
     static string WriteOverrides(TempDirectory dir, params (string code, Severity severity)[] entries)
@@ -774,7 +914,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task SC003_PromotedToError_BuildFails()
+    public async Task SC005_PromotedToError_BuildFails()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -786,17 +926,17 @@ public class VerifySponsorshipTaskTests
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             IgnoredFromRef = "true",
-            SeverityOverridesPath = WriteOverrides(dir, ("SC003", Severity.Error))
+            SeverityOverridesPath = WriteOverrides(dir, ("SC005", Severity.Error))
         };
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Warnings).IsEmpty();
         await Assert.That(engine.Errors).HasSingleItem();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC003");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC005");
     }
 
     [Test]
-    public async Task SC004_DowngradedToWarning_BuildPasses()
+    public async Task SC007_DowngradedToWarning_BuildPasses()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -807,17 +947,17 @@ public class VerifySponsorshipTaskTests
             ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             GitHubFromRef = "mallory",
-            SeverityOverridesPath = WriteOverrides(dir, ("SC004", Severity.Warning))
+            SeverityOverridesPath = WriteOverrides(dir, ("SC007", Severity.Warning))
         };
 
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Warnings).HasSingleItem();
-        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC004");
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC007");
     }
 
     [Test]
-    public async Task SC005_DowngradedToMessage_BuildPasses()
+    public async Task SC009_DowngradedToMessage_BuildPasses()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -828,13 +968,13 @@ public class VerifySponsorshipTaskTests
             ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             LicensedUntilFromRef = "2000-01",
-            SeverityOverridesPath = WriteOverrides(dir, ("SC005", Severity.Message))
+            SeverityOverridesPath = WriteOverrides(dir, ("SC009", Severity.Message))
         };
 
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Warnings).IsEmpty();
-        await Assert.That(engine.Messages.Any(_ => _.Code == "SC005")).IsTrue();
+        await Assert.That(engine.Messages.Any(_ => _.Code == "SC009")).IsTrue();
     }
 
     [Test]
@@ -864,7 +1004,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task SC003_MessageOverride_ReplacesDefaultText()
+    public async Task SC005_MessageOverride_ReplacesDefaultText()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -876,7 +1016,7 @@ public class VerifySponsorshipTaskTests
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             IgnoredFromRef = "true",
-            MessageOverridesPath = WriteMessageOverrides(dir, ("SC003", "You agreed not to free-ride."))
+            MessageOverridesPath = WriteMessageOverrides(dir, ("SC005", "You agreed not to free-ride."))
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -911,7 +1051,7 @@ public class VerifySponsorshipTaskTests
     [Test]
     public async Task MessageOverride_OnNonTrippedCode_HasNoEffect()
     {
-        // SC001 message override is set, but the consumer trips SC004 — the SC001 override is
+        // SC001 message override is set, but the consumer trips SC007 — the SC001 override is
         // never read.
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -926,18 +1066,18 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC004");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
         await Assert.That(engine.Errors[0].Message!).DoesNotContain("should not appear");
     }
 
     [Test]
     public async Task NonOverrideableCode_IgnoresEntryInSidecar()
     {
-        // Verifier is tolerant of sidecar entries for non-overrideable codes (SC002 here) —
+        // Verifier is tolerant of sidecar entries for non-overrideable codes (SC003 here) —
         // bundler-side validation is the source of truth, so any sneaky entry is silently dropped.
         using var dir = new TempDirectory();
         var path = Path.Combine(dir, "SeverityOverrides.txt");
-        await File.WriteAllLinesAsync(path, ["SC002=warning"]);
+        await File.WriteAllLinesAsync(path, ["SC003=warning"]);
         var engine = new StubBuildEngine();
         var task = new VerifySponsorshipTask
         {
@@ -951,7 +1091,7 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsFalse();
-        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC002");
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC003");
     }
 }
 

@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- CPM is enabled in Directory.Packages.props but the SponsorCheck metadata is wrongly placed
-         on PackageReference here instead of PackageVersion. The verifier must reject this with SC012. -->
+         on PackageReference here instead of PackageVersion. The verifier must reject this with SC020. -->
     <PackageReference Include="ThePackage" SponsorshipLicenseIgnored="true" />
   </ItemGroup>
 </Project>

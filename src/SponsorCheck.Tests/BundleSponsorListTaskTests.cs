@@ -49,7 +49,7 @@ public class BundleSponsorListTaskTests
     public async Task WritesAuthorAccountsFileWithEnabledPlatforms()
     {
         // The bundled AuthorAccounts file is what lets the consumer-side verifier construct
-        // platform-specific sponsor URLs in SC001/SC003 messages.
+        // platform-specific sponsor URLs in SC001/SC005 messages.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
         var override_ = WriteOverride(dir, "[]");
@@ -368,9 +368,9 @@ public class BundleSponsorListTaskTests
         await Assert.That(task.Execute()).IsTrue();
         var parsed = SeverityOverrideFile.Read(task.OutputSeverityOverridesPath);
         await Assert.That(parsed["SC001"]).IsEqualTo(Severity.Warning);
-        await Assert.That(parsed["SC003"]).IsEqualTo(Severity.Error);
-        await Assert.That(parsed["SC004"]).IsEqualTo(Severity.Message);
-        await Assert.That(parsed["SC005"]).IsEqualTo(Severity.Warning);
+        await Assert.That(parsed["SC005"]).IsEqualTo(Severity.Error);
+        await Assert.That(parsed["SC007"]).IsEqualTo(Severity.Message);
+        await Assert.That(parsed["SC009"]).IsEqualTo(Severity.Warning);
     }
 
     [Test]
@@ -457,7 +457,7 @@ public class BundleSponsorListTaskTests
         await Assert.That(task.Execute()).IsTrue();
         var parsed = MessageOverrideFile.Read(task.OutputMessageOverridesPath);
         await Assert.That(parsed["SC001"]).IsEqualTo("Please sponsor!");
-        await Assert.That(parsed["SC003"]).IsEqualTo("You agreed not to free-ride.");
+        await Assert.That(parsed["SC005"]).IsEqualTo("You agreed not to free-ride.");
     }
 
     [Test]
@@ -513,7 +513,7 @@ public class BundleSponsorListTaskTests
 
         await Assert.That(task.Execute()).IsTrue();
         var parsed = SeverityOverrideFile.Read(task.OutputSeverityOverridesPath);
-        await Assert.That(parsed["SC003"]).IsEqualTo(Severity.Error);
+        await Assert.That(parsed["SC005"]).IsEqualTo(Severity.Error);
     }
 
     [Test]

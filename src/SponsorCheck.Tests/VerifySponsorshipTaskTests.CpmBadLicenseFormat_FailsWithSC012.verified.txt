@@ -5,14 +5,12 @@
       Code: SC012,
       File: ,
       Message:
-Sponsor metadata in the wrong location. Package 'MyOssLib' uses Central Package Management, so SponsorCheck metadata must live on <PackageVersion> in Directory.Packages.props — not on <PackageReference>.
+Invalid license date format (CPM). Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.
 
-Move the following attribute(s) off the <PackageReference> for 'MyOssLib'
-  in: C:/Consumer/MyApp.csproj
-  - SponsorshipLicenseIgnored
-
-...and onto the <PackageVersion> for 'MyOssLib' in:
+Fix the SponsorshipLicensedUntil attribute in:
   C:/Consumer/Directory.Packages.props
+
+  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc012,
       Timestamp: DateTime_1,

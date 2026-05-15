@@ -97,7 +97,9 @@ public class AuthorPackTests
         using var stream = entry.Open();
         using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync();
-        string[] expected = ["SC001=warning", "SC003=error"];
+        // Each override metadatum applies to both the SC0xx code and its SC2xx CPM sibling, so the
+        // bundled file carries two entries per author-supplied override.
+        string[] expected = ["SC001=warning", "SC002=warning", "SC005=error", "SC006=error"];
         var lines = content.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
         await Assert.That(lines).IsEquivalentTo(expected);
     }

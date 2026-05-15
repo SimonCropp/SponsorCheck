@@ -1,0 +1,25 @@
+﻿{
+  Errors: [
+    {
+      Subcategory: SponsorCheck,
+      Code: SC008,
+      File: ,
+      Message:
+Invalid account (CPM). Package 'MyOssLib': no sponsor account declared on the <PackageVersion> in Directory.Packages.props matches the bundled list.
+
+Tried: GitHubSponsors=mallory
+
+If sponsorship started after this package was released, attest to the start date in:
+  C:/Consumer/Directory.Packages.props
+
+  <PackageVersion Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="mallory" SponsorshipStart="yyyy-MM-dd" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008,
+      Timestamp: DateTime_1,
+      HelpKeyword: ,
+      SenderName: VerifySponsorshipTask
+    }
+  ],
+  ContinueOnError: false,
+  ProjectFileOfTaskNode: 
+}

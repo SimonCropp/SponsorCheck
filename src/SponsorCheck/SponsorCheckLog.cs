@@ -69,6 +69,7 @@ public static class SponsorCheckLog
 
     public static string DocsUrl(string code)
     {
+        // SC0xx are consumer-side (verifier). SC1xx are author-side (bundler).
         var doc = code.StartsWith("SC1", StringComparison.Ordinal)
             ? "BundlerDiagnosticCodes.md"
             : "VerifierDiagnosticCodes.md";
@@ -78,17 +79,25 @@ public static class SponsorCheckLog
     public static string NameFor(string code) => code switch
     {
         "SC001" => "No license specified",
-        "SC002" => "Conflicting license modes",
-        "SC003" => "License ignored",
-        "SC004" => "Invalid account",
-        "SC005" => "License expired",
-        "SC006" => "Metadata set on both PackageReference and PackageVersion",
-        "SC007" => "Invalid license date format",
-        "SC008" => "Sponsorship attestation trusted",
-        "SC009" => "Bundled sponsor hash file missing",
-        "SC010" => "Invalid SponsorshipStart format",
-        "SC011" => "SponsorshipStart in the future",
-        "SC012" => "Sponsor metadata in the wrong location",
+        "SC003" => "Conflicting license modes",
+        "SC005" => "License ignored",
+        "SC007" => "Invalid account",
+        "SC009" => "License expired",
+        "SC019" => "Metadata set on both PackageReference and PackageVersion",
+        "SC011" => "Invalid license date format",
+        "SC017" => "Sponsorship attestation trusted",
+        "SC018" => "Bundled sponsor hash file missing",
+        "SC013" => "Invalid SponsorshipStart format",
+        "SC015" => "SponsorshipStart in the future",
+        "SC020" => "Sponsor metadata in the wrong location",
+        "SC002" => "No license specified (CPM)",
+        "SC004" => "Conflicting license modes (CPM)",
+        "SC006" => "License ignored (CPM)",
+        "SC008" => "Invalid account (CPM)",
+        "SC010" => "License expired (CPM)",
+        "SC012" => "Invalid license date format (CPM)",
+        "SC014" => "Invalid SponsorshipStart format (CPM)",
+        "SC016" => "SponsorshipStart in the future (CPM)",
         "SC100" => "Platform fetch failed",
         "SC101" => "No platform account configured",
         "SC102" => "Missing platform credential",

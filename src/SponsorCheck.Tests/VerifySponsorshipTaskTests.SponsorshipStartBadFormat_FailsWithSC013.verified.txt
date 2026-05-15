@@ -2,17 +2,17 @@
   Errors: [
     {
       Subcategory: SponsorCheck,
-      Code: SC010,
+      Code: SC013,
       File: ,
       Message:
-Invalid SponsorshipStart format. Package 'MyOssLib': SponsorshipStart='yesterday' is not in 'yyyy-MM-dd' format.
+Invalid SponsorshipStart format. Package 'MyOssLib': SponsorshipStart='yesterday' on the <PackageReference> is not in 'yyyy-MM-dd' format.
 
 Fix the SponsorshipStart attribute in:
   C:/Consumer/MyApp.csproj
 
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipStart="yyyy-MM-dd" />
 
-See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc010,
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc013,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask

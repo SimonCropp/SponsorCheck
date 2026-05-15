@@ -2,17 +2,17 @@
   Errors: [
     {
       Subcategory: SponsorCheck,
-      Code: SC011,
+      Code: SC015,
       File: ,
       Message:
-SponsorshipStart in the future. Package 'MyOssLib': SponsorshipStart='2099-01-01' is in the future.
+SponsorshipStart in the future. Package 'MyOssLib': SponsorshipStart='2099-01-01' on the <PackageReference> is in the future.
 
 Fix the SponsorshipStart attribute in:
   C:/Consumer/MyApp.csproj
 
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipStart="yyyy-MM-dd" />
 
-See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011,
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask

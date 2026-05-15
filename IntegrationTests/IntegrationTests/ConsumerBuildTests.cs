@@ -28,19 +28,19 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task InvalidSponsor_FailsWithSC004()
+    public async Task InvalidSponsor_FailsWithSC007()
     {
         var result = await BuildFixture("Consumer.InvalidSponsor");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("SC004");
+        await Assert.That(result.Combined).Contains("SC007");
     }
 
     [Test]
-    public async Task IgnoredLicense_BuildsWithSC003Warning()
+    public async Task IgnoredLicense_BuildsWithSC005Warning()
     {
         var result = await BuildFixture("Consumer.IgnoredLicense");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("SC003");
+        await Assert.That(result.Combined).Contains("SC005");
     }
 
     [Test]
@@ -60,19 +60,19 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task ExpiredLicense_FailsWithSC005()
+    public async Task ExpiredLicense_FailsWithSC009()
     {
         var result = await BuildFixture("Consumer.ExpiredLicense");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("SC005");
+        await Assert.That(result.Combined).Contains("SC009");
     }
 
     [Test]
-    public async Task MultipleModes_FailsWithSC002()
+    public async Task MultipleModes_FailsWithSC003()
     {
         var result = await BuildFixture("Consumer.MultipleModes");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("SC002");
+        await Assert.That(result.Combined).Contains("SC003");
     }
 
     [Test]
@@ -127,29 +127,32 @@ public class ConsumerBuildTests
         // with SponsorshipLicenseIgnored=true.
         var result = await BuildFixture("Consumer.Cpm");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("SC003");
+        // CPM consumers emit the SC2xx sibling of each diagnostic. SC006 is the CPM "license ignored" warning.
+        await Assert.That(result.Combined).Contains("SC006");
         await Assert.That(result.Combined).DoesNotContain("SC001");
         await Assert.That(result.Combined).DoesNotContain("SC002");
+        await Assert.That(result.Combined).DoesNotContain("SC003");
+        await Assert.That(result.Combined).DoesNotContain("SC004");
     }
 
     [Test]
-    public async Task CpmConsumer_LicenseMetadataOnPackageReference_FailsWithSC012()
+    public async Task CpmConsumer_LicenseMetadataOnPackageReference_FailsWithSC020()
     {
         // CPM is on but the consumer wrongly put SponsorCheck metadata on <PackageReference>
-        // instead of <PackageVersion>. The verifier must reject the placement with SC012 before
+        // instead of <PackageVersion>. The verifier must reject the placement with SC020 before
         // it ever reaches the license-mode check (which would otherwise fire SC001).
         var result = await BuildFixture("Consumer.CpmMisplaced");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("SC012");
+        await Assert.That(result.Combined).Contains("SC020");
         await Assert.That(result.Combined).DoesNotContain("SC001");
     }
 
     [Test]
-    public async Task FutureSponsorshipStart_FailsWithSC011()
+    public async Task FutureSponsorshipStart_FailsWithSC015()
     {
         var result = await BuildFixture("Consumer.FutureSponsorshipStart");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("SC011");
+        await Assert.That(result.Combined).Contains("SC015");
     }
 
     [Test]
@@ -180,23 +183,23 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task SeverityOverride_SC003PromotedToError_BuildFails()
+    public async Task SeverityOverride_SC005PromotedToError_BuildFails()
     {
         // Author bakes LicenseIgnoredSeverityOverride="error". A consumer setting
         // SponsorshipLicenseIgnored="true" — which would normally pass with a warning — must
         // now fail because the override hardens the rule.
         var result = await BuildFixture(
-            "Consumer.OverrideSC003Ignored",
+            "Consumer.OverrideSC005Ignored",
             authorFixture: "ThePackageOverridden");
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
-        await Assert.That(result.Combined).Contains("error SC003");
+        await Assert.That(result.Combined).Contains("error SC005");
     }
 
     [Test]
-    public async Task MessageOverride_SC003_CustomMessageReachesBuildLog()
+    public async Task MessageOverride_SC005_CustomMessageReachesBuildLog()
     {
         var result = await BuildFixture(
-            "Consumer.OverrideSC003Ignored",
+            "Consumer.OverrideSC005Ignored",
             authorFixture: "ThePackageOverridden");
         await Assert.That(result.Combined).Contains("You agreed not to free-ride this library.");
         await Assert.That(result.Combined).DoesNotContain("Build is allowed but is in breach");

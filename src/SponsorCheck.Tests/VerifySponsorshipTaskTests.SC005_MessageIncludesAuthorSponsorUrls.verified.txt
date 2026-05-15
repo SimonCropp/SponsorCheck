@@ -2,10 +2,10 @@
   Warnings: [
     {
       Subcategory: SponsorCheck,
-      Code: SC003,
+      Code: SC005,
       File: ,
       Message:
-License ignored. Package 'MyOssLib': SponsorshipLicenseIgnored="true". Build is allowed but is in breach of the package license.
+License ignored. Package 'MyOssLib': SponsorshipLicenseIgnored="true" on the <PackageReference>. Build is allowed but is in breach of the package license.
 
 Add ONE of the following attributes to the existing <PackageReference> for 'MyOssLib' in:
   C:/Consumer/MyApp.csproj
@@ -22,7 +22,7 @@ Option — Time-bounded license (replace yyyy-MM with the last covered month):
 Sponsor at:
   https://github.com/sponsors/acmecorp
 
-See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc003,
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005,
       Timestamp: DateTime_1,
       HelpKeyword: ,
       SenderName: VerifySponsorshipTask

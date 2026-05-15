@@ -34,7 +34,7 @@ public sealed class VerifySponsorshipTask :
         {
             var context = BuildConsumerContext();
 
-            // SC012 enforces that under CPM only <PackageVersion> carries SponsorCheck metadata,
+            // SC020 enforces that under CPM only <PackageVersion> carries SponsorCheck metadata,
             // and conversely under non-CPM only <PackageReference> does. Run this before merging
             // so a wrong-side value doesn't silently flow through the merge.
             if (!CheckPlacement(context))
@@ -60,7 +60,7 @@ public sealed class VerifySponsorshipTask :
         }
         catch (MaintenanceFeeException exception)
         {
-            SponsorCheckLog.Error(Log, "SC006", exception.Message);
+            SponsorCheckLog.Error(Log, "SC019", exception.Message);
             return false;
         }
         catch (Exception exception)
@@ -114,7 +114,7 @@ public sealed class VerifySponsorshipTask :
         }
 
         var body = ConsumerMetadataExamples.RenderPlacementError(context, misplaced);
-        SponsorCheckLog.Error(Log, "SC012", body);
+        SponsorCheckLog.Error(Log, "SC020", body);
         return false;
     }
 

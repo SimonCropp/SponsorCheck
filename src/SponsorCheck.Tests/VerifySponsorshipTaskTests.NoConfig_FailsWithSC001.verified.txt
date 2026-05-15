@@ -5,7 +5,7 @@
       Code: SC001,
       File: ,
       Message:
-No license specified. Package 'MyOssLib' is built with SponsorCheck and requires license metadata applied to the PackageReference.
+No license specified. Package 'MyOssLib' requires license metadata on the <PackageReference> for 'MyOssLib'.
 
 Add ONE of the following attributes to the existing <PackageReference> for 'MyOssLib' in:
   C:/Consumer/MyApp.csproj

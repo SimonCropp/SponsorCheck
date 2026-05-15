@@ -1,0 +1,23 @@
+﻿{
+  Errors: [
+    {
+      Subcategory: SponsorCheck,
+      Code: SC004,
+      File: ,
+      Message:
+Conflicting license modes (CPM). Package 'MyOssLib': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props (SponsorshipLicenseIgnored, Sponsor). Pick one.
+
+Edit the <PackageVersion> for 'MyOssLib' in:
+  C:/Consumer/Directory.Packages.props
+
+Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004,
+      Timestamp: DateTime_1,
+      HelpKeyword: ,
+      SenderName: VerifySponsorshipTask
+    }
+  ],
+  ContinueOnError: false,
+  ProjectFileOfTaskNode: 
+}

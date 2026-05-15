@@ -6,8 +6,8 @@
     <!-- License metadata lives on PackageVersion (CPM). Without the property-flatten in
          ConsumerVerifier.targets, MSBuild batches the verifier task across the PackageReference
          and PackageVersion ItemGroups: the PackageReference batch (no metadata) emits SC001, the
-         PackageVersion batch emits SC003. Build fails on the SC001. With the flatten, only the
-         merged metadata is read and SC003 fires once. -->
+         PackageVersion batch emits SC005. Build fails on the SC001. With the flatten, only the
+         merged metadata is read and SC005 fires once. -->
     <PackageVersion Include="ThePackage" Version="1.0.0"
                     SponsorshipLicenseIgnored="true" />
   </ItemGroup>

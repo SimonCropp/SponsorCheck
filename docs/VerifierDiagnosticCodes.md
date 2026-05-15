@@ -1,33 +1,35 @@
 # Verifier diagnostic codes
 
-Codes in the `SC0xx` range are emitted by the verifier in consumer projects.
+Codes in the `SC0xx` range are emitted by the verifier in consumer projects. Pairs are interleaved by mode: **odd-numbered codes** fire when the consumer is **not** using Central Package Management (metadata lives on `<PackageReference>` in the consumer csproj); **even-numbered codes** fire when the consumer **is** using CPM (metadata lives on `<PackageVersion>` in `Directory.Packages.props`). Sibling = `code ± 1` — SC001/SC002, SC003/SC004, SC011/SC012, and so on. The trailing SC017–SC020 codes are unpaired (audit message, install-integrity check, and the two placement errors).
+
+Each paired scenario shares one author-side override metadatum: `NoLicenseSpecifiedSeverityOverride` applies to both SC001 and SC002, and similarly for the rest. The split exists so each code can be documented, linked, and triaged independently — the underlying scenario is the same.
 
 Every emitted message is prefixed with the code's short **Name** (e.g. `No license specified. Package 'MyOssLib'...`) and suffixed with ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#<code>`. The Syntax/Example entries below show the inner format string only — the name and link wrap is added at log time.
 
-The default severities below can be overridden by the OSS author at pack time, and the message body can be replaced with custom text, via paired metadata on `<PackageReference Include="SponsorCheck">`: `<Code>SeverityOverride` and `<Code>MessageOverride` for each of `NoLicenseSpecified` (SC001), `LicenseIgnored` (SC003), `InvalidAccount` (SC004), `LicenseExpired` (SC005). Other codes are consumer-side configuration bugs that the consumer must fix and so cannot be tuned. Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name and the docs link wrap still apply).
+The default severities below can be overridden by the OSS author at pack time, and the message body can be replaced with custom text, via paired metadata on `<PackageReference Include="SponsorCheck">`: `<Stem>SeverityOverride` and `<Stem>MessageOverride` for each of `NoLicenseSpecified` (SC001/SC002), `LicenseIgnored` (SC005/SC006), `InvalidAccount` (SC007/SC008), `LicenseExpired` (SC009/SC010). Other codes are consumer-side configuration bugs that the consumer must fix and so cannot be tuned. Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name and the docs link wrap still apply).
 
 <!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
 ```mermaid
 flowchart TD
     Start([Consumer build]) --> Which{Which mode?}
 
-    Which -->|Ignored| SC003[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc003'>SC003 Warning<br/>In breach of license</a>]
+    Which -->|Ignored| SC005[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>SC005 Warning<br/>In breach of license</a>]
 
     Which -->|Supplied sponsor account| HasStart{Sponsorship<br/>Start set?}
     HasStart -->|Yes| Future{Start in<br/>future?}
-    Future -->|Yes| SC011[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011'>SC011 Error<br/>Date in future</a>]
+    Future -->|Yes| SC015[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015'>SC015 Error<br/>Date in future</a>]
     Future -->|No| AfterPack{Start &gt;<br/>PackDate?}
-    AfterPack -->|Yes| PassAttest([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008'>Build passes<br/>SC008 audit message</a>])
+    AfterPack -->|Yes| PassAttest([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017'>Build passes<br/>SC017 audit message</a>])
     AfterPack -->|No| Match
     HasStart -->|No| Match
     Match{Supplied account<br/>exists in hash list?}
     Match -->|Yes| PassSponsor([Build passes])
-    Match -->|No| SC004[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004'>SC004 Error<br/>Account is not licensed for usage</a>]
+    Match -->|No| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 Error<br/>Account is not licensed for usage</a>]
 
     Which -->|Licensed Until| ParseYM{Valid<br/>yyyy-MM?}
-    ParseYM -->|No| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 Error<br/>Invalid date format</a>]
+    ParseYM -->|No| SC011[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011'>SC011 Error<br/>Invalid date format</a>]
     ParseYM -->|Yes| Expired{End of month<br/>in the past?}
-    Expired -->|Yes| SC005[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>SC005 Error<br/>License expired</a>]
+    Expired -->|Yes| SC009[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>SC009 Error<br/>License expired</a>]
     Expired -->|No| PassLicense([Build passes])
 ```
 <!-- endInclude -->
@@ -36,45 +38,45 @@ flowchart TD
 
 - **Name:** No license specified
 - **Level**: Error
-- **Meaning:** No license mode set on the PackageReference / PackageVersion.
+- **Meaning:** No license mode set on the `<PackageReference>` for ThePackage. CPM equivalent: [SC002](#sc002).
 - **Syntax:**
 
   ```
-  Package '{PackageId}' is built with SponsorCheck and requires license metadata applied to the {Element}.
+  Package '{PackageId}' requires license metadata on the <PackageReference> for '{PackageId}'.
 
-  Add ONE of the following attributes to the existing <{Element}> for '{PackageId}' in:
-    {targetFile}
+  Add ONE of the following attributes to the existing <PackageReference> for '{PackageId}' in:
+    {csprojPath}
 
   Option — Mark as ignored (you accept that the build is in breach of the package license):
-    <{Element} Include="{PackageId}" Version="{version}" SponsorshipLicenseIgnored="true" />
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicenseIgnored="true" />
 
   Option — Sponsor on {PlatformName} ({sponsorUrl}):
-    <{Element} Include="{PackageId}" Version="{version}" {PlatformMetadataName}="<your-{platform}-account>" />
+    <PackageReference Include="{PackageId}" Version="{version}" {PlatformMetadataName}="<your-{platform}-account>" />
 
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
-    <{Element} Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
 
   Sponsor at:
     {sponsorUrls}
   ```
 
-  `{Element}` is `PackageReference` (no CPM) or `PackageVersion` (CPM). `{targetFile}` is the consumer csproj or `Directory.Packages.props`. One "Sponsor on..." option is rendered per platform the author has enabled.
+  One "Sponsor on..." option is rendered per platform the author has enabled.
 - **Example:**
 
   ```
-  Package 'MyOssLib' is built with SponsorCheck and requires license metadata applied to the PackageVersion.
+  Package 'MyOssLib' requires license metadata on the <PackageReference> for 'MyOssLib'.
 
-  Add ONE of the following attributes to the existing <PackageVersion> for 'MyOssLib' in:
-    /work/MyApp/Directory.Packages.props
+  Add ONE of the following attributes to the existing <PackageReference> for 'MyOssLib' in:
+    /work/MyApp/MyApp.csproj
 
   Option — Mark as ignored (you accept that the build is in breach of the package license):
-    <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
+    <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
 
   Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
-    <PackageVersion Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
+    <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
 
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
-    <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+    <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 
   Sponsor at:
     https://github.com/sponsors/acmecorp
@@ -83,23 +85,31 @@ flowchart TD
 
 ### SC002
 
+- **Name:** No license specified (CPM)
+- **Level**: Error
+- **Meaning:** CPM sibling of [SC001](#sc001): no license mode set on the `<PackageVersion>` for ThePackage in `Directory.Packages.props`. Body shape matches SC001 with `<PackageVersion>` in place of `<PackageReference>` and the props file path in place of the csproj path.
+- **Example opener:** `Package 'MyOssLib' requires license metadata on the <PackageVersion> for 'MyOssLib' in Directory.Packages.props.`
+
+
+### SC003
+
 - **Name:** Conflicting license modes
 - **Level**: Error
-- **Meaning:** Multiple license modes set (mutually exclusive).
+- **Meaning:** Multiple license modes set on the same `<PackageReference>` (mutually exclusive). CPM equivalent: [SC004](#sc004).
 - **Syntax:**
 
   ```
-  Package '{PackageId}': mutually exclusive license modes are set ({modes}). Pick one.
+  Package '{PackageId}': mutually exclusive license modes are set on the <PackageReference> ({modes}). Pick one.
 
-  Edit the <{Element}> for '{PackageId}' in:
-    {targetFile}
+  Edit the <PackageReference> for '{PackageId}' in:
+    {csprojPath}
 
   Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil.
   ```
 - **Example:**
 
   ```
-  Package 'MyOssLib': mutually exclusive license modes are set (SponsorshipLicenseIgnored, Sponsor). Pick one.
+  Package 'MyOssLib': mutually exclusive license modes are set on the <PackageReference> (SponsorshipLicenseIgnored, Sponsor). Pick one.
 
   Edit the <PackageReference> for 'MyOssLib' in:
     /work/MyApp/MyApp.csproj
@@ -108,44 +118,60 @@ flowchart TD
   ```
 
 
-### SC003
+### SC004
+
+- **Name:** Conflicting license modes (CPM)
+- **Level**: Error
+- **Meaning:** CPM sibling of [SC003](#sc003): mutually exclusive license modes set on the same `<PackageVersion>` in `Directory.Packages.props`.
+- **Example opener:** `Package 'MyOssLib': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props (SponsorshipLicenseIgnored, Sponsor). Pick one.`
+
+
+### SC005
 
 - **Name:** License ignored
 - **Level**: Warning
-- **Meaning:** `SponsorshipLicenseIgnored="true"` — consumer has opted out.
+- **Meaning:** `SponsorshipLicenseIgnored="true"` on the `<PackageReference>` — consumer has opted out. CPM equivalent: [SC006](#sc006).
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipLicenseIgnored="true". Build is allowed but is in breach of the package license.
+  Package '{PackageId}': SponsorshipLicenseIgnored="true" on the <PackageReference>. Build is allowed but is in breach of the package license.
 
   <SC001-style remediation block — see SC001 for the full format>
   ```
-- **Example:** Same body shape as SC001 (rendered with the consumer's actual `<PackageReference>` / `<PackageVersion>`, target file, and one "Sponsor on..." line per enabled platform), prefixed with `Package 'MyOssLib': SponsorshipLicenseIgnored="true". Build is allowed but is in breach of the package license.`
+- **Example:** Same body shape as SC001, prefixed with `Package 'MyOssLib': SponsorshipLicenseIgnored="true" on the <PackageReference>. Build is allowed but is in breach of the package license.`
 
 
-### SC004
+### SC006
+
+- **Name:** License ignored (CPM)
+- **Level**: Warning
+- **Meaning:** CPM sibling of [SC005](#sc005): `SponsorshipLicenseIgnored="true"` on the `<PackageVersion>` in `Directory.Packages.props`.
+- **Example opener:** `Package 'MyOssLib': SponsorshipLicenseIgnored="true" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license.`
+
+
+### SC007
 
 - **Name:** Invalid account
 - **Level**: Error
-- **Meaning:** None of the supplied platform accounts match the bundled hash list.
+- **Meaning:** None of the sponsor accounts declared on the `<PackageReference>` match the bundled hash list. CPM equivalent: [SC008](#sc008).
 - **Syntax:**
 
   ```
-  Package '{PackageId}': no supplied sponsor account matches the bundled list.
+  Package '{PackageId}': no sponsor account declared on the <PackageReference> matches the bundled list.
 
   Tried: {attempts}
 
   If sponsorship started after this package was released, attest to the start date in:
-    {targetFile}
+    {csprojPath}
 
-    <{Element} Include="{PackageId}" Version="{version}" {PlatformMetadataName}="{accountValue}" SponsorshipStart="yyyy-MM-dd" />
+    <PackageReference Include="{PackageId}" Version="{version}" {PlatformMetadataName}="{accountValue}" SponsorshipStart="yyyy-MM-dd" />
   ```
 
   The "If sponsorship started after this package was released..." block is omitted when `SponsorshipStart` is already set on the consumer side.
 - **Example:**
 
   ```
-  Package 'MyOssLib': no supplied sponsor account matches the bundled list.
+  Package 'MyOssLib': no sponsor account declared on the <PackageReference> matches the bundled list.
 
   Tried: GitHubSponsors=mallory
 
@@ -156,25 +182,33 @@ flowchart TD
   ```
 
 
-### SC005
+### SC008
+
+- **Name:** Invalid account (CPM)
+- **Level**: Error
+- **Meaning:** CPM sibling of [SC007](#sc007): no sponsor account declared on the `<PackageVersion>` in `Directory.Packages.props` matches the bundled hash list.
+- **Example opener:** `Package 'MyOssLib': no sponsor account declared on the <PackageVersion> in Directory.Packages.props matches the bundled list.`
+
+
+### SC009
 
 - **Name:** License expired
 - **Level**: Error
-- **Meaning:** `SponsorshipLicensedUntil` has expired.
+- **Meaning:** `SponsorshipLicensedUntil` on the `<PackageReference>` has expired. CPM equivalent: [SC010](#sc010).
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipLicensedUntil='{value}' has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).
+  Package '{PackageId}': SponsorshipLicensedUntil='{value}' on the <PackageReference> has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).
 
   Renew the license in:
-    {targetFile}
+    {csprojPath}
 
-    <{Element} Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
   ```
 - **Example:**
 
   ```
-  Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' has expired (end of month 2000-01-31 UTC).
+  Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' on the <PackageReference> has expired (end of month 2000-01-31 UTC).
 
   Renew the license in:
     /work/MyApp/MyApp.csproj
@@ -183,34 +217,42 @@ flowchart TD
   ```
 
 
-### SC006
+### SC010
+
+- **Name:** License expired (CPM)
+- **Level**: Error
+- **Meaning:** CPM sibling of [SC009](#sc009): `SponsorshipLicensedUntil` on the `<PackageVersion>` in `Directory.Packages.props` has expired.
+- **Example opener:** `Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' on the <PackageVersion> in Directory.Packages.props has expired (end of month 2000-01-31 UTC).`
+
+
+### SC019
 
 - **Name:** Metadata set on both PackageReference and PackageVersion
 - **Level**: Error
-- **Meaning:** Defensive backstop: metadata set on both PackageReference and PackageVersion. SC012 normally fires first now (because the wrong-side metadatum is itself a placement violation) — SC006 only surfaces if SC012's check is bypassed.
+- **Meaning:** Defensive backstop: metadata set on both PackageReference and PackageVersion. SC020 normally fires first now (because the wrong-side metadatum is itself a placement violation) — SC019 only surfaces if SC020's check is bypassed.
 - **Syntax:** `{metadataName}: set on both PackageReference ('{r}') and PackageVersion ('{v}'). Set on only one.`
 - **Example:** `GitHubSponsorAccount: set on both PackageReference ('alice') and PackageVersion ('bob'). Set on only one.`
 
 
-### SC007
+### SC011
 
 - **Name:** Invalid license date format
 - **Level**: Error
-- **Meaning:** `SponsorshipLicensedUntil` not in `yyyy-MM` format.
+- **Meaning:** `SponsorshipLicensedUntil` on a `<PackageReference>` is not in `yyyy-MM` format. The CPM equivalent is [SC012](#sc012).
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipLicensedUntil='{value}' is not in 'yyyy-MM' format.
+  Package '{PackageId}': SponsorshipLicensedUntil='{value}' on the <PackageReference> is not in 'yyyy-MM' format.
 
   Fix the SponsorshipLicensedUntil attribute in:
-    {targetFile}
+    {csprojPath}
 
-    <{Element} Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
   ```
 - **Example:**
 
   ```
-  Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' is not in 'yyyy-MM' format.
+  Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' on the <PackageReference> is not in 'yyyy-MM' format.
 
   Fix the SponsorshipLicensedUntil attribute in:
     /work/MyApp/MyApp.csproj
@@ -219,7 +261,34 @@ flowchart TD
   ```
 
 
-### SC008
+### SC012
+
+- **Name:** Invalid license date format (CPM)
+- **Level**: Error
+- **Meaning:** `SponsorshipLicensedUntil` on a `<PackageVersion>` (Central Package Management) is not in `yyyy-MM` format. The non-CPM equivalent is [SC011](#sc011).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipLicensedUntil='{value}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.
+
+  Fix the SponsorshipLicensedUntil attribute in:
+    {directoryPackagesPropsPath}
+
+    <PackageVersion Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
+  ```
+- **Example:**
+
+  ```
+  Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.
+
+  Fix the SponsorshipLicensedUntil attribute in:
+    /work/MyApp/Directory.Packages.props
+
+    <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+  ```
+
+
+### SC017
 
 - **Name:** Sponsorship attestation trusted
 - **Level**: Info
@@ -228,7 +297,7 @@ flowchart TD
 - **Example:** `Package 'MyOssLib': trusting unverified sponsor declaration (GitHubSponsors=carol): SponsorshipStart=2026-04-30 is later than package release 2026-04-15, so the bundled sponsor list cannot contain this account.`
 
 
-### SC009
+### SC018
 
 - **Name:** Bundled sponsor hash file missing
 - **Level**: Error
@@ -237,25 +306,25 @@ flowchart TD
 - **Example:** `Package 'MyOssLib': bundled sponsor hash file not found at 'C:\Users\me\.nuget\packages\myosslib\1.0.0\build\SponsorCheck.SponsorHashes.txt'.`
 
 
-### SC010
+### SC013
 
 - **Name:** Invalid SponsorshipStart format
 - **Level**: Error
-- **Meaning:** `SponsorshipStart` not in `yyyy-MM-dd` format.
+- **Meaning:** `SponsorshipStart` on the `<PackageReference>` is not in `yyyy-MM-dd` format. CPM equivalent: [SC014](#sc014).
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipStart='{value}' is not in 'yyyy-MM-dd' format.
+  Package '{PackageId}': SponsorshipStart='{value}' on the <PackageReference> is not in 'yyyy-MM-dd' format.
 
   Fix the SponsorshipStart attribute in:
-    {targetFile}
+    {csprojPath}
 
-    <{Element} Include="{PackageId}" Version="{version}" SponsorshipStart="yyyy-MM-dd" />
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipStart="yyyy-MM-dd" />
   ```
 - **Example:**
 
   ```
-  Package 'MyOssLib': SponsorshipStart='yesterday' is not in 'yyyy-MM-dd' format.
+  Package 'MyOssLib': SponsorshipStart='yesterday' on the <PackageReference> is not in 'yyyy-MM-dd' format.
 
   Fix the SponsorshipStart attribute in:
     /work/MyApp/MyApp.csproj
@@ -264,25 +333,33 @@ flowchart TD
   ```
 
 
-### SC011
+### SC014
+
+- **Name:** Invalid SponsorshipStart format (CPM)
+- **Level**: Error
+- **Meaning:** CPM sibling of [SC013](#sc013): `SponsorshipStart` on the `<PackageVersion>` in `Directory.Packages.props` is not in `yyyy-MM-dd` format.
+- **Example opener:** `Package 'MyOssLib': SponsorshipStart='yesterday' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM-dd' format.`
+
+
+### SC015
 
 - **Name:** SponsorshipStart in the future
 - **Level**: Error
-- **Meaning:** `SponsorshipStart` is in the future.
+- **Meaning:** `SponsorshipStart` on the `<PackageReference>` is in the future. CPM equivalent: [SC016](#sc016).
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipStart='{value}' is in the future.
+  Package '{PackageId}': SponsorshipStart='{value}' on the <PackageReference> is in the future.
 
   Fix the SponsorshipStart attribute in:
-    {targetFile}
+    {csprojPath}
 
-    <{Element} Include="{PackageId}" Version="{version}" SponsorshipStart="yyyy-MM-dd" />
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipStart="yyyy-MM-dd" />
   ```
 - **Example:**
 
   ```
-  Package 'MyOssLib': SponsorshipStart='2099-01-01' is in the future.
+  Package 'MyOssLib': SponsorshipStart='2099-01-01' on the <PackageReference> is in the future.
 
   Fix the SponsorshipStart attribute in:
     /work/MyApp/MyApp.csproj
@@ -291,7 +368,15 @@ flowchart TD
   ```
 
 
-### SC012
+### SC016
+
+- **Name:** SponsorshipStart in the future (CPM)
+- **Level**: Error
+- **Meaning:** CPM sibling of [SC015](#sc015): `SponsorshipStart` on the `<PackageVersion>` in `Directory.Packages.props` is in the future.
+- **Example opener:** `Package 'MyOssLib': SponsorshipStart='2099-01-01' on the <PackageVersion> in Directory.Packages.props is in the future.`
+
+
+### SC020
 
 - **Name:** Sponsor metadata in the wrong location
 - **Level**: Error

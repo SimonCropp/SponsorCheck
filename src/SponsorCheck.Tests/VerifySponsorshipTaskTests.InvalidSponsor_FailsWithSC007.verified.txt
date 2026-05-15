@@ -5,12 +5,14 @@
       Code: SC007,
       File: ,
       Message:
-Invalid license date format. Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' is not in 'yyyy-MM' format.
+Invalid account. Package 'MyOssLib': no sponsor account declared on the <PackageReference> matches the bundled list.
 
-Fix the SponsorshipLicensedUntil attribute in:
+Tried: GitHubSponsors=mallory
+
+If sponsorship started after this package was released, attest to the start date in:
   C:/Consumer/MyApp.csproj
 
-  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+  <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="mallory" SponsorshipStart="yyyy-MM-dd" />
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007,
       Timestamp: DateTime_1,

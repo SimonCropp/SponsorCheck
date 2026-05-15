@@ -16,24 +16,33 @@ public static class DecisionApplier
         switch (decision)
         {
             case LicenseDecision.MissingConfig m:
+            {
+                var (code, opener) = context.IsCpm
+                    ? ("SC002", $"Package '{m.PackageId}' requires license metadata on the <PackageVersion> for '{m.PackageId}' in Directory.Packages.props.")
+                    : ("SC001", $"Package '{m.PackageId}' requires license metadata on the <PackageReference> for '{m.PackageId}'.");
                 return SponsorCheckLog.Emit(
                     log,
-                    "SC001",
+                    code,
                     Severity.Error,
                     severityOverrides,
                     messageOverrides,
                     $"""
-                     Package '{m.PackageId}' is built with SponsorCheck and requires license metadata applied to the {context.ElementName}.
+                     {opener}
 
                      {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)}
                      """);
+            }
 
             case LicenseDecision.ConflictingModes c:
+            {
+                var (code, opener) = context.IsCpm
+                    ? ("SC004", $"Package '{c.PackageId}': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props ({string.Join(", ", c.Modes)}). Pick one.")
+                    : ("SC003", $"Package '{c.PackageId}': mutually exclusive license modes are set on the <PackageReference> ({string.Join(", ", c.Modes)}). Pick one.");
                 SponsorCheckLog.Error(
                     log,
-                    "SC002",
+                    code,
                     $"""
-                     Package '{c.PackageId}': mutually exclusive license modes are set ({string.Join(", ", c.Modes)}). Pick one.
+                     {opener}
 
                      Edit the <{context.ElementName}> for '{c.PackageId}' in:
                        {context.TargetFilePath}
@@ -41,19 +50,25 @@ public static class DecisionApplier
                      Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil.
                      """);
                 return false;
+            }
 
             case LicenseDecision.Ignored i:
+            {
+                var (code, opener) = context.IsCpm
+                    ? ("SC006", $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license.")
+                    : ("SC005", $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageReference>. Build is allowed but is in breach of the package license.");
                 return SponsorCheckLog.Emit(
                     log,
-                    "SC003",
+                    code,
                     Severity.Warning,
                     severityOverrides,
                     messageOverrides,
                     $"""
-                     Package '{i.PackageId}': SponsorshipLicenseIgnored="true". Build is allowed but is in breach of the package license.
+                     {opener}
 
                      {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)}
                      """);
+            }
 
             case LicenseDecision.Sponsor s:
                 return ApplySponsor(s, sponsorHashListPath, packDatePath, context, severityOverrides, messageOverrides, log, utcNow);
@@ -82,11 +97,14 @@ public static class DecisionApplier
         {
             if (!TryParseDate(sponsor.SponsorshipStartRaw!, out var startDate))
             {
+                var (startFormatCode, startFormatOpener) = context.IsCpm
+                    ? ("SC014", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM-dd' format.")
+                    : ("SC013", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageReference> is not in 'yyyy-MM-dd' format.");
                 SponsorCheckLog.Error(
                     log,
-                    "SC010",
+                    startFormatCode,
                     $"""
-                     Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is not in 'yyyy-MM-dd' format.
+                     {startFormatOpener}
 
                      {ConsumerMetadataExamples.RenderSponsorshipStartFix(context)}
                      """);
@@ -95,11 +113,14 @@ public static class DecisionApplier
 
             if (startDate > utcNow.Date)
             {
+                var (futureStartCode, futureStartOpener) = context.IsCpm
+                    ? ("SC016", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageVersion> in Directory.Packages.props is in the future.")
+                    : ("SC015", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageReference> is in the future.");
                 SponsorCheckLog.Error(
                     log,
-                    "SC011",
+                    futureStartCode,
                     $"""
-                     Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' is in the future.
+                     {futureStartOpener}
 
                      {ConsumerMetadataExamples.RenderSponsorshipStartFix(context)}
                      """);
@@ -114,7 +135,7 @@ public static class DecisionApplier
                 // Informational, not a warning: SponsorshipStart is a documented escape hatch and the consumer's build log is the only audit trail.
                 SponsorCheckLog.HighMessage(
                     log,
-                    "SC008",
+                    "SC017",
                     $"Package '{sponsor.PackageId}': trusting unverified sponsor declaration ({attempts}): SponsorshipStart={startDate:yyyy-MM-dd} is later than package release {pd:yyyy-MM-dd}, so the bundled sponsor list cannot contain this account.");
                 return true;
             }
@@ -125,7 +146,7 @@ public static class DecisionApplier
         {
             SponsorCheckLog.Error(
                 log,
-                "SC009",
+                "SC018",
                 $"Package '{sponsor.PackageId}': bundled sponsor hash file not found at '{sponsorHashListPath}'.");
             return false;
         }
@@ -143,9 +164,12 @@ public static class DecisionApplier
             checkAttempts.Add($"{pair.Key}={pair.Value}");
         }
 
+        var (code, opener) = context.IsCpm
+            ? ("SC008", $"Package '{sponsor.PackageId}': no sponsor account declared on the <PackageVersion> in Directory.Packages.props matches the bundled list.")
+            : ("SC007", $"Package '{sponsor.PackageId}': no sponsor account declared on the <PackageReference> matches the bundled list.");
         var lines = new List<string>
         {
-            $"Package '{sponsor.PackageId}': no supplied sponsor account matches the bundled list.",
+            opener,
             "",
             $"Tried: {string.Join(", ", checkAttempts)}"
         };
@@ -157,7 +181,7 @@ public static class DecisionApplier
 
         return SponsorCheckLog.Emit(
             log,
-            "SC004",
+            code,
             Severity.Error,
             severityOverrides,
             messageOverrides,
@@ -174,11 +198,14 @@ public static class DecisionApplier
     {
         if (!TryParseYearMonth(l.LicensedUntilRaw, out var year, out var month))
         {
+            var (code, opener) = context.IsCpm
+                ? ("SC012", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.")
+                : ("SC011", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> is not in 'yyyy-MM' format.");
             SponsorCheckLog.Error(
                 log,
-                "SC007",
+                code,
                 $"""
-                 Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' is not in 'yyyy-MM' format.
+                 {opener}
 
                  {ConsumerMetadataExamples.RenderLicensedUntilFormatFix(context)}
                  """);
@@ -192,14 +219,17 @@ public static class DecisionApplier
         if (utcNow >= startOfNextMonth)
         {
             var lastDay = startOfNextMonth.AddDays(-1);
+            var (code, opener) = context.IsCpm
+                ? ("SC010", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props has expired (end of month {lastDay:yyyy-MM-dd} UTC).")
+                : ("SC009", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> has expired (end of month {lastDay:yyyy-MM-dd} UTC).");
             return SponsorCheckLog.Emit(
                 log,
-                "SC005",
+                code,
                 Severity.Error,
                 severityOverrides,
                 messageOverrides,
                 $"""
-                 Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' has expired (end of month {lastDay:yyyy-MM-dd} UTC).
+                 {opener}
 
                  {ConsumerMetadataExamples.RenderLicensedUntilRenewal(context)}
                  """);

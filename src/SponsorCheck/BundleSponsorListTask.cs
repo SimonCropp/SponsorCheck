@@ -159,6 +159,7 @@ public sealed class BundleSponsorListTask :
             }
 
             overrides[entry.Code] = severity;
+            overrides[entry.CpmCode] = severity;
         }
 
         return true;
@@ -174,6 +175,7 @@ public sealed class BundleSponsorListTask :
             if (!string.IsNullOrWhiteSpace(raw))
             {
                 overrides[entry.Code] = raw!;
+                overrides[entry.CpmCode] = raw!;
             }
         }
 

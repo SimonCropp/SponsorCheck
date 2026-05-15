@@ -162,7 +162,7 @@ Each project still bundles independently at its own pack time (one platform fetc
 
 ### Tuning verifier severity and message text
 
-By default the verifier emits `SC001` (no license mode set), `SC004` (sponsor account not in list), and `SC005` (license expired) as **errors** that fail the consumer build, and `SC003` (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement, or a custom-worded message — can override the severity and/or the message text at pack time:
+By default the verifier emits `SC001` (no license mode set), `SC007` (sponsor account not in list), and `SC009` (license expired) as **errors** that fail the consumer build, and `SC005` (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement, or a custom-worded message — can override the severity and/or the message text at pack time:
 
 ```xml
 <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
@@ -173,14 +173,14 @@ By default the verifier emits `SC001` (no license mode set), `SC004` (sponsor ac
                   LicenseIgnoredSeverityOverride="error" />
 ```
 
-Available metadata (severity + message pair per overrideable code):
+Available metadata (severity + message pair per overrideable code). Each override applies to **both** members of the odd/even SC0xx pair — one knob covers the non-CPM and CPM siblings:
 
-| Code | Severity metadata | Message metadata | Default severity |
+| Codes | Severity metadata | Message metadata | Default severity |
 | --- | --- | --- | --- |
-| [SC001](docs/VerifierDiagnosticCodes.md#sc001) | `NoLicenseSpecifiedSeverityOverride` | `NoLicenseSpecifiedMessageOverride` | error |
-| [SC003](docs/VerifierDiagnosticCodes.md#sc003) | `LicenseIgnoredSeverityOverride` | `LicenseIgnoredMessageOverride` | warning |
-| [SC004](docs/VerifierDiagnosticCodes.md#sc004) | `InvalidAccountSeverityOverride` | `InvalidAccountMessageOverride` | error |
-| [SC005](docs/VerifierDiagnosticCodes.md#sc005) | `LicenseExpiredSeverityOverride` | `LicenseExpiredMessageOverride` | error |
+| [SC001](docs/VerifierDiagnosticCodes.md#sc001) / [SC002](docs/VerifierDiagnosticCodes.md#sc002) | `NoLicenseSpecifiedSeverityOverride` | `NoLicenseSpecifiedMessageOverride` | error |
+| [SC005](docs/VerifierDiagnosticCodes.md#sc005) / [SC006](docs/VerifierDiagnosticCodes.md#sc006) | `LicenseIgnoredSeverityOverride` | `LicenseIgnoredMessageOverride` | warning |
+| [SC007](docs/VerifierDiagnosticCodes.md#sc007) / [SC008](docs/VerifierDiagnosticCodes.md#sc008) | `InvalidAccountSeverityOverride` | `InvalidAccountMessageOverride` | error |
+| [SC009](docs/VerifierDiagnosticCodes.md#sc009) / [SC010](docs/VerifierDiagnosticCodes.md#sc010) | `LicenseExpiredSeverityOverride` | `LicenseExpiredMessageOverride` | error |
 
 Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name still prefixes and the docs link still suffixes). Other codes are consumer-side configuration bugs and aren't overrideable. Unrecognized severity values fail the pack with [SC104](docs/BundlerDiagnosticCodes.md#sc104). The chosen severities and messages are baked into the produced nupkg — consumers can't tamper with them.
 
@@ -207,9 +207,9 @@ Pick exactly one mode per package. Placement depends on whether the consumer use
 - **Without CPM**, set the metadata on the consumer csproj's `<PackageReference>`.
 - **With CPM** (`ManagePackageVersionsCentrally=true`), set it on the matching `<PackageVersion>` in `Directory.Packages.props`.
 
-Setting the metadata on the wrong element raises [wrong location - SC012](docs/VerifierDiagnosticCodes.md#sc012) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC006](docs/VerifierDiagnosticCodes.md#sc006) is a defensive backstop for the rare case where SC012's check is bypassed.
+Setting the metadata on the wrong element raises [wrong location - SC020](docs/VerifierDiagnosticCodes.md#sc020) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC019](docs/VerifierDiagnosticCodes.md#sc019) is a defensive backstop for the rare case where SC020's check is bypassed.
 
-Verifier diagnostics that prompt changes to consumer-side metadata (SC001, SC003, SC004, SC005, SC007, SC010, SC011) render a copy-pasteable XML snippet pre-filled with the package id, version, and the path of the file to edit.
+Verifier diagnostics that prompt changes to consumer-side metadata (SC001, SC005, SC007, SC009, SC011, SC013, SC015) render a copy-pasteable XML snippet pre-filled with the package id, version, and the path of the file to edit.
 
 
 ### Sponsor account match (any platform)
@@ -247,9 +247,9 @@ The bundled hash list is frozen at the package's pack date. When sponsorship beg
   SponsorshipStart="2026-04-30" />
 ```
 
-If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits a [trusted SponsorshipStart - SC008](docs/VerifierDiagnosticCodes.md#sc008) high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date (including equal — the boundary is strict), the hash check is enforced as normal: claiming to be a sponsor at release time means the account should already be in the bundled list.
+If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits a [trusted SponsorshipStart - SC017](docs/VerifierDiagnosticCodes.md#sc017) high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date (including equal — the boundary is strict), the hash check is enforced as normal: claiming to be a sponsor at release time means the account should already be in the bundled list.
 
-`SponsorshipStart` in the future fails with [future SponsorshipStart - SC011](docs/VerifierDiagnosticCodes.md#sc011). Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
+`SponsorshipStart` in the future fails with [future SponsorshipStart - SC015](docs/VerifierDiagnosticCodes.md#sc015). Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
 
 
 #### Sponsorship lifecycle: what happens after sponsorship lapses
@@ -257,8 +257,8 @@ If `SponsorshipStart` is **after** the package's pack date, the verifier trusts 
 The bundled hash list is frozen per package version. The verifier has no notion of "currently sponsoring" — it only checks whether the consumer's account hash was in the list at pack time, or whether the consumer has attested to a `SponsorshipStart` after that pack date. That has three practical consequences when sponsorship lapses:
 
 1. **Already-bundled versions stay buildable forever.** If the consumer's account hash was bundled into v1.1 at the time it was packed, the verifier keeps accepting it for v1.1 builds even after the consumer stops sponsoring. Versions paid for stay paid for; the OSS author has no recall mechanism short of yanking the package.
-2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with [no sponsor match - SC004](docs/VerifierDiagnosticCodes.md#sc004). To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipLicenseIgnored="true"` (which emits the [license ignored - SC003](docs/VerifierDiagnosticCodes.md#sc003) warning on every build).
-3. **`SponsorshipStart` is honor-system but self-expiring.** The verifier cannot tell whether the consumer is currently sponsoring; it only checks that the attested start date is `> PackDate` and `<= today`. While the consumer stays on the package version where the attestation was added, leaving it in after a lapse keeps the build passing — same shape as bullet 1 (paid versions stay paid). On upgrade, the newer `PackDate` overtakes the attested start, the bypass stops firing, and bullet 2 takes over (lapsed sponsors fail with [no sponsor match - SC004](docs/VerifierDiagnosticCodes.md#sc004)). So `SponsorshipStart` doesn't need to be cleaned up proactively — leaving it in place is harmless. The only audit signal while the bypass is active is the [trusted SponsorshipStart - SC008](docs/VerifierDiagnosticCodes.md#sc008) message in the consumer's own build log; the OSS author never sees it.
+2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with [no sponsor match - SC007](docs/VerifierDiagnosticCodes.md#sc007). To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipLicenseIgnored="true"` (which emits the [license ignored - SC005](docs/VerifierDiagnosticCodes.md#sc005) warning on every build).
+3. **`SponsorshipStart` is honor-system but self-expiring.** The verifier cannot tell whether the consumer is currently sponsoring; it only checks that the attested start date is `> PackDate` and `<= today`. While the consumer stays on the package version where the attestation was added, leaving it in after a lapse keeps the build passing — same shape as bullet 1 (paid versions stay paid). On upgrade, the newer `PackDate` overtakes the attested start, the bypass stops firing, and bullet 2 takes over (lapsed sponsors fail with [no sponsor match - SC007](docs/VerifierDiagnosticCodes.md#sc007)). So `SponsorshipStart` doesn't need to be cleaned up proactively — leaving it in place is harmless. The only audit signal while the bypass is active is the [trusted SponsorshipStart - SC017](docs/VerifierDiagnosticCodes.md#sc017) message in the consumer's own build log; the OSS author never sees it.
 
 
 ### Time-bounded private license
@@ -304,7 +304,7 @@ For private B2B licensing arrangements outside of the platforms. Format is `yyyy
 <sup><a href='/IntegrationTests/Fixtures/Consumer.IgnoredLicense/Consumer.IgnoredLicense.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.IgnoredLicense.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Build passes but emits the [license ignored - SC003](docs/VerifierDiagnosticCodes.md#sc003) warning on every build, flagging that the build is in breach of the package's license.
+Build passes but emits the [license ignored - SC005](docs/VerifierDiagnosticCodes.md#sc005) warning on every build, flagging that the build is in breach of the package's license.
 
 
 ## Diagnostic codes
@@ -339,23 +339,23 @@ The verifier runs in consumer projects on every build and:
 flowchart TD
     Start([Consumer build]) --> Which{Which mode?}
 
-    Which -->|Ignored| SC003[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc003'>SC003 Warning<br/>In breach of license</a>]
+    Which -->|Ignored| SC005[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>SC005 Warning<br/>In breach of license</a>]
 
     Which -->|Supplied sponsor account| HasStart{Sponsorship<br/>Start set?}
     HasStart -->|Yes| Future{Start in<br/>future?}
-    Future -->|Yes| SC011[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011'>SC011 Error<br/>Date in future</a>]
+    Future -->|Yes| SC015[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015'>SC015 Error<br/>Date in future</a>]
     Future -->|No| AfterPack{Start &gt;<br/>PackDate?}
-    AfterPack -->|Yes| PassAttest([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008'>Build passes<br/>SC008 audit message</a>])
+    AfterPack -->|Yes| PassAttest([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017'>Build passes<br/>SC017 audit message</a>])
     AfterPack -->|No| Match
     HasStart -->|No| Match
     Match{Supplied account<br/>exists in hash list?}
     Match -->|Yes| PassSponsor([Build passes])
-    Match -->|No| SC004[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004'>SC004 Error<br/>Account is not licensed for usage</a>]
+    Match -->|No| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 Error<br/>Account is not licensed for usage</a>]
 
     Which -->|Licensed Until| ParseYM{Valid<br/>yyyy-MM?}
-    ParseYM -->|No| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 Error<br/>Invalid date format</a>]
+    ParseYM -->|No| SC011[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011'>SC011 Error<br/>Invalid date format</a>]
     ParseYM -->|Yes| Expired{End of month<br/>in the past?}
-    Expired -->|Yes| SC005[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>SC005 Error<br/>License expired</a>]
+    Expired -->|Yes| SC009[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>SC009 Error<br/>License expired</a>]
     Expired -->|No| PassLicense([Build passes])
 ```
 <!-- endInclude -->

@@ -2,7 +2,7 @@ public class SponsorCheckLogTests
 {
     static readonly string[] AllKnownCodes =
     [
-        "SC001", "SC002", "SC003", "SC004", "SC005", "SC006", "SC007", "SC008", "SC009", "SC010", "SC011", "SC012",
+        "SC001", "SC003", "SC005", "SC007", "SC009", "SC019", "SC011", "SC017", "SC018", "SC013", "SC015", "SC020",
         "SC100", "SC101", "SC102", "SC103", "SC104"
     ];
 

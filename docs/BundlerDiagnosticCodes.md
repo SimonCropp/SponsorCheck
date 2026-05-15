@@ -45,6 +45,6 @@ Every emitted message is prefixed with the code's short **Name** (e.g. `Platform
 
 - **Name:** Invalid severity override
 - **Level**: Error
-- **Meaning:** A `<Code>SeverityOverride` metadatum on the SponsorCheck reference has an unrecognized value. Overrideable metadata: `NoLicenseSpecifiedSeverityOverride` (SC001), `LicenseIgnoredSeverityOverride` (SC003), `InvalidAccountSeverityOverride` (SC004), `LicenseExpiredSeverityOverride` (SC005). Allowed values are `error`, `warning`, `message`.
+- **Meaning:** A `<Code>SeverityOverride` metadatum on the SponsorCheck reference has an unrecognized value. Overrideable metadata: `NoLicenseSpecifiedSeverityOverride` (SC001), `LicenseIgnoredSeverityOverride` (SC005), `InvalidAccountSeverityOverride` (SC007), `LicenseExpiredSeverityOverride` (SC009). Allowed values are `error`, `warning`, `message`.
 - **Syntax:** `{metadataName}='{value}' is not a recognized severity. Allowed: error, warning, message.`
 - **Example:** `NoLicenseSpecifiedSeverityOverride='critical' is not a recognized severity. Allowed: error, warning, message.`

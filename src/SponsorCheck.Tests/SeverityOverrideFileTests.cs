@@ -51,9 +51,9 @@ public class SeverityOverrideFileTests
         string[] expected =
         [
             "SC001|NoLicenseSpecifiedSeverityOverride|NoLicenseSpecifiedMessageOverride",
-            "SC003|LicenseIgnoredSeverityOverride|LicenseIgnoredMessageOverride",
-            "SC004|InvalidAccountSeverityOverride|InvalidAccountMessageOverride",
-            "SC005|LicenseExpiredSeverityOverride|LicenseExpiredMessageOverride"
+            "SC005|LicenseIgnoredSeverityOverride|LicenseIgnoredMessageOverride",
+            "SC007|InvalidAccountSeverityOverride|InvalidAccountMessageOverride",
+            "SC009|LicenseExpiredSeverityOverride|LicenseExpiredMessageOverride"
         ];
         await Assert.That(pairs).IsEquivalentTo(expected);
     }
@@ -66,14 +66,14 @@ public class SeverityOverrideFileTests
         var input = new Dictionary<string, Severity>(StringComparer.Ordinal)
         {
             ["SC001"] = Severity.Warning,
-            ["SC003"] = Severity.Error,
-            ["SC004"] = Severity.Message
+            ["SC005"] = Severity.Error,
+            ["SC007"] = Severity.Message
         };
         SeverityOverrideFile.Write(path, input);
         var output = SeverityOverrideFile.Read(path);
         await Assert.That(output["SC001"]).IsEqualTo(Severity.Warning);
-        await Assert.That(output["SC003"]).IsEqualTo(Severity.Error);
-        await Assert.That(output["SC004"]).IsEqualTo(Severity.Message);
+        await Assert.That(output["SC005"]).IsEqualTo(Severity.Error);
+        await Assert.That(output["SC007"]).IsEqualTo(Severity.Message);
     }
 
     [Test]
@@ -92,11 +92,11 @@ public class SeverityOverrideFileTests
         var path = Path.Combine(dir, "overrides.txt");
         SeverityOverrideFile.Write(path, new Dictionary<string, Severity>(StringComparer.Ordinal)
         {
-            ["SC004"] = Severity.Warning,
+            ["SC007"] = Severity.Warning,
             ["SC001"] = Severity.Error,
-            ["SC003"] = Severity.Message
+            ["SC005"] = Severity.Message
         });
-        string[] expected = ["SC001=error", "SC003=message", "SC004=warning"];
+        string[] expected = ["SC001=error", "SC005=message", "SC007=warning"];
         var lines = await File.ReadAllLinesAsync(path);
         await Assert.That(lines).IsEquivalentTo(expected);
     }
