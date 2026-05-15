@@ -10,6 +10,8 @@ OSS authors install `SponsorCheck` as a development dependency in their library 
 
 When consumers reference the produced package, the bundled verifier runs on every build and requires one of three license-mode: a sponsor account that matches the bundled list, a time-bounded private license, or an explicit "ignored" with a build warning.
 
+Jump to [OSS author setup](#oss-author-setup) or [consumer license modes](#license-modes).
+
 
 ## Why this approach
 
