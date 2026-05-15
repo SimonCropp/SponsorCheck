@@ -12,4 +12,6 @@ public static class ConsumerMetadataNames
 
     public static string For(string platformId) =>
         map.TryGetValue(platformId, out var name) ? name : $"{platformId}SponsorAccount";
+
+    public static IReadOnlyList<string> All { get; } = [.. map.Values];
 }

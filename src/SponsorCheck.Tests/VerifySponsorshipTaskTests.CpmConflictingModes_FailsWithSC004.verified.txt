@@ -10,7 +10,7 @@ Conflicting license modes (CPM). Package 'MyOssLib': mutually exclusive license 
 Edit the <PackageVersion> for 'MyOssLib' in:
   C:/Consumer/Directory.Packages.props
 
-Keep exactly one of: a <Platform>SponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
+Keep exactly one of: GitHubSponsorAccount, OpenCollectiveSponsorAccount, PolarSponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc004,
       Timestamp: DateTime_1,

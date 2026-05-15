@@ -104,7 +104,7 @@ flowchart TD
   Edit the <PackageReference> for '{PackageId}' in:
     {csprojPath}
 
-  Keep exactly one of: a <Platform>SponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
+  Keep exactly one of: GitHubSponsorAccount, OpenCollectiveSponsorAccount, PolarSponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
   ```
 - **Example:**
 
@@ -114,7 +114,7 @@ flowchart TD
   Edit the <PackageReference> for 'MyOssLib' in:
     /work/MyApp/MyApp.csproj
 
-  Keep exactly one of: a <Platform>SponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
+  Keep exactly one of: GitHubSponsorAccount, OpenCollectiveSponsorAccount, PolarSponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
   ```
 
 
