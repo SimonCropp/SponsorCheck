@@ -47,20 +47,20 @@ flowchart TD
   Add ONE of the following attributes to the existing <PackageReference> for '{PackageId}' in:
     {csprojPath}
 
-  Option — Mark as ignored (you accept that the build is in breach of the package license):
-    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicenseIgnored="true" />
-
   Option — Sponsor on {PlatformName} ({sponsorUrl}):
     <PackageReference Include="{PackageId}" Version="{version}" {PlatformMetadataName}="<your-{platform}-account>" />
 
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
 
+  Option — Mark as ignored (you accept that the build is in breach of the package license):
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicenseIgnored="true" />
+
   Sponsor at:
     {sponsorUrls}
   ```
 
-  One "Sponsor on..." option is rendered per platform the author has enabled.
+  One "Sponsor on..." option is rendered per platform the author has enabled. SponsorshipLicenseIgnored is listed last so the breach-of-license escape hatch sits after the legitimate options.
 - **Example:**
 
   ```
@@ -69,14 +69,14 @@ flowchart TD
   Add ONE of the following attributes to the existing <PackageReference> for 'MyOssLib' in:
     /work/MyApp/MyApp.csproj
 
-  Option — Mark as ignored (you accept that the build is in breach of the package license):
-    <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
-
   Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
     <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
 
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
     <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+
+  Option — Mark as ignored (you accept that the build is in breach of the package license):
+    <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
 
   Sponsor at:
     https://github.com/sponsors/acmecorp
@@ -104,17 +104,17 @@ flowchart TD
   Edit the <PackageReference> for '{PackageId}' in:
     {csprojPath}
 
-  Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil.
+  Keep exactly one of: a <Platform>SponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
   ```
 - **Example:**
 
   ```
-  Package 'MyOssLib': mutually exclusive license modes are set on the <PackageReference> (SponsorshipLicenseIgnored, Sponsor). Pick one.
+  Package 'MyOssLib': mutually exclusive license modes are set on the <PackageReference> (Sponsor, SponsorshipLicenseIgnored). Pick one.
 
   Edit the <PackageReference> for 'MyOssLib' in:
     /work/MyApp/MyApp.csproj
 
-  Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil.
+  Keep exactly one of: a <Platform>SponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
   ```
 
 
@@ -123,7 +123,7 @@ flowchart TD
 - **Name:** Conflicting license modes (CPM)
 - **Level**: Error
 - **Meaning:** CPM sibling of [SC003](#sc003): mutually exclusive license modes set on the same `<PackageVersion>` in `Directory.Packages.props`.
-- **Example opener:** `Package 'MyOssLib': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props (SponsorshipLicenseIgnored, Sponsor). Pick one.`
+- **Example opener:** `Package 'MyOssLib': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props (Sponsor, SponsorshipLicenseIgnored). Pick one.`
 
 
 ### SC005

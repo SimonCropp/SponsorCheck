@@ -5,12 +5,12 @@
       Code: SC003,
       File: ,
       Message:
-Conflicting license modes. Package 'MyOssLib': mutually exclusive license modes are set on the <PackageReference> (SponsorshipLicenseIgnored, Sponsor). Pick one.
+Conflicting license modes. Package 'MyOssLib': mutually exclusive license modes are set on the <PackageReference> (Sponsor, SponsorshipLicenseIgnored). Pick one.
 
 Edit the <PackageReference> for 'MyOssLib' in:
   C:/Consumer/MyApp.csproj
 
-Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil.
+Keep exactly one of: a <Platform>SponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc003,
       Timestamp: DateTime_1,

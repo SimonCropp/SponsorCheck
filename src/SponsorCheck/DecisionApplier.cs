@@ -47,7 +47,7 @@ public static class DecisionApplier
                      Edit the <{context.ElementName}> for '{c.PackageId}' in:
                        {context.TargetFilePath}
 
-                     Keep exactly one of: SponsorshipLicenseIgnored, a <Platform>SponsorAccount, or SponsorshipLicensedUntil.
+                     Keep exactly one of: a <Platform>SponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
                      """);
                 return false;
             }

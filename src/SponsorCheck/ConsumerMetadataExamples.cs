@@ -13,13 +13,12 @@ public static class ConsumerMetadataExamples
         ConsumerContext context,
         IReadOnlyList<AuthorAccount> authorAccounts)
     {
+        // Sponsor options come first, then time-bounded license, then the ignore escape hatch
+        // last — same ordering convention as the SC003/SC004 conflict message.
         var lines = new List<string>
         {
             $"Add ONE of the following attributes to the existing <{context.ElementName}> for '{context.PackageId}' in:",
-            $"  {context.TargetFilePath}",
-            "",
-            "Option — Mark as ignored (you accept that the build is in breach of the package license):",
-            $"  {RenderItem(context, ("SponsorshipLicenseIgnored", "true"))}"
+            $"  {context.TargetFilePath}"
         };
 
         foreach (var account in authorAccounts)
@@ -32,6 +31,10 @@ public static class ConsumerMetadataExamples
         lines.Add("");
         lines.Add("Option — Time-bounded license (replace yyyy-MM with the last covered month):");
         lines.Add($"  {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}");
+
+        lines.Add("");
+        lines.Add("Option — Mark as ignored (you accept that the build is in breach of the package license):");
+        lines.Add($"  {RenderItem(context, ("SponsorshipLicenseIgnored", "true"))}");
 
         if (authorAccounts.Count > 0)
         {

@@ -10,14 +10,14 @@ No license specified. Package 'MyOssLib' requires license metadata on the <Packa
 Add ONE of the following attributes to the existing <PackageReference> for 'MyOssLib' in:
   C:/Consumer/MyApp.csproj
 
-Option — Mark as ignored (you accept that the build is in breach of the package license):
-  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
-
 Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
   <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
 
 Option — Time-bounded license (replace yyyy-MM with the last covered month):
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+
+Option — Mark as ignored (you accept that the build is in breach of the package license):
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
 
 Sponsor at:
   https://github.com/sponsors/acmecorp

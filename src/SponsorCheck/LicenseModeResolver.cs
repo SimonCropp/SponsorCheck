@@ -7,13 +7,9 @@ public static class LicenseModeResolver
         string? sponsorshipStart,
         string packageId)
     {
+        // Order matters: messages list modes in this order so SponsorshipLicenseIgnored (the
+        // breach-of-license escape hatch) appears last, after the legitimate options.
         var modes = new List<string>();
-        var isIgnored = string.Equals(ignored, "true", StringComparison.OrdinalIgnoreCase);
-        if (isIgnored)
-        {
-            modes.Add("SponsorshipLicenseIgnored");
-        }
-
         var nonEmptySponsors = sponsorAccountsByPlatform
             .Where(_ => !string.IsNullOrWhiteSpace(_.Value))
             .ToDictionary(_ => _.Key, _ => _.Value!.Trim(), StringComparer.OrdinalIgnoreCase);
@@ -26,6 +22,12 @@ public static class LicenseModeResolver
         if (hasLicense)
         {
             modes.Add("SponsorshipLicensedUntil");
+        }
+
+        var isIgnored = string.Equals(ignored, "true", StringComparison.OrdinalIgnoreCase);
+        if (isIgnored)
+        {
+            modes.Add("SponsorshipLicenseIgnored");
         }
 
         if (modes.Count == 0)
