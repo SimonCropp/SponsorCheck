@@ -41,7 +41,7 @@ Require a license key per consumer, issued by the maintainer, validated at build
 The maintainer keeps using GitHub Sponsors / Open Collective / Polar and ships a bundled hash list with each pack. Consumers see an `SC0xx` entry in their build log if they aren't on the list, with documented escape hatches.
 
 - **Maintainer cost:** the platform still does all the work — signup, billing, rotation, the public list of supporters. No license keys ever issued. Onboarding a sponsor is "they click Sponsor"; offboarding is "they stop sponsoring" — the next pack picks up the change automatically.
-- **Consumer cost:** two metadata attributes on a `PackageReference` for sponsor-match mode, or a single `yyyy-MM` string for time-bounded private licenses. No keys, no servers, no rotation.
+- **Consumer cost:** one metadata attribute on the `PackageReference` (or `PackageVersion` under Central Package Management) for sponsor-match mode, or a single `yyyy-MM` string for time-bounded private licenses. No keys, no servers, no rotation.
 - **Outcome:** every build either passes silently, emits a "please sponsor" error/warning the developer sees in their actual workflow, or — under `SponsorshipLicenseIgnored="true"` — passes with a visible breach-of-license warning that follows the build through CI and code review.
 
 The trade for staying frictionless is honesty: hashing is not a security boundary, `SponsorshipLicenseIgnored="true"` is the documented bypass, and anyone determined to free-ride can do so trivially. The intent is to convert the inattentive majority — teams that would happily sponsor if they knew the maintainer wanted them to — not to extract revenue from adversaries.
