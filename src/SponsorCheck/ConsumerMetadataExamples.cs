@@ -119,10 +119,18 @@ public static class ConsumerMetadataExamples
             context.IsCpm
                 ? $"Package '{context.PackageId}' uses Central Package Management, so SponsorCheck metadata must live on <PackageVersion> in Directory.Packages.props — not on <PackageReference>."
                 : $"Package '{context.PackageId}' is not using Central Package Management, so SponsorCheck metadata must live on <PackageReference> in the consumer csproj — not on <PackageVersion>.",
-            "",
-            $"Move the following attribute(s) off the <{wrongElement}> for '{context.PackageId}'"
+            ""
         };
 
+        // Single misplaced attribute: collapse the move-off / move-onto pair into one sentence.
+        if (misplacedMetadataNames.Count == 1)
+        {
+            lines.Add($"Move the {misplacedMetadataNames[0]} attribute from the <{wrongElement}> for '{context.PackageId}' to the <{rightElement}> for '{context.PackageId}' in:");
+            lines.Add($"  {rightFile}");
+            return string.Join(newline, lines);
+        }
+
+        lines.Add($"Move the following attributes off the <{wrongElement}> for '{context.PackageId}'");
         if (!string.IsNullOrWhiteSpace(wrongFile))
         {
             lines.Add($"  in: {wrongFile}");

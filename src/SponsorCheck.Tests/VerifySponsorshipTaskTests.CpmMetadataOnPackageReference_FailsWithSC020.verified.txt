@@ -7,11 +7,7 @@
       Message:
 Sponsor metadata in the wrong location. Package 'MyOssLib' uses Central Package Management, so SponsorCheck metadata must live on <PackageVersion> in Directory.Packages.props — not on <PackageReference>.
 
-Move the following attribute(s) off the <PackageReference> for 'MyOssLib'
-  in: C:/Consumer/MyApp.csproj
-  - SponsorshipLicenseIgnored
-
-...and onto the <PackageVersion> for 'MyOssLib' in:
+Move the SponsorshipLicenseIgnored attribute from the <PackageReference> for 'MyOssLib' to the <PackageVersion> for 'MyOssLib' in:
   C:/Consumer/Directory.Packages.props
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc020,

@@ -417,12 +417,12 @@ flowchart TD
 - **Name:** Sponsor metadata in the wrong location
 - **Level**: Error
 - **Meaning:** Under Central Package Management (`ManagePackageVersionsCentrally=true`) the SponsorCheck metadata must live on `<PackageVersion>` in `Directory.Packages.props`, not on `<PackageReference>` in the consumer's csproj. The mirror also holds: without CPM the metadata must live on `<PackageReference>`, not on `<PackageVersion>`.
-- **Syntax:**
+- **Syntax (multiple misplaced attributes):**
 
   ```
   Package '{PackageId}' uses Central Package Management, so SponsorCheck metadata must live on <PackageVersion> in Directory.Packages.props — not on <PackageReference>.
 
-  Move the following attribute(s) off the <PackageReference> for '{PackageId}'
+  Move the following attributes off the <PackageReference> for '{PackageId}'
     in: {csprojPath}
     - {misplacedMetadata1}
     - {misplacedMetadata2}
@@ -432,15 +432,19 @@ flowchart TD
   ```
 
   The first sentence inverts (`is not using` / `<PackageReference>` ↔ `<PackageVersion>` ↔ `Directory.Packages.props` ↔ csproj) when CPM is off.
-- **Example:**
+- **Syntax (single misplaced attribute):**
+
+  ```
+  Package '{PackageId}' uses Central Package Management, so SponsorCheck metadata must live on <PackageVersion> in Directory.Packages.props — not on <PackageReference>.
+
+  Move the {misplacedMetadata} attribute from the <PackageReference> for '{PackageId}' to the <PackageVersion> for '{PackageId}' in:
+    {directoryPackagesPropsPath}
+  ```
+- **Example (single attribute):**
 
   ```
   Package 'MyOssLib' uses Central Package Management, so SponsorCheck metadata must live on <PackageVersion> in Directory.Packages.props — not on <PackageReference>.
 
-  Move the following attribute(s) off the <PackageReference> for 'MyOssLib'
-    in: /work/MyApp/MyApp.csproj
-    - SponsorshipLicenseIgnored
-
-  ...and onto the <PackageVersion> for 'MyOssLib' in:
+  Move the SponsorshipLicenseIgnored attribute from the <PackageReference> for 'MyOssLib' to the <PackageVersion> for 'MyOssLib' in:
     /work/MyApp/Directory.Packages.props
   ```

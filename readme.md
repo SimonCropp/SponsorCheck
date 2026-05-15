@@ -45,6 +45,126 @@ The maintainer keeps using GitHub Sponsors / Open Collective / Polar and ships a
 The trade for staying frictionless is honesty: hashing is not a security boundary, `SponsorshipLicenseIgnored="true"` is the documented bypass, and anyone determined to free-ride can do so trivially. The intent is to convert the inattentive majority — teams that would happily sponsor if they knew the maintainer wanted them to — not to extract revenue from adversaries.
 
 
+## Consumers
+
+
+### License modes
+
+License modes are per package and mutually exclusive.
+
+Pick exactly one mode per package. Placement depends on whether the consumer uses Central Package Management:
+
+- **Without CPM**, set the metadata on the consumer csproj's `<PackageReference>`.
+- **With CPM** (`ManagePackageVersionsCentrally=true`), set it on the matching `<PackageVersion>` in `Directory.Packages.props`.
+
+Setting the metadata on the wrong element raises [wrong location - SC020](docs/VerifierDiagnosticCodes.md#sc020) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC019](docs/VerifierDiagnosticCodes.md#sc019) is a defensive backstop for the rare case where SC020's check is bypassed.
+
+Verifier diagnostics that prompt changes to consumer-side metadata (SC001, SC005, SC007, SC009, SC011, SC013, SC015) render a copy-pasteable XML snippet pre-filled with the package id, version, and the path of the file to edit.
+
+
+#### Sponsor account match (any platform)
+
+<!-- snippet: Consumer.ValidGitHubSponsor.csproj -->
+<a id='snippet-Consumer.ValidGitHubSponsor.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      GitHubSponsorAccount="alice" />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.ValidGitHubSponsor/Consumer.ValidGitHubSponsor.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.ValidGitHubSponsor.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+When the package author accepts multiple platforms and the consumer sponsors on one of them, supply the matching `<Platform>SponsorAccount` metadata. Multiple values are allowed — the verifier passes if **any** account matches the bundled list.
+
+
+##### Recent sponsors: SponsorshipStart
+
+The bundled hash list is frozen at the package's pack date. When sponsorship begins *after* the package was released, the account cannot possibly be in the list. Add `SponsorshipStart="yyyy-MM-dd"` to attest to the start date:
+
+```xml
+<PackageReference
+  Include="ThePackage"
+  Version="1.0"
+  GitHubSponsorAccount="carol"
+  SponsorshipStart="2026-04-30" />
+```
+
+If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits a [trusted SponsorshipStart - SC017](docs/VerifierDiagnosticCodes.md#sc017) high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date (including equal — the boundary is strict), the hash check is enforced as normal: claiming to be a sponsor at release time means the account should already be in the bundled list.
+
+`SponsorshipStart` in the future fails with [future SponsorshipStart - SC015](docs/VerifierDiagnosticCodes.md#sc015). Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
+
+
+#### Sponsorship lifecycle: what happens after sponsorship lapses
+
+The bundled hash list is frozen per package version. The verifier has no notion of "currently sponsoring" — it only checks whether the consumer's account hash was in the list at pack time, or whether the consumer has attested to a `SponsorshipStart` after that pack date. That has three practical consequences when sponsorship lapses:
+
+1. **Already-bundled versions stay buildable forever.** If the consumer's account hash was bundled into v1.1 at the time it was packed, the verifier keeps accepting it for v1.1 builds even after the consumer stops sponsoring. Versions paid for stay paid for; the OSS author has no recall mechanism short of yanking the package.
+2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with [no sponsor match - SC007](docs/VerifierDiagnosticCodes.md#sc007). To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipLicenseIgnored="true"` (which emits the [license ignored - SC005](docs/VerifierDiagnosticCodes.md#sc005) warning on every build).
+3. **`SponsorshipStart` is honor-system but self-expiring.** The verifier cannot tell whether the consumer is currently sponsoring; it only checks that the attested start date is `> PackDate` and `<= today`. While the consumer stays on the package version where the attestation was added, leaving it in after a lapse keeps the build passing — same shape as bullet 1 (paid versions stay paid). On upgrade, the newer `PackDate` overtakes the attested start, the bypass stops firing, and bullet 2 takes over (lapsed sponsors fail with [no sponsor match - SC007](docs/VerifierDiagnosticCodes.md#sc007)). So `SponsorshipStart` doesn't need to be cleaned up proactively — leaving it in place is harmless. The only audit signal while the bypass is active is the [trusted SponsorshipStart - SC017](docs/VerifierDiagnosticCodes.md#sc017) message in the consumer's own build log; the OSS author never sees it.
+
+
+### Time-bounded private license
+
+<!-- snippet: Consumer.FutureLicense.csproj -->
+<a id='snippet-Consumer.FutureLicense.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      SponsorshipLicensedUntil="2099-12" />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.FutureLicense/Consumer.FutureLicense.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.FutureLicense.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+For private B2B licensing arrangements outside of the platforms. Format is `yyyy-MM`; the license is valid through the end of that month UTC.
+
+
+### Explicit ignore
+
+An escape hatch to disable licensing.
+
+<!-- snippet: Consumer.IgnoredLicense.csproj -->
+<a id='snippet-Consumer.IgnoredLicense.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      SponsorshipLicenseIgnored="true" />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.IgnoredLicense/Consumer.IgnoredLicense.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.IgnoredLicense.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Build passes but emits the [license ignored - SC005](docs/VerifierDiagnosticCodes.md#sc005) warning on every build, flagging that the build is in breach of the package's license.
+
+
+### Diagnostic codes
+
+[Verifier diagnostic codes (SC0xx)](docs/VerifierDiagnosticCodes.md) — emitted in consumer projects.
+
+
+
 ## OSS author setup
 
 Add `SponsorCheck` as a `PrivateAssets="all"` development dependency on the library project, with one `<Platform>Account` metadatum per supported platform.
@@ -160,6 +280,7 @@ Each csproj declares the bare reference:
 
 Each project still bundles independently at its own pack time (one platform fetch per packable project).
 
+
 ### Tuning verifier severity and message text
 
 By default the verifier emits `SC001` (no license mode set), `SC007` (sponsor account not in list), and `SC009` (license expired) as **errors** that fail the consumer build, and `SC005` (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement, or a custom-worded message — can override the severity and/or the message text at pack time:
@@ -200,117 +321,9 @@ For testing or offline builds, set `<SponsorListOverride>` to a JSON file path:
 <!-- endSnippet -->
 
 
-## Consumer license modes (per package, mutually exclusive)
+### Diagnostic codes
 
-Pick exactly one mode per package. Placement depends on whether the consumer uses Central Package Management:
-
-- **Without CPM**, set the metadata on the consumer csproj's `<PackageReference>`.
-- **With CPM** (`ManagePackageVersionsCentrally=true`), set it on the matching `<PackageVersion>` in `Directory.Packages.props`.
-
-Setting the metadata on the wrong element raises [wrong location - SC020](docs/VerifierDiagnosticCodes.md#sc020) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC019](docs/VerifierDiagnosticCodes.md#sc019) is a defensive backstop for the rare case where SC020's check is bypassed.
-
-Verifier diagnostics that prompt changes to consumer-side metadata (SC001, SC005, SC007, SC009, SC011, SC013, SC015) render a copy-pasteable XML snippet pre-filled with the package id, version, and the path of the file to edit.
-
-
-### Sponsor account match (any platform)
-
-<!-- snippet: Consumer.ValidGitHubSponsor.csproj -->
-<a id='snippet-Consumer.ValidGitHubSponsor.csproj'></a>
-```csproj
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference
-      Include="ThePackage"
-      Version="1.0.0"
-      GitHubSponsorAccount="alice" />
-  </ItemGroup>
-</Project>
-```
-<sup><a href='/IntegrationTests/Fixtures/Consumer.ValidGitHubSponsor/Consumer.ValidGitHubSponsor.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.ValidGitHubSponsor.csproj' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-When the package author accepts multiple platforms and the consumer sponsors on one of them, supply the matching `<Platform>SponsorAccount` metadata. Multiple values are allowed — the verifier passes if **any** account matches the bundled list.
-
-
-#### Recent sponsors: SponsorshipStart
-
-The bundled hash list is frozen at the package's pack date. When sponsorship begins *after* the package was released, the account cannot possibly be in the list. Add `SponsorshipStart="yyyy-MM-dd"` to attest to the start date:
-
-```xml
-<PackageReference
-  Include="ThePackage"
-  Version="1.0"
-  GitHubSponsorAccount="carol"
-  SponsorshipStart="2026-04-30" />
-```
-
-If `SponsorshipStart` is **after** the package's pack date, the verifier trusts the declaration and emits a [trusted SponsorshipStart - SC017](docs/VerifierDiagnosticCodes.md#sc017) high-priority build message naming the unverified sponsor (audit trail in the consumer's own build log). If `SponsorshipStart` is on or before the pack date (including equal — the boundary is strict), the hash check is enforced as normal: claiming to be a sponsor at release time means the account should already be in the bundled list.
-
-`SponsorshipStart` in the future fails with [future SponsorshipStart - SC015](docs/VerifierDiagnosticCodes.md#sc015). Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
-
-
-#### Sponsorship lifecycle: what happens after sponsorship lapses
-
-The bundled hash list is frozen per package version. The verifier has no notion of "currently sponsoring" — it only checks whether the consumer's account hash was in the list at pack time, or whether the consumer has attested to a `SponsorshipStart` after that pack date. That has three practical consequences when sponsorship lapses:
-
-1. **Already-bundled versions stay buildable forever.** If the consumer's account hash was bundled into v1.1 at the time it was packed, the verifier keeps accepting it for v1.1 builds even after the consumer stops sponsoring. Versions paid for stay paid for; the OSS author has no recall mechanism short of yanking the package.
-2. **Newer versions packed after a lapse reject the consumer.** If the author ships v1.2 after the consumer stops, the consumer's hash is not in v1.2's bundled list and a hash-only check fails with [no sponsor match - SC007](docs/VerifierDiagnosticCodes.md#sc007). To upgrade, the consumer must either re-sponsor (so the hash lands in the next pack), switch the package to `SponsorshipLicensedUntil="yyyy-MM"`, or opt out with `SponsorshipLicenseIgnored="true"` (which emits the [license ignored - SC005](docs/VerifierDiagnosticCodes.md#sc005) warning on every build).
-3. **`SponsorshipStart` is honor-system but self-expiring.** The verifier cannot tell whether the consumer is currently sponsoring; it only checks that the attested start date is `> PackDate` and `<= today`. While the consumer stays on the package version where the attestation was added, leaving it in after a lapse keeps the build passing — same shape as bullet 1 (paid versions stay paid). On upgrade, the newer `PackDate` overtakes the attested start, the bypass stops firing, and bullet 2 takes over (lapsed sponsors fail with [no sponsor match - SC007](docs/VerifierDiagnosticCodes.md#sc007)). So `SponsorshipStart` doesn't need to be cleaned up proactively — leaving it in place is harmless. The only audit signal while the bypass is active is the [trusted SponsorshipStart - SC017](docs/VerifierDiagnosticCodes.md#sc017) message in the consumer's own build log; the OSS author never sees it.
-
-
-### Time-bounded private license
-
-<!-- snippet: Consumer.FutureLicense.csproj -->
-<a id='snippet-Consumer.FutureLicense.csproj'></a>
-```csproj
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference
-      Include="ThePackage"
-      Version="1.0.0"
-      SponsorshipLicensedUntil="2099-12" />
-  </ItemGroup>
-</Project>
-```
-<sup><a href='/IntegrationTests/Fixtures/Consumer.FutureLicense/Consumer.FutureLicense.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.FutureLicense.csproj' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-For private B2B licensing arrangements outside of the platforms. Format is `yyyy-MM`; the license is valid through the end of that month UTC.
-
-
-### Explicit ignore (escape hatch)
-
-<!-- snippet: Consumer.IgnoredLicense.csproj -->
-<a id='snippet-Consumer.IgnoredLicense.csproj'></a>
-```csproj
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference
-      Include="ThePackage"
-      Version="1.0.0"
-      SponsorshipLicenseIgnored="true" />
-  </ItemGroup>
-</Project>
-```
-<sup><a href='/IntegrationTests/Fixtures/Consumer.IgnoredLicense/Consumer.IgnoredLicense.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.IgnoredLicense.csproj' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Build passes but emits the [license ignored - SC005](docs/VerifierDiagnosticCodes.md#sc005) warning on every build, flagging that the build is in breach of the package's license.
-
-
-## Diagnostic codes
-
-- [Verifier diagnostic codes (SC0xx)](docs/VerifierDiagnosticCodes.md) — emitted in consumer projects.
-- [Bundler diagnostic codes (SC1xx)](docs/BundlerDiagnosticCodes.md) — emitted at the OSS author's pack time.
+[Bundler diagnostic codes (SC1xx)](docs/BundlerDiagnosticCodes.md) — emitted at the OSS author's pack time.
 
 
 ## How it works
