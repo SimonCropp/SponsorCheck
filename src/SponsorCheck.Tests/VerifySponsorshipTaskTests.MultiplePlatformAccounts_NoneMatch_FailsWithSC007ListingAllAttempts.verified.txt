@@ -7,10 +7,12 @@
       Message:
 Invalid account. Package 'MyOssLib': no sponsor account declared on the <PackageReference> matches the bundled list.
 
-Tried: GitHubSponsors=mallory
+Tried: GitHubSponsors=mallory, OpenCollective=wrong-org, Polar=wrong-handle
 
 Sponsor at:
   https://github.com/sponsors/acmecorp
+  https://opencollective.com/acme-org
+  https://polar.sh/acme
 
 If sponsorship started after this package was released, attest to the start date in:
 

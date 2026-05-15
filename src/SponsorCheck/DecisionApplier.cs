@@ -71,7 +71,7 @@ public static class DecisionApplier
             }
 
             case LicenseDecision.Sponsor s:
-                return ApplySponsor(s, sponsorHashListPath, packDatePath, context, severityOverrides, messageOverrides, log, utcNow);
+                return ApplySponsor(s, sponsorHashListPath, packDatePath, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
 
             case LicenseDecision.Licensed l:
                 return ApplyLicensed(l, context, severityOverrides, messageOverrides, log, utcNow);
@@ -86,6 +86,7 @@ public static class DecisionApplier
         string sponsorHashListPath,
         string packDatePath,
         ConsumerContext context,
+        IReadOnlyList<AuthorAccount> authorAccounts,
         IReadOnlyDictionary<string, Severity> severityOverrides,
         IReadOnlyDictionary<string, string> messageOverrides,
         TaskLoggingHelper log,
@@ -173,6 +174,16 @@ public static class DecisionApplier
             "",
             $"Tried: {string.Join(", ", checkAttempts)}"
         };
+        if (authorAccounts.Count > 0)
+        {
+            lines.Add("");
+            lines.Add("Sponsor at:");
+            foreach (var account in authorAccounts)
+            {
+                lines.Add($"  {account.SponsorUrl}");
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(sponsor.SponsorshipStartRaw))
         {
             lines.Add("");

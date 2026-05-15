@@ -140,6 +140,7 @@ public class VerifySponsorshipTaskTests
             ConsumerProjectPath = consumerProject,
             PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             GitHubFromRef = "mallory"
         };
 
@@ -163,11 +164,37 @@ public class VerifySponsorshipTaskTests
             DirectoryPackagesPropsPath = directoryPackagesProps,
             PackageVersionFromVer = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             GitHubFromVer = "mallory"
         };
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC008");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmInvalidSponsor_MultiplePlatformsConfigured_ShowsAllSponsorUrls()
+    {
+        // Multi-platform variant of CpmInvalidSponsor_FailsWithSC008: SC008 message lists every
+        // configured platform's sponsor URL.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            GitHubFromVer = "mallory"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC008");
         await Verify(engine);
     }
@@ -187,6 +214,91 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsTrue();
+    }
+
+    [Test]
+    public async Task InvalidSponsor_OnePlatformConfigured_ShowsSponsorUrl()
+    {
+        // When the consumer's sponsor account doesn't match and the author has a single platform
+        // enabled, the SC007 message must include a "Sponsor at:" block with that platform's URL.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            GitHubFromRef = "mallory"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains("Sponsor at:");
+        await Assert.That(message).Contains("https://github.com/sponsors/acmecorp");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task InvalidSponsor_MultiplePlatformsConfigured_ShowsAllSponsorUrls()
+    {
+        // Multi-platform author: every configured platform's sponsor URL appears in the SC007
+        // "Sponsor at:" block so the consumer can pick whichever channel they prefer.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            GitHubFromRef = "mallory"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains("Sponsor at:");
+        await Assert.That(message).Contains("https://github.com/sponsors/acmecorp");
+        await Assert.That(message).Contains("https://opencollective.com/acme-org");
+        await Assert.That(message).Contains("https://polar.sh/acme");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task MultiplePlatformAccounts_NoneMatch_FailsWithSC007ListingAllAttempts()
+    {
+        // Consumer declared sponsor accounts on all three platforms; none are in the bundled list.
+        // The SC007 message's "Tried:" line must enumerate each attempted (platform, account) pair
+        // so the consumer can see exactly which lookups were performed.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            GitHubFromRef = "mallory",
+            OpenCollectiveFromRef = "wrong-org",
+            PolarFromRef = "wrong-handle"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains("GitHubSponsors=mallory");
+        await Assert.That(message).Contains("OpenCollective=wrong-org");
+        await Assert.That(message).Contains("Polar=wrong-handle");
+        await Verify(engine);
     }
 
     [Test]
@@ -400,6 +512,33 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
+    public async Task CpmIgnored_MultiplePlatformsConfigured_WarnsWithSC006()
+    {
+        // Multi-platform variant of CpmIgnored_Passes: SC006 warning body renders all configured
+        // platform sponsor URLs.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            IgnoredFromVer = "true"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC006");
+        await Verify(engine);
+    }
+
+    [Test]
     public async Task CpmLicensedUntilFuture_Passes()
     {
         // CPM happy path for SponsorshipLicensedUntil on PackageVersion.
@@ -462,6 +601,31 @@ public class VerifySponsorshipTaskTests
             PackageVersionFromVer = "1.2.3",
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
             AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC002");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmNoConfig_MultiplePlatformsConfigured_FailsWithSC002()
+    {
+        // Multi-platform variant of CpmNoConfig_FailsWithSC002: SC002 message renders one
+        // "Sponsor on..." option per platform and lists all sponsor URLs.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme"))
         };
 
         await Assert.That(task.Execute()).IsFalse();
@@ -661,6 +825,7 @@ public class VerifySponsorshipTaskTests
             ConsumerProjectPath = consumerProject,
             PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = hashes,
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             PackDatePath = packDate,
             GitHubFromRef = "carol",
             SponsorshipStartFromRef = "2026-04-15"
@@ -702,6 +867,7 @@ public class VerifySponsorshipTaskTests
             ConsumerProjectPath = consumerProject,
             PackageVersionFromRef = "1.2.3",
             SponsorHashListPath = hashes,
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
             PackDatePath = packDate,
             GitHubFromRef = "carol",
             SponsorshipStartFromRef = "2026-04-01"

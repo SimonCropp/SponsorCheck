@@ -86,6 +86,22 @@ Verifier diagnostics that prompt changes to consumer-side metadata (SC001, SC005
 
 When the package author accepts multiple platforms and the consumer sponsors on one of them, supply the matching `<Platform>SponsorAccount` metadata. Multiple values are allowed — the verifier passes if **any** account matches the bundled list.
 
+##### Why multiple accounts are useful
+
+A consumer organisation may sponsor different OSS authors across different platforms. Say `acmecorp` sponsors one library author on **GitHub Sponsors** and a different author on **Open Collective**. When packages from both authors land in the same consumer project, both `GitHubSponsorAccount="acmecorp"` and `OpenCollectiveSponsorAccount="acme-org"` need to be present so each package's bundled hash list finds its match. The verifier short-circuits on the first hit, so the cost is one cheap hash lookup per declared platform per package.
+
+Without "any match" semantics the consumer would have to:
+
+- Know in advance which platform each package's author publishes on.
+- Track that mapping over time — an author switching platforms would break every consumer.
+- Branch the metadata per package, likely via separate `<PackageReference>` items with conditional metadata.
+
+Other reasons the same shape matters:
+
+- **Sponsorship migration.** An author moving from GitHub Sponsors to Open Collective ships a new package version with the new hash list. Existing consumers who already have both attributes set keep building without a metadata change.
+- **Personal vs org accounts.** A developer might sponsor as a personal GitHub handle for some authors and via their org's Open Collective for others. Both can sit side-by-side on the same `<PackageReference>` / `<PackageVersion>`.
+- **Reduced churn in `Directory.Packages.props`.** In a monorepo, the consumer's sponsorship identities are set once at the top level. Every project that references a SponsorCheck-using package inherits all of them without per-project tuning.
+
 
 ##### Recent sponsors: SponsorshipStart
 

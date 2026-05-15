@@ -1,0 +1,41 @@
+﻿{
+  Warnings: [
+    {
+      Subcategory: SponsorCheck,
+      Code: SC006,
+      File: ,
+      Message:
+License ignored (CPM). Package 'MyOssLib': SponsorshipLicenseIgnored="true" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license.
+
+Add ONE of the following attributes to the existing <PackageVersion> for 'MyOssLib' in:
+  C:/Consumer/Directory.Packages.props
+
+Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
+  <PackageVersion Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
+
+Option — Sponsor on Open Collective (https://opencollective.com/acme-org):
+  <PackageVersion Include="MyOssLib" Version="1.2.3" OpenCollectiveSponsorAccount="<your-opencollective-account>" />
+
+Option — Sponsor on Polar (https://polar.sh/acme):
+  <PackageVersion Include="MyOssLib" Version="1.2.3" PolarSponsorAccount="<your-polar-account>" />
+
+Option — Time-bounded license (replace yyyy-MM with the last covered month):
+  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+
+Option — Mark as ignored (you accept that the build is in breach of the package license):
+  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
+
+Sponsor at:
+  https://github.com/sponsors/acmecorp
+  https://opencollective.com/acme-org
+  https://polar.sh/acme
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006,
+      Timestamp: DateTime_1,
+      HelpKeyword: ,
+      SenderName: VerifySponsorshipTask
+    }
+  ],
+  ContinueOnError: false,
+  ProjectFileOfTaskNode: 
+}

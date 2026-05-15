@@ -9,6 +9,9 @@ Invalid account. Package 'MyOssLib': no sponsor account declared on the <Package
 
 Tried: GitHubSponsors=carol
 
+Sponsor at:
+  https://github.com/sponsors/acmecorp
+
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007,
       Timestamp: DateTime_1,
       HelpKeyword: ,

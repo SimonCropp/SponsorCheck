@@ -161,6 +161,11 @@ flowchart TD
 
   Tried: {attempts}
 
+  Sponsor at:
+    {sponsorUrl1}
+    {sponsorUrl2}
+    ...
+
   If sponsorship started after this package was released, attest to the start date in:
 
     {csprojPath}
@@ -170,13 +175,18 @@ flowchart TD
     <PackageReference Include="{PackageId}" Version="{version}" {PlatformMetadataName}="{accountValue}" SponsorshipStart="yyyy-MM-dd" />
   ```
 
-  The "If sponsorship started after this package was released..." block is omitted when `SponsorshipStart` is already set on the consumer side.
+  The "Sponsor at:" block is omitted when the author did not bundle any platform accounts. The "If sponsorship started after this package was released..." block is omitted when `SponsorshipStart` is already set on the consumer side.
 - **Example:**
 
   ```
   Package 'MyOssLib': no sponsor account declared on the <PackageReference> matches the bundled list.
 
   Tried: GitHubSponsors=mallory
+
+  Sponsor at:
+    https://github.com/sponsors/acmecorp
+    https://opencollective.com/acme-org
+    https://polar.sh/acme
 
   If sponsorship started after this package was released, attest to the start date in:
 
