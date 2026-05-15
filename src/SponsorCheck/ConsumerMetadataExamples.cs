@@ -60,7 +60,10 @@ public static class ConsumerMetadataExamples
 
         return $"""
                 If sponsorship started after this package was released, attest to the start date in:
+
                   {context.TargetFilePath}
+
+                Example format:
 
                   {RenderItem(context, attributes)}
                 """;
@@ -69,7 +72,10 @@ public static class ConsumerMetadataExamples
     public static string RenderLicensedUntilRenewal(ConsumerContext context) =>
         $"""
          Renew the license in:
+
            {context.TargetFilePath}
+
+         Example format:
 
            {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
          """;
@@ -77,7 +83,10 @@ public static class ConsumerMetadataExamples
     public static string RenderLicensedUntilFormatFix(ConsumerContext context) =>
         $"""
          Fix the SponsorshipLicensedUntil attribute in:
+
            {context.TargetFilePath}
+
+         Example format:
 
            {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
          """;
@@ -85,7 +94,10 @@ public static class ConsumerMetadataExamples
     public static string RenderSponsorshipStartFix(ConsumerContext context) =>
         $"""
          Fix the SponsorshipStart attribute in:
+
            {context.TargetFilePath}
+
+         Example format:
 
            {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}
          """;

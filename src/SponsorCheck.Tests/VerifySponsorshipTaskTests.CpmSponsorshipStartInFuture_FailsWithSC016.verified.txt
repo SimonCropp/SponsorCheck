@@ -8,7 +8,10 @@
 SponsorshipStart in the future (CPM). Package 'MyOssLib': SponsorshipStart='2099-01-01' on the <PackageVersion> in Directory.Packages.props is in the future.
 
 Fix the SponsorshipStart attribute in:
+
   C:/Consumer/Directory.Packages.props
+
+Example format:
 
   <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipStart="yyyy-MM-dd" />
 

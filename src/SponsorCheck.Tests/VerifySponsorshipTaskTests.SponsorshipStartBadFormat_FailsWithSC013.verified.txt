@@ -8,7 +8,10 @@
 Invalid SponsorshipStart format. Package 'MyOssLib': SponsorshipStart='yesterday' on the <PackageReference> is not in 'yyyy-MM-dd' format.
 
 Fix the SponsorshipStart attribute in:
+
   C:/Consumer/MyApp.csproj
+
+Example format:
 
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipStart="yyyy-MM-dd" />
 

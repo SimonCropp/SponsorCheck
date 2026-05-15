@@ -162,7 +162,10 @@ flowchart TD
   Tried: {attempts}
 
   If sponsorship started after this package was released, attest to the start date in:
+
     {csprojPath}
+
+  Example format:
 
     <PackageReference Include="{PackageId}" Version="{version}" {PlatformMetadataName}="{accountValue}" SponsorshipStart="yyyy-MM-dd" />
   ```
@@ -176,7 +179,10 @@ flowchart TD
   Tried: GitHubSponsors=mallory
 
   If sponsorship started after this package was released, attest to the start date in:
+
     /work/MyApp/MyApp.csproj
+
+  Example format:
 
     <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="mallory" SponsorshipStart="yyyy-MM-dd" />
   ```
@@ -201,7 +207,10 @@ flowchart TD
   Package '{PackageId}': SponsorshipLicensedUntil='{value}' on the <PackageReference> has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).
 
   Renew the license in:
+
     {csprojPath}
+
+  Example format:
 
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
   ```
@@ -211,7 +220,10 @@ flowchart TD
   Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' on the <PackageReference> has expired (end of month 2000-01-31 UTC).
 
   Renew the license in:
+
     /work/MyApp/MyApp.csproj
+
+  Example format:
 
     <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
   ```
@@ -245,7 +257,10 @@ flowchart TD
   Package '{PackageId}': SponsorshipLicensedUntil='{value}' on the <PackageReference> is not in 'yyyy-MM' format.
 
   Fix the SponsorshipLicensedUntil attribute in:
+
     {csprojPath}
+
+  Example format:
 
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
   ```
@@ -255,7 +270,10 @@ flowchart TD
   Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' on the <PackageReference> is not in 'yyyy-MM' format.
 
   Fix the SponsorshipLicensedUntil attribute in:
+
     /work/MyApp/MyApp.csproj
+
+  Example format:
 
     <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
   ```
@@ -272,7 +290,10 @@ flowchart TD
   Package '{PackageId}': SponsorshipLicensedUntil='{value}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.
 
   Fix the SponsorshipLicensedUntil attribute in:
+
     {directoryPackagesPropsPath}
+
+  Example format:
 
     <PackageVersion Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
   ```
@@ -282,7 +303,10 @@ flowchart TD
   Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.
 
   Fix the SponsorshipLicensedUntil attribute in:
+
     /work/MyApp/Directory.Packages.props
+
+  Example format:
 
     <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
   ```
@@ -317,7 +341,10 @@ flowchart TD
   Package '{PackageId}': SponsorshipStart='{value}' on the <PackageReference> is not in 'yyyy-MM-dd' format.
 
   Fix the SponsorshipStart attribute in:
+
     {csprojPath}
+
+  Example format:
 
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipStart="yyyy-MM-dd" />
   ```
@@ -327,7 +354,10 @@ flowchart TD
   Package 'MyOssLib': SponsorshipStart='yesterday' on the <PackageReference> is not in 'yyyy-MM-dd' format.
 
   Fix the SponsorshipStart attribute in:
+
     /work/MyApp/MyApp.csproj
+
+  Example format:
 
     <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipStart="yyyy-MM-dd" />
   ```
@@ -352,7 +382,10 @@ flowchart TD
   Package '{PackageId}': SponsorshipStart='{value}' on the <PackageReference> is in the future.
 
   Fix the SponsorshipStart attribute in:
+
     {csprojPath}
+
+  Example format:
 
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipStart="yyyy-MM-dd" />
   ```
@@ -362,7 +395,10 @@ flowchart TD
   Package 'MyOssLib': SponsorshipStart='2099-01-01' on the <PackageReference> is in the future.
 
   Fix the SponsorshipStart attribute in:
+
     /work/MyApp/MyApp.csproj
+
+  Example format:
 
     <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipStart="yyyy-MM-dd" />
   ```

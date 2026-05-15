@@ -8,7 +8,10 @@
 License expired (CPM). Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' on the <PackageVersion> in Directory.Packages.props has expired (end of month 2000-01-31 UTC).
 
 Renew the license in:
+
   C:/Consumer/Directory.Packages.props
+
+Example format:
 
   <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 

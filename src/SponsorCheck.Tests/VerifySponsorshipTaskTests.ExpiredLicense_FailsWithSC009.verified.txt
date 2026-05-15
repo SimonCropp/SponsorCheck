@@ -8,7 +8,10 @@
 License expired. Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' on the <PackageReference> has expired (end of month 2000-01-31 UTC).
 
 Renew the license in:
+
   C:/Consumer/MyApp.csproj
+
+Example format:
 
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 

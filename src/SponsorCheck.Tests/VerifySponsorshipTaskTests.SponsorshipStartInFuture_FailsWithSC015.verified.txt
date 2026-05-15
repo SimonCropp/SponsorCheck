@@ -8,7 +8,10 @@
 SponsorshipStart in the future. Package 'MyOssLib': SponsorshipStart='2099-01-01' on the <PackageReference> is in the future.
 
 Fix the SponsorshipStart attribute in:
+
   C:/Consumer/MyApp.csproj
+
+Example format:
 
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipStart="yyyy-MM-dd" />
 
