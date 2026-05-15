@@ -1,9 +1,24 @@
 public class SponsorCheckLogTests
 {
-    static readonly string[] AllKnownCodes =
+    static string[] allKnownCodes =
     [
-        "SC001", "SC003", "SC005", "SC007", "SC009", "SC019", "SC011", "SC017", "SC018", "SC013", "SC015", "SC020",
-        "SC100", "SC101", "SC102", "SC103", "SC104"
+        "SC001",
+        "SC003",
+        "SC005",
+        "SC007",
+        "SC009",
+        "SC019",
+        "SC011",
+        "SC017",
+        "SC018",
+        "SC013",
+        "SC015",
+        "SC020",
+        "SC100",
+        "SC101",
+        "SC102",
+        "SC103",
+        "SC104"
     ];
 
     [Test]
@@ -16,15 +31,15 @@ public class SponsorCheckLogTests
         // Ensures every known code appears in the lookup. A new SC code added to the codebase
         // without a matching entry in NameFor would otherwise silently fall back to returning the
         // code itself — defeating the human-readable purpose.
-        foreach (var code in AllKnownCodes)
+        foreach (var code in allKnownCodes)
         {
             var name = SponsorCheckLog.NameFor(code);
             await Assert.That(name).IsNotEqualTo(code).Because($"{code} is missing a name in SponsorCheckLog.NameFor");
             await Assert.That(name).IsNotEmpty();
         }
 
-        var distinct = AllKnownCodes.Select(SponsorCheckLog.NameFor).Distinct(StringComparer.Ordinal).Count();
-        await Assert.That(distinct).IsEqualTo(AllKnownCodes.Length).Because("each code should have a distinct name");
+        var distinct = allKnownCodes.Select(SponsorCheckLog.NameFor).Distinct(StringComparer.Ordinal).Count();
+        await Assert.That(distinct).IsEqualTo(allKnownCodes.Length).Because("each code should have a distinct name");
     }
 
     [Test]

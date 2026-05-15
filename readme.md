@@ -61,7 +61,7 @@ Pick exactly one mode per package. Placement depends on whether the consumer use
 
 Setting the metadata on the wrong element raises [wrong location - SC020](docs/VerifierDiagnosticCodes.md#sc020) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC019](docs/VerifierDiagnosticCodes.md#sc019) is a defensive backstop for the rare case where SC020's check is bypassed.
 
-Verifier diagnostics that prompt changes to consumer-side metadata (SC001, SC005, SC007, SC009, SC011, SC013, SC015) render a copy-pasteable XML snippet pre-filled with the package id, version, and the path of the file to edit.
+Verifier diagnostics that prompt changes to consumer-side metadata (SC001/SC002, SC005/SC006, SC007/SC008, SC009/SC010, SC011/SC012, SC013/SC014, SC015/SC016) render a copy-pasteable XML snippet pre-filled with the package id, version, and the path of the file to edit. Each odd/even pair is the non-CPM / CPM sibling of the same condition.
 
 
 #### Sponsor account match (any platform)
@@ -268,7 +268,7 @@ dotnet user-secrets set "SponsorCheck:PolarToken" "polar_yyy"
 
 #### CI — encrypted env vars
 
-Recommended for CI builds, where there's no per-developer profile to hold a user-secrets file. Encrypt the token in the CI provider's secret store (AppVeyor "secure variable", GitHub Actions secret, Azure DevOps secret variable, etc.) and surface it as an env var named `GitHubToken`, `OpenCollectiveToken`, or `PolarToken`. MSBuild auto-imports env vars as properties, so no extra wiring is needed — the bundler picks them up via the same `<GitHubToken>` / `<OpenCollectiveToken>` / `<PolarToken>` resolution path. Names match the MSBuild property names exactly (case-sensitive on Linux/macOS).
+Recommended for CI builds, where there's no per-developer profile to hold a user-secrets file. Encrypt the token in the CI provider's secret store (AppVeyor "secure variable", GitHub Actions secret, Azure DevOps secret variable, etc.) and surface it as an env var named `GitHubToken`, `OpenCollectiveToken`, or `PolarToken`. MSBuild auto-imports env vars as properties, so no extra wiring is needed — the bundler picks them up via the same `<GitHubToken>` / `<OpenCollectiveToken>` / `<PolarToken>` resolution path. The env var name must match the MSBuild property name modulo case (`GitHubToken`, `githubtoken`, and `GITHUBTOKEN` all resolve via case-insensitive property lookup), but punctuation matters — conventional CI names like `GITHUB_TOKEN` won't auto-flow.
 
 
 ### Multiple packable projects in one repo
@@ -354,7 +354,7 @@ The bundler runs at the OSS author's pack time (Release config, `IsPackable=true
 1. Reads `<Platform>Account` metadata from the SponsorCheck `PackageReference` / `PackageVersion`.
 1. For each enabled platform, calls the platform's API (or reads `SponsorListOverride` if set) to get the list of sponsor accounts.
 1. Hashes each as the first 12 hex chars (48 bits) of `SHA256(utf8("{platform-id}:{lowercase(account)}"))`. Platform-id prefix prevents cross-platform spoofing.
-1. Writes the sorted, deduped hashes to `build/SponsorCheck.SponsorHashes.txt` and a verifier `.targets` file to `build/<ThePackageId>.targets` inside the produced nupkg, plus the verifier task DLL under `tasks/`.
+1. Writes four files into the produced nupkg's `build/` folder: the sorted, deduped hashes (`SponsorCheck.SponsorHashes.txt`), the UTC pack date that powers the `SponsorshipStart` bypass (`SponsorCheck.PackDate.txt`), the enabled platform accounts used to render sponsor URLs in diagnostics (`SponsorCheck.AuthorAccounts.txt`), and the per-consumer verifier targets file (`<ThePackageId>.targets`). The verifier task DLL is packed under `tasks/`.
 
 
 ### Verifier
