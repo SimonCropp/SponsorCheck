@@ -4,6 +4,14 @@ public static class ModuleInitializer
     public static void Init()
     {
         VerifyDiffPlex.Initialize();
+        VerifierSettings.IgnoreMembers(
+            "HelpKeyword",
+            "SenderName",
+            "ContinueOnError",
+            "ProjectFileOfTaskNode",
+            "File",
+            "Subcategory",
+            "Timestamp");
         VerifierSettings.IgnoreMember<BuildEventArgs>(_ => _.ThreadId);
     }
 }

@@ -1,9 +1,7 @@
 ﻿{
   Errors: [
     {
-      Subcategory: SponsorCheck,
       Code: SC001,
-      File: ,
       Message:
 No license specified. Package 'MyOssLib' requires license metadata on the <PackageReference> for 'MyOssLib'.
 
@@ -31,11 +29,7 @@ Sponsor at:
   https://polar.sh/acme
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001,
-      Timestamp: DateTime_1,
-      HelpKeyword: ,
-      SenderName: VerifySponsorshipTask
+      Timestamp: DateTime_1
     }
-  ],
-  ContinueOnError: false,
-  ProjectFileOfTaskNode: 
+  ]
 }

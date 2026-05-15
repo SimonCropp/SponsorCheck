@@ -1,9 +1,7 @@
 ﻿{
   Errors: [
     {
-      Subcategory: SponsorCheck,
       Code: SC011,
-      File: ,
       Message:
 Invalid license date format. Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' on the <PackageReference> is not in 'yyyy-MM' format.
 
@@ -16,11 +14,7 @@ Example format:
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011,
-      Timestamp: DateTime_1,
-      HelpKeyword: ,
-      SenderName: VerifySponsorshipTask
+      Timestamp: DateTime_1
     }
-  ],
-  ContinueOnError: false,
-  ProjectFileOfTaskNode: 
+  ]
 }

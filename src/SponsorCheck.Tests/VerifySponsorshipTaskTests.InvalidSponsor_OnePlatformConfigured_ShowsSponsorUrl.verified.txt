@@ -1,16 +1,13 @@
 ﻿{
   Errors: [
     {
-      Subcategory: SponsorCheck,
       Code: SC007,
-      File: ,
       Message:
 Invalid account. Package 'MyOssLib': no sponsor account declared on the <PackageReference> matches the bundled list.
 
 Tried: GitHubSponsors=mallory
 
-Sponsor at:
-  https://github.com/sponsors/acmecorp
+Sponsor at https://github.com/sponsors/acmecorp
 
 If sponsorship started after this package was released, attest to the start date in:
 
@@ -21,11 +18,7 @@ Example format:
   <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="mallory" SponsorshipStart="yyyy-MM-dd" />
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007,
-      Timestamp: DateTime_1,
-      HelpKeyword: ,
-      SenderName: VerifySponsorshipTask
+      Timestamp: DateTime_1
     }
-  ],
-  ContinueOnError: false,
-  ProjectFileOfTaskNode: 
+  ]
 }

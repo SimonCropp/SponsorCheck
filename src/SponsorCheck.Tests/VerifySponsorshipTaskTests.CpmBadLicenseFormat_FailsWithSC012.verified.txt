@@ -1,11 +1,9 @@
 ﻿{
   Errors: [
     {
-      Subcategory: SponsorCheck,
       Code: SC012,
-      File: ,
       Message:
-Invalid license date format (CPM). Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.
+Invalid license date format. Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.
 
 Fix the SponsorshipLicensedUntil attribute in:
 
@@ -16,11 +14,7 @@ Example format:
   <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc012,
-      Timestamp: DateTime_1,
-      HelpKeyword: ,
-      SenderName: VerifySponsorshipTask
+      Timestamp: DateTime_1
     }
-  ],
-  ContinueOnError: false,
-  ProjectFileOfTaskNode: 
+  ]
 }

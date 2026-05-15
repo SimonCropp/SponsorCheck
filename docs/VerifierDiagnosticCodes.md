@@ -60,7 +60,7 @@ flowchart TD
     {sponsorUrls}
   ```
 
-  One "Sponsor on..." option is rendered per platform the author has enabled. SponsorshipLicenseIgnored is listed last so the breach-of-license escape hatch sits after the legitimate options.
+  One "Sponsor on..." option is rendered per platform the author has enabled. SponsorshipLicenseIgnored is listed last so the breach-of-license escape hatch sits after the legitimate options. When only one platform is configured the "Sponsor at:" block collapses to a single inline line: `Sponsor at {sponsorUrl}`.
 - **Example:**
 
   ```
@@ -78,14 +78,13 @@ flowchart TD
   Option — Mark as ignored (you accept that the build is in breach of the package license):
     <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
 
-  Sponsor at:
-    https://github.com/sponsors/acmecorp
+  Sponsor at https://github.com/sponsors/acmecorp
   ```
 
 
 ### SC002
 
-- **Name:** No license specified (CPM)
+- **Name:** No license specified
 - **Level**: Error
 - **Meaning:** CPM sibling of [SC001](#sc001): no license mode set on the `<PackageVersion>` for ThePackage in `Directory.Packages.props`. Body shape matches SC001 with `<PackageVersion>` in place of `<PackageReference>` and the props file path in place of the csproj path.
 - **Example opener:** `Package 'MyOssLib' requires license metadata on the <PackageVersion> for 'MyOssLib' in Directory.Packages.props.`
@@ -120,7 +119,7 @@ flowchart TD
 
 ### SC004
 
-- **Name:** Conflicting license modes (CPM)
+- **Name:** Conflicting license modes
 - **Level**: Error
 - **Meaning:** CPM sibling of [SC003](#sc003): mutually exclusive license modes set on the same `<PackageVersion>` in `Directory.Packages.props`.
 - **Example opener:** `Package 'MyOssLib': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props (Sponsor, SponsorshipLicenseIgnored). Pick one.`
@@ -143,7 +142,7 @@ flowchart TD
 
 ### SC006
 
-- **Name:** License ignored (CPM)
+- **Name:** License ignored
 - **Level**: Warning
 - **Meaning:** CPM sibling of [SC005](#sc005): `SponsorshipLicenseIgnored="true"` on the `<PackageVersion>` in `Directory.Packages.props`.
 - **Example opener:** `Package 'MyOssLib': SponsorshipLicenseIgnored="true" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license.`
@@ -175,7 +174,7 @@ flowchart TD
     <PackageReference Include="{PackageId}" Version="{version}" {PlatformMetadataName}="{accountValue}" SponsorshipStart="yyyy-MM-dd" />
   ```
 
-  The "Sponsor at:" block is omitted when the author did not bundle any platform accounts. The "If sponsorship started after this package was released..." block is omitted when `SponsorshipStart` is already set on the consumer side.
+  The "Sponsor at:" block is omitted when the author did not bundle any platform accounts. When only one platform is configured it collapses to a single inline line: `Sponsor at {sponsorUrl}`. The "If sponsorship started after this package was released..." block is omitted when `SponsorshipStart` is already set on the consumer side.
 - **Example:**
 
   ```
@@ -200,7 +199,7 @@ flowchart TD
 
 ### SC008
 
-- **Name:** Invalid account (CPM)
+- **Name:** Invalid account
 - **Level**: Error
 - **Meaning:** CPM sibling of [SC007](#sc007): no sponsor account declared on the `<PackageVersion>` in `Directory.Packages.props` matches the bundled hash list.
 - **Example opener:** `Package 'MyOssLib': no sponsor account declared on the <PackageVersion> in Directory.Packages.props matches the bundled list.`
@@ -241,7 +240,7 @@ flowchart TD
 
 ### SC010
 
-- **Name:** License expired (CPM)
+- **Name:** License expired
 - **Level**: Error
 - **Meaning:** CPM sibling of [SC009](#sc009): `SponsorshipLicensedUntil` on the `<PackageVersion>` in `Directory.Packages.props` has expired.
 - **Example opener:** `Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' on the <PackageVersion> in Directory.Packages.props has expired (end of month 2000-01-31 UTC).`
@@ -291,7 +290,7 @@ flowchart TD
 
 ### SC012
 
-- **Name:** Invalid license date format (CPM)
+- **Name:** Invalid license date format
 - **Level**: Error
 - **Meaning:** `SponsorshipLicensedUntil` on a `<PackageVersion>` (Central Package Management) is not in `yyyy-MM` format. The non-CPM equivalent is [SC011](#sc011).
 - **Syntax:**
@@ -375,7 +374,7 @@ flowchart TD
 
 ### SC014
 
-- **Name:** Invalid SponsorshipStart format (CPM)
+- **Name:** Invalid SponsorshipStart format
 - **Level**: Error
 - **Meaning:** CPM sibling of [SC013](#sc013): `SponsorshipStart` on the `<PackageVersion>` in `Directory.Packages.props` is not in `yyyy-MM-dd` format.
 - **Example opener:** `Package 'MyOssLib': SponsorshipStart='yesterday' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM-dd' format.`
@@ -416,7 +415,7 @@ flowchart TD
 
 ### SC016
 
-- **Name:** SponsorshipStart in the future (CPM)
+- **Name:** SponsorshipStart in the future
 - **Level**: Error
 - **Meaning:** CPM sibling of [SC015](#sc015): `SponsorshipStart` on the `<PackageVersion>` in `Directory.Packages.props` is in the future.
 - **Example opener:** `Package 'MyOssLib': SponsorshipStart='2099-01-01' on the <PackageVersion> in Directory.Packages.props is in the future.`

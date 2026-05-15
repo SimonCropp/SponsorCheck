@@ -1,11 +1,9 @@
 ﻿{
   Errors: [
     {
-      Subcategory: SponsorCheck,
       Code: SC002,
-      File: ,
       Message:
-No license specified (CPM). Package 'MyOssLib' requires license metadata on the <PackageVersion> for 'MyOssLib' in Directory.Packages.props.
+No license specified. Package 'MyOssLib' requires license metadata on the <PackageVersion> for 'MyOssLib' in Directory.Packages.props.
 
 Add ONE of the following attributes to the existing <PackageVersion> for 'MyOssLib' in:
   C:/Consumer/Directory.Packages.props
@@ -19,15 +17,10 @@ Option — Time-bounded license (replace yyyy-MM with the last covered month):
 Option — Mark as ignored (you accept that the build is in breach of the package license):
   <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
 
-Sponsor at:
-  https://github.com/sponsors/acmecorp
+Sponsor at https://github.com/sponsors/acmecorp
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc002,
-      Timestamp: DateTime_1,
-      HelpKeyword: ,
-      SenderName: VerifySponsorshipTask
+      Timestamp: DateTime_1
     }
-  ],
-  ContinueOnError: false,
-  ProjectFileOfTaskNode: 
+  ]
 }

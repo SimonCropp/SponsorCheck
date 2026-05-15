@@ -1,11 +1,9 @@
 ﻿{
   Warnings: [
     {
-      Subcategory: SponsorCheck,
       Code: SC006,
-      File: ,
       Message:
-License ignored (CPM). Package 'MyOssLib': SponsorshipLicenseIgnored="true" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license.
+License ignored. Package 'MyOssLib': SponsorshipLicenseIgnored="true" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license.
 
 Add ONE of the following attributes to the existing <PackageVersion> for 'MyOssLib' in:
   C:/Consumer/Directory.Packages.props
@@ -31,11 +29,7 @@ Sponsor at:
   https://polar.sh/acme
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006,
-      Timestamp: DateTime_1,
-      HelpKeyword: ,
-      SenderName: VerifySponsorshipTask
+      Timestamp: DateTime_1
     }
-  ],
-  ContinueOnError: false,
-  ProjectFileOfTaskNode: 
+  ]
 }

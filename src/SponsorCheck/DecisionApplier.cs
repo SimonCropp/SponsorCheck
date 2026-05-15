@@ -174,7 +174,12 @@ public static class DecisionApplier
             "",
             $"Tried: {string.Join(", ", checkAttempts)}"
         };
-        if (authorAccounts.Count > 0)
+        if (authorAccounts.Count == 1)
+        {
+            lines.Add("");
+            lines.Add($"Sponsor at {authorAccounts[0].SponsorUrl}");
+        }
+        else if (authorAccounts.Count > 1)
         {
             lines.Add("");
             lines.Add("Sponsor at:");

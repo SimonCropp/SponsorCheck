@@ -1,9 +1,7 @@
 ﻿{
   Errors: [
     {
-      Subcategory: SponsorCheck,
       Code: SC003,
-      File: ,
       Message:
 Conflicting license modes. Package 'MyOssLib': mutually exclusive license modes are set on the <PackageReference> (Sponsor, SponsorshipLicenseIgnored). Pick one.
 
@@ -13,11 +11,7 @@ Edit the <PackageReference> for 'MyOssLib' in:
 Keep exactly one of: GitHubSponsorAccount, OpenCollectiveSponsorAccount, PolarSponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc003,
-      Timestamp: DateTime_1,
-      HelpKeyword: ,
-      SenderName: VerifySponsorshipTask
+      Timestamp: DateTime_1
     }
-  ],
-  ContinueOnError: false,
-  ProjectFileOfTaskNode: 
+  ]
 }

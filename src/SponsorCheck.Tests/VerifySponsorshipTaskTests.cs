@@ -220,7 +220,8 @@ public class VerifySponsorshipTaskTests
     public async Task InvalidSponsor_OnePlatformConfigured_ShowsSponsorUrl()
     {
         // When the consumer's sponsor account doesn't match and the author has a single platform
-        // enabled, the SC007 message must include a "Sponsor at:" block with that platform's URL.
+        // enabled, SC007 renders the inline single-line "Sponsor at <url>" form (no colon, no
+        // newline + indent). The multi-platform variant uses the "Sponsor at:\n  <url>\n  <url>" block.
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
         var task = new VerifySponsorshipTask
@@ -237,8 +238,7 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
         var message = engine.Errors[0].Message!;
-        await Assert.That(message).Contains("Sponsor at:");
-        await Assert.That(message).Contains("https://github.com/sponsors/acmecorp");
+        await Assert.That(message).Contains("Sponsor at https://github.com/sponsors/acmecorp");
         await Verify(engine);
     }
 

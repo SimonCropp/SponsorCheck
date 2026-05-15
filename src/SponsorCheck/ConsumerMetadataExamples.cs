@@ -36,7 +36,12 @@ public static class ConsumerMetadataExamples
         lines.Add("Option — Mark as ignored (you accept that the build is in breach of the package license):");
         lines.Add($"  {RenderItem(context, ("SponsorshipLicenseIgnored", "true"))}");
 
-        if (authorAccounts.Count > 0)
+        if (authorAccounts.Count == 1)
+        {
+            lines.Add("");
+            lines.Add($"Sponsor at {authorAccounts[0].SponsorUrl}");
+        }
+        else if (authorAccounts.Count > 1)
         {
             lines.Add("");
             lines.Add("Sponsor at:");
