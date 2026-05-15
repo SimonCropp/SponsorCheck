@@ -298,8 +298,13 @@ public sealed class BundleSponsorListTask :
         var key = platformId == "GitHubSponsors"
             ? "SponsorCheck:GitHubToken"
             : $"SponsorCheck:{platformId}Token";
-        return userSecrets.TryGetValue(key, out var value) &&
-               !string.IsNullOrWhiteSpace(value) ? value : null;
+        if (userSecrets.TryGetValue(key, out var value) &&
+            !string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+
+        return null;
     }
 
     static string Sanitize(string packageId)

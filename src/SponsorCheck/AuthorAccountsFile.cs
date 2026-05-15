@@ -32,8 +32,8 @@ public static class AuthorAccountsFile
                 continue;
             }
 
-            var platform = line.Substring(0, eq).Trim();
-            var account = line.Substring(eq + 1).Trim();
+            var platform = line[..eq].Trim();
+            var account = line[(eq + 1)..].Trim();
             if (platform.Length == 0 || account.Length == 0)
             {
                 continue;
