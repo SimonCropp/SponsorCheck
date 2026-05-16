@@ -1,0 +1,15 @@
+﻿{
+  Errors: [
+    {
+      Code: SC007,
+      Message:
+Invalid account. Package 'MyOssLib': no sponsor account declared on the <PackageReference> matches the bundled list.
+
+Tried: GitHubSponsors=carol
+
+Sponsor at https://acme.example.com/sponsor
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007
+    }
+  ]
+}

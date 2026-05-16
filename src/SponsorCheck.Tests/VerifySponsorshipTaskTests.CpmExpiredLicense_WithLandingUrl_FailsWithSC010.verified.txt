@@ -1,0 +1,21 @@
+﻿{
+  Errors: [
+    {
+      Code: SC010,
+      Message:
+License expired. Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' on the <PackageVersion> in Directory.Packages.props has expired (end of month 2000-01-31 UTC).
+
+Renew the license in:
+
+  C:/Consumer/Directory.Packages.props
+
+Example format:
+
+  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+
+Sponsor at https://acme.example.com/sponsor
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc010
+    }
+  ]
+}

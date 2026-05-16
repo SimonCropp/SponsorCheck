@@ -14,6 +14,9 @@ public sealed class BundleSponsorListTask :
     public string UserSecretsId { get; set; } = "";
     public string OverrideListPath { get; set; } = "";
 
+    public string SponsorLandingUrlFromRef { get; set; } = "";
+    public string SponsorLandingUrlFromVer { get; set; } = "";
+
     public string NoLicenseSpecifiedSeverityOverrideFromRef { get; set; } = "";
     public string NoLicenseSpecifiedSeverityOverrideFromVer { get; set; } = "";
     public string LicenseIgnoredSeverityOverrideFromRef { get; set; } = "";
@@ -40,6 +43,7 @@ public sealed class BundleSponsorListTask :
     [Required] public string OutputAuthorAccountsPath { get; set; } = "";
     [Required] public string OutputSeverityOverridesPath { get; set; } = "";
     [Required] public string OutputMessageOverridesPath { get; set; } = "";
+    [Required] public string OutputLandingUrlPath { get; set; } = "";
     public string OverridePackDate { get; set; } = "";
 
     public override bool Execute()
@@ -50,6 +54,13 @@ public sealed class BundleSponsorListTask :
             EnsureDirectory(OutputVerifierTargetsPath);
             EnsureDirectory(OutputSeverityOverridesPath);
             EnsureDirectory(OutputMessageOverridesPath);
+            EnsureDirectory(OutputLandingUrlPath);
+
+            // Author-supplied SponsorLandingUrl replaces the per-platform sponsor URLs in
+            // consumer-side diagnostic messages. Always write the sidecar (empty when unset)
+            // so the verifier can rely on the file existing.
+            var landingUrl = PackageMetadataMerger.Merge("SponsorLandingUrl", SponsorLandingUrlFromRef, SponsorLandingUrlFromVer) ?? "";
+            File.WriteAllText(OutputLandingUrlPath, landingUrl);
 
             if (!TryResolveSeverityOverrides(out var severityOverrides))
             {

@@ -204,4 +204,21 @@ public class ConsumerBuildTests
         await Assert.That(result.Combined).Contains("You agreed not to free-ride this library.");
         await Assert.That(result.Combined).DoesNotContain("Build is allowed but is in breach");
     }
+
+    [Test]
+    public async Task LandingUrlOverride_SC001_BuildLogContainsLandingUrlNotPlatformUrls()
+    {
+        // ThePackageLandingUrl bakes SponsorLandingUrl="https://acme.example.com/sponsor" on its
+        // SponsorCheck reference. A consumer that omits license metadata trips SC001; the rendered
+        // message must point at the author's landing URL instead of github.com/sponsors etc.
+        var result = await BuildFixture(
+            "Consumer.LandingUrlNoConfig",
+            authorFixture: "ThePackageLandingUrl");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC001");
+        await Assert.That(result.Combined).Contains("https://acme.example.com/sponsor");
+        await Assert.That(result.Combined).DoesNotContain("https://github.com/sponsors/acmecorp");
+        await Assert.That(result.Combined).DoesNotContain("https://opencollective.com/acme-org");
+        await Assert.That(result.Combined).DoesNotContain("https://polar.sh/acme");
+    }
 }

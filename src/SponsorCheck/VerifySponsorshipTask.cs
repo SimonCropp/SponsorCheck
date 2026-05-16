@@ -7,6 +7,7 @@ public sealed class VerifySponsorshipTask :
     [Required] public string AuthorAccountsPath { get; set; } = "";
     public string SeverityOverridesPath { get; set; } = "";
     public string MessageOverridesPath { get; set; } = "";
+    public string LandingUrlPath { get; set; } = "";
 
     public string IsCpm { get; set; } = "";
     public string ConsumerProjectPath { get; set; } = "";
@@ -53,7 +54,8 @@ public sealed class VerifySponsorshipTask :
             };
 
             var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, sponsors, sponsorshipStart, ThePackageId);
-            var authorAccounts = ResolveAuthorAccounts(AuthorAccountsPath);
+            var landingUrl = ReadLandingUrl(LandingUrlPath);
+            var authorAccounts = ResolveAuthorAccounts(AuthorAccountsPath, landingUrl);
             var severityOverrides = SeverityOverrideFile.Read(SeverityOverridesPath);
             var messageOverrides = MessageOverrideFile.Read(MessageOverridesPath);
             return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, severityOverrides, messageOverrides, Log, DateTime.UtcNow);
@@ -121,7 +123,7 @@ public sealed class VerifySponsorshipTask :
     static string FirstNonEmpty(string a, string b) =>
         !string.IsNullOrWhiteSpace(a) ? a.Trim() : (string.IsNullOrWhiteSpace(b) ? "" : b.Trim());
 
-    public static IReadOnlyList<AuthorAccount> ResolveAuthorAccounts(string authorAccountsPath)
+    public static IReadOnlyList<AuthorAccount> ResolveAuthorAccounts(string authorAccountsPath, string? landingUrlOverride = null)
     {
         var entries = AuthorAccountsFile.Read(authorAccountsPath);
         var accounts = new List<AuthorAccount>(entries.Count);
@@ -129,14 +131,28 @@ public sealed class VerifySponsorshipTask :
         {
             if (PlatformRegistry.TryGet(entry.Key, out var platform))
             {
+                var url = string.IsNullOrWhiteSpace(landingUrlOverride)
+                    ? platform!.SponsorPageUrl(entry.Value)
+                    : landingUrlOverride!.Trim();
                 accounts.Add(new(
                     entry.Key,
                     entry.Value,
-                    platform!.SponsorPageUrl(entry.Value),
+                    url,
                     ConsumerMetadataNames.For(entry.Key)));
             }
         }
 
         return accounts;
+    }
+
+    static string? ReadLandingUrl(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return null;
+        }
+
+        var text = File.ReadAllText(path).Trim();
+        return text.Length == 0 ? null : text;
     }
 }

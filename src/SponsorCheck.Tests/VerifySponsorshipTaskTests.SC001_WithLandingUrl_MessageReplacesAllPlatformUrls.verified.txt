@@ -1,0 +1,31 @@
+﻿{
+  Errors: [
+    {
+      Code: SC001,
+      Message:
+No license specified. Package 'MyOssLib' requires license metadata on the <PackageReference> for 'MyOssLib'.
+
+Add ONE of the following attributes to the existing <PackageReference> for 'MyOssLib' in:
+  C:/Consumer/MyApp.csproj
+
+Option — Sponsor on GitHub Sponsors (https://acme.example.com/sponsor):
+  <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
+
+Option — Sponsor on Open Collective (https://acme.example.com/sponsor):
+  <PackageReference Include="MyOssLib" Version="1.2.3" OpenCollectiveSponsorAccount="<your-opencollective-account>" />
+
+Option — Sponsor on Polar (https://acme.example.com/sponsor):
+  <PackageReference Include="MyOssLib" Version="1.2.3" PolarSponsorAccount="<your-polar-account>" />
+
+Option — Time-bounded license (replace yyyy-MM with the last covered month):
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+
+Option — Mark as ignored (you accept that the build is in breach of the package license):
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
+
+Sponsor at https://acme.example.com/sponsor
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001
+    }
+  ]
+}

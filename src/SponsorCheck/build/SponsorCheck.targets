@@ -20,6 +20,7 @@
       <_SponsorCheck_AuthorAccountsPath>$(IntermediateOutputPath)SponsorCheck\AuthorAccounts.txt</_SponsorCheck_AuthorAccountsPath>
       <_SponsorCheck_SeverityOverridesPath>$(IntermediateOutputPath)SponsorCheck\SeverityOverrides.txt</_SponsorCheck_SeverityOverridesPath>
       <_SponsorCheck_MessageOverridesPath>$(IntermediateOutputPath)SponsorCheck\MessageOverrides.json</_SponsorCheck_MessageOverridesPath>
+      <_SponsorCheck_LandingUrlPath>$(IntermediateOutputPath)SponsorCheck\LandingUrl.txt</_SponsorCheck_LandingUrlPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -56,6 +57,8 @@
       <_SponsorCheck_InvalidAccountMsgFromVer>@(_SponsorCheck_SelfVer->'%(InvalidAccountMessageOverride)')</_SponsorCheck_InvalidAccountMsgFromVer>
       <_SponsorCheck_LicenseExpiredMsgFromRef>@(_SponsorCheck_Self->'%(LicenseExpiredMessageOverride)')</_SponsorCheck_LicenseExpiredMsgFromRef>
       <_SponsorCheck_LicenseExpiredMsgFromVer>@(_SponsorCheck_SelfVer->'%(LicenseExpiredMessageOverride)')</_SponsorCheck_LicenseExpiredMsgFromVer>
+      <_SponsorCheck_LandingUrlFromRef>@(_SponsorCheck_Self->'%(SponsorLandingUrl)')</_SponsorCheck_LandingUrlFromRef>
+      <_SponsorCheck_LandingUrlFromVer>@(_SponsorCheck_SelfVer->'%(SponsorLandingUrl)')</_SponsorCheck_LandingUrlFromVer>
     </PropertyGroup>
 
     <BundleSponsorListTask
@@ -81,6 +84,8 @@
         InvalidAccountMessageOverrideFromVer="$(_SponsorCheck_InvalidAccountMsgFromVer)"
         LicenseExpiredMessageOverrideFromRef="$(_SponsorCheck_LicenseExpiredMsgFromRef)"
         LicenseExpiredMessageOverrideFromVer="$(_SponsorCheck_LicenseExpiredMsgFromVer)"
+        SponsorLandingUrlFromRef="$(_SponsorCheck_LandingUrlFromRef)"
+        SponsorLandingUrlFromVer="$(_SponsorCheck_LandingUrlFromVer)"
         GitHubToken="$(GitHubToken)"
         OpenCollectiveToken="$(OpenCollectiveToken)"
         PolarToken="$(PolarToken)"
@@ -94,6 +99,7 @@
         OutputAuthorAccountsPath="$(_SponsorCheck_AuthorAccountsPath)"
         OutputSeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
         OutputMessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
+        OutputLandingUrlPath="$(_SponsorCheck_LandingUrlPath)"
         OverridePackDate="$(SponsorCheck_PackDateOverride)" />
 
     <ItemGroup>
@@ -116,6 +122,10 @@
       <None Include="$(_SponsorCheck_MessageOverridesPath)"
             Pack="true"
             PackagePath="build\SponsorCheck.MessageOverrides.json"
+            Visible="false" />
+      <None Include="$(_SponsorCheck_LandingUrlPath)"
+            Pack="true"
+            PackagePath="build\SponsorCheck.LandingUrl.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_GeneratedTargetsPath)"
             Pack="true"

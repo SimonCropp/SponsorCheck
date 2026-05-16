@@ -9,6 +9,7 @@
     <_SponsorCheck_AuthorAccountsPath>$(MSBuildThisFileDirectory)SponsorCheck.AuthorAccounts.txt</_SponsorCheck_AuthorAccountsPath>
     <_SponsorCheck_SeverityOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.SeverityOverrides.txt</_SponsorCheck_SeverityOverridesPath>
     <_SponsorCheck_MessageOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.MessageOverrides.json</_SponsorCheck_MessageOverridesPath>
+    <_SponsorCheck_LandingUrlPath>$(MSBuildThisFileDirectory)SponsorCheck.LandingUrl.txt</_SponsorCheck_LandingUrlPath>
   </PropertyGroup>
 
   <UsingTask TaskName="VerifySponsorshipTask"
@@ -46,6 +47,7 @@
         AuthorAccountsPath="$(_SponsorCheck_AuthorAccountsPath)"
         SeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
         MessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
+        LandingUrlPath="$(_SponsorCheck_LandingUrlPath)"
         IsCpm="$(ManagePackageVersionsCentrally)"
         ConsumerProjectPath="$(MSBuildProjectFullPath)"
         DirectoryPackagesPropsPath="$(DirectoryPackagesPropsPath)"

@@ -80,15 +80,26 @@ public static class ConsumerMetadataExamples
             return "";
         }
 
-        if (authorAccounts.Count == 1)
+        // Dedupe identical URLs so a SponsorLandingUrl override (which collapses every platform
+        // to the same URL) renders as a single "Sponsor at <url>" line instead of repeating it.
+        var distinctUrls = new List<string>();
+        foreach (var account in authorAccounts)
         {
-            return $"Sponsor at {authorAccounts[0].SponsorUrl}";
+            if (!distinctUrls.Contains(account.SponsorUrl, StringComparer.Ordinal))
+            {
+                distinctUrls.Add(account.SponsorUrl);
+            }
+        }
+
+        if (distinctUrls.Count == 1)
+        {
+            return $"Sponsor at {distinctUrls[0]}";
         }
 
         var lines = new List<string> { "Sponsor at:" };
-        foreach (var account in authorAccounts)
+        foreach (var url in distinctUrls)
         {
-            lines.Add($"  {account.SponsorUrl}");
+            lines.Add($"  {url}");
         }
 
         return string.Join(newline, lines);

@@ -1307,6 +1307,480 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC003");
     }
+
+    // --- SponsorLandingUrl override: duplicates of every URL-bearing snapshot test ---
+    //
+    // When the package author sets SponsorLandingUrl on their SponsorCheck reference, the verifier
+    // replaces every per-platform sponsor URL (github.com/sponsors/..., opencollective.com/...,
+    // polar.sh/...) with the single author-supplied landing URL. The "Sponsor at" block also
+    // collapses to one line because RenderSponsorAtBlock dedupes identical URLs.
+    //
+    // Each test here mirrors an existing snapshot test above but with WriteLandingUrl(dir) plumbed
+    // into LandingUrlPath. The snapshot proves the rendered message no longer contains the
+    // platform URLs and instead contains the override URL.
+
+    const string overrideLandingUrl = "https://acme.example.com/sponsor";
+
+    static string WriteLandingUrl(TempDirectory dir, string url = overrideLandingUrl)
+    {
+        var path = Path.Combine(dir, "LandingUrl.txt");
+        File.WriteAllText(path, url);
+        return path;
+    }
+
+    [Test]
+    public async Task NoConfig_WithLandingUrl_FailsWithSC001()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains(overrideLandingUrl);
+        await Assert.That(message).DoesNotContain("github.com/sponsors");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task SC001_WithLandingUrl_MessageReplacesAllPlatformUrls()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains(overrideLandingUrl);
+        await Assert.That(message).DoesNotContain("https://github.com/sponsors/acmecorp");
+        await Assert.That(message).DoesNotContain("https://opencollective.com/acme-org");
+        await Assert.That(message).DoesNotContain("https://polar.sh/acme");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task SC005_WithLandingUrl_MessageReplacesPlatformUrl()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromRef = "true",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var message = engine.Warnings[0].Message!;
+        await Assert.That(message).Contains(overrideLandingUrl);
+        await Assert.That(message).DoesNotContain("https://github.com/sponsors/acmecorp");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task IgnoredTrue_WithLandingUrl_PassesWithSC005Warning()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromRef = "true",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC005");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task InvalidSponsor_WithLandingUrl_FailsWithSC007()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            GitHubFromRef = "mallory",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task InvalidSponsor_OnePlatformConfigured_WithLandingUrl_ShowsOverrideUrl()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            GitHubFromRef = "mallory",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains($"Sponsor at {overrideLandingUrl}");
+        await Assert.That(message).DoesNotContain("github.com/sponsors");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task InvalidSponsor_MultiplePlatformsConfigured_WithLandingUrl_CollapsesToOneSponsorAt()
+    {
+        // Three platforms, one landing URL: RenderSponsorAtBlock dedupes so the rendered SC007
+        // message has a single "Sponsor at <url>" line instead of a three-bullet block.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            GitHubFromRef = "mallory",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains($"Sponsor at {overrideLandingUrl}");
+        await Assert.That(message).DoesNotContain("Sponsor at:");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmInvalidSponsor_WithLandingUrl_FailsWithSC008()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            GitHubFromVer = "mallory",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC008");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmInvalidSponsor_MultiplePlatformsConfigured_WithLandingUrl_CollapsesToOneSponsorAt()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            GitHubFromVer = "mallory",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC008");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task ExpiredLicense_WithLandingUrl_FailsWithSC009()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            LicensedUntilFromRef = "2000-01",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task ExpiredLicense_MultiplePlatformsConfigured_WithLandingUrl_CollapsesToOneSponsorAt()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            LicensedUntilFromRef = "2000-01",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmExpiredLicense_WithLandingUrl_FailsWithSC010()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            LicensedUntilFromVer = "2000-01",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC010");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmExpiredLicense_MultiplePlatformsConfigured_WithLandingUrl_CollapsesToOneSponsorAt()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            LicensedUntilFromVer = "2000-01",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC010");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmIgnored_MultiplePlatformsConfigured_WithLandingUrl_WarnsWithSC006()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            IgnoredFromVer = "true",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC006");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmNoConfig_WithLandingUrl_FailsWithSC002()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC002");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmNoConfig_MultiplePlatformsConfigured_WithLandingUrl_FailsWithSC002()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC002");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task MultiplePlatformAccounts_NoneMatch_WithLandingUrl_FailsWithSC007ListingAllAttempts()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"), ("OpenCollective", "acme-org"), ("Polar", "acme")),
+            GitHubFromRef = "mallory",
+            OpenCollectiveFromRef = "wrong-org",
+            PolarFromRef = "wrong-handle",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task SponsorshipStartBeforePackDate_WithLandingUrl_StillEnforcesHash()
+    {
+        using var dir = new TempDirectory();
+        var hashes = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var packDate = Path.Combine(dir, "packdate.txt");
+        await File.WriteAllTextAsync(packDate, "2026-04-15");
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = hashes,
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            PackDatePath = packDate,
+            GitHubFromRef = "carol",
+            SponsorshipStartFromRef = "2026-04-01",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task SponsorshipStartEqualsPackDate_WithLandingUrl_FallsThroughToHash()
+    {
+        using var dir = new TempDirectory();
+        var hashes = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var packDate = Path.Combine(dir, "packdate.txt");
+        await File.WriteAllTextAsync(packDate, "2026-04-15");
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = hashes,
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            PackDatePath = packDate,
+            GitHubFromRef = "carol",
+            SponsorshipStartFromRef = "2026-04-15",
+            LandingUrlPath = WriteLandingUrl(dir)
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        await Verify(engine);
+    }
 }
 
 internal sealed class TaskLoggingHelperFor(IBuildEngine engine) :

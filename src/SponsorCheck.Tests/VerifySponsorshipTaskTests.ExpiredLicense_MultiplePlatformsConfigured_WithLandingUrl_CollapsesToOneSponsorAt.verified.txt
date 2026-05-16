@@ -1,0 +1,21 @@
+﻿{
+  Errors: [
+    {
+      Code: SC009,
+      Message:
+License expired. Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' on the <PackageReference> has expired (end of month 2000-01-31 UTC).
+
+Renew the license in:
+
+  C:/Consumer/MyApp.csproj
+
+Example format:
+
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
+
+Sponsor at https://acme.example.com/sponsor
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009
+    }
+  ]
+}
