@@ -149,6 +149,35 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task NoPlatformAccount_FailsPackWithSC101()
+    {
+        // ThePackageNoPlatform references SponsorCheck without any <Platform>Account metadata.
+        // The bundler must fail-fast with SC101 before any platform fetch is attempted.
+        var result = await ThePackageBuilder.TryPack("ThePackageNoPlatform");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC101");
+        await Assert.That(result.Combined).Contains("at least one platform account metadata");
+    }
+
+    [Test]
+    public async Task MissingCredential_FailsPackWithSC102()
+    {
+        // ThePackageMissingCredential declares GitHubSponsorsAccount but supplies no token.
+        // Pack without the override list so the real platform fetch is attempted, and force
+        // GitHubToken="" so any ambient env-var doesn't satisfy the credential requirement.
+        var result = await ThePackageBuilder.TryPack(
+            "ThePackageMissingCredential",
+            useOverrideList: false,
+            extraProperties: new Dictionary<string, string>
+            {
+                ["GitHubToken"] = ""
+            });
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC102");
+        await Assert.That(result.Combined).Contains("GitHub Sponsors: API token required");
+    }
+
+    [Test]
     public async Task SeverityOverrides_InvalidValue_FailsPackWithSC104()
     {
         // ThePackageBadOverride declares NoLicenseSpecifiedSeverityOverride="critical" — not a

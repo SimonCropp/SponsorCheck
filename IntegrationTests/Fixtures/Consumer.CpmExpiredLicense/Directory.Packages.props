@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="ThePackage" Version="1.0.0"
+                    SponsorshipLicensedUntil="2000-01" />
+  </ItemGroup>
+</Project>

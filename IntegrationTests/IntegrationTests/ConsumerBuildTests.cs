@@ -148,6 +148,50 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task CpmNoConfig_FailsWithSC002()
+    {
+        // CPM sibling of SC001 (Consumer.NoConfig). License metadata is missing on the
+        // PackageVersion; the verifier must fire SC002, not SC001.
+        var result = await BuildFixture("Consumer.CpmNoConfig");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC002");
+        await Assert.That(result.Combined).DoesNotContain("SC001");
+    }
+
+    [Test]
+    public async Task CpmMultipleModes_FailsWithSC004()
+    {
+        // CPM sibling of SC003 (Consumer.MultipleModes). Two mutually-exclusive license modes
+        // declared on the PackageVersion must trip SC004, not SC003.
+        var result = await BuildFixture("Consumer.CpmMultipleModes");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC004");
+        await Assert.That(result.Combined).DoesNotContain("SC003");
+    }
+
+    [Test]
+    public async Task CpmInvalidSponsor_FailsWithSC008()
+    {
+        // CPM sibling of SC007 (Consumer.InvalidSponsor). A sponsor account on PackageVersion
+        // that doesn't match the bundled hash list must trip SC008, not SC007.
+        var result = await BuildFixture("Consumer.CpmInvalidSponsor");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC008");
+        await Assert.That(result.Combined).DoesNotContain("SC007");
+    }
+
+    [Test]
+    public async Task CpmExpiredLicense_FailsWithSC010()
+    {
+        // CPM sibling of SC009 (Consumer.ExpiredLicense). Expired SponsorshipLicensedUntil on
+        // the PackageVersion must trip SC010, not SC009.
+        var result = await BuildFixture("Consumer.CpmExpiredLicense");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC010");
+        await Assert.That(result.Combined).DoesNotContain("SC009");
+    }
+
+    [Test]
     public async Task FutureSponsorshipStart_FailsWithSC015()
     {
         var result = await BuildFixture("Consumer.FutureSponsorshipStart");

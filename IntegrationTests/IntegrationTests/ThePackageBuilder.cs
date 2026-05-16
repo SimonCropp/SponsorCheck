@@ -84,7 +84,14 @@ public static class ThePackageBuilder
     /// Like EnsureBuilt, but returns the CLI result without throwing on failure. Use this in
     /// tests that expect the pack to fail (e.g. SC104 on bad metadata) and want to inspect the
     /// build output. Always uses a fresh feed dir — never cached.
-    public static async Task<CliResult> TryPack(string fixtureName)
+    /// When <paramref name="useOverrideList"/> is false the bundler hits the real platform fetch
+    /// path instead of the JSON override — used by SC102 (missing credential) which only fires
+    /// when a real platform is consulted. The caller must supply <paramref name="extraProperties"/>
+    /// that block any ambient token from leaking in (e.g. <c>GitHubToken=""</c>).
+    public static async Task<CliResult> TryPack(
+        string fixtureName,
+        bool useOverrideList = true,
+        IReadOnlyDictionary<string, string>? extraProperties = null)
     {
         var feed = Path.Combine(Path.GetTempPath(), "sponsorcheck-it-feed", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(feed);
@@ -100,17 +107,30 @@ public static class ThePackageBuilder
 
         var packagesDir = Path.Combine(feed, ".pkgs");
         Directory.CreateDirectory(packagesDir);
+        var properties = new Dictionary<string, string>
+        {
+            ["PackageOutputPath"] = feed,
+            ["SponsorCheckVersion"] = sponsorCheckVersion,
+            ["SponsorCheck_PackDateOverride"] = "2024-01-01"
+        };
+        if (useOverrideList)
+        {
+            properties["SponsorListOverride"] = TestEnvironment.OverrideListPath;
+        }
+
+        if (extraProperties != null)
+        {
+            foreach (var pair in extraProperties)
+            {
+                properties[pair.Key] = pair.Value;
+            }
+        }
+
         return await DotnetCliRunner.Run(
             "pack",
             Path.Combine(workDir, $"{fixtureName}.csproj"),
             "Release",
-            new Dictionary<string, string>
-            {
-                ["SponsorListOverride"] = TestEnvironment.OverrideListPath,
-                ["PackageOutputPath"] = feed,
-                ["SponsorCheckVersion"] = sponsorCheckVersion,
-                ["SponsorCheck_PackDateOverride"] = "2024-01-01"
-            },
+            properties,
             workDir,
             packagesDir).ConfigureAwait(false);
     }

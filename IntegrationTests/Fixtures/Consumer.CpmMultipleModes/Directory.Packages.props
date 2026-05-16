@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="ThePackage" Version="1.0.0"
+                    SponsorshipLicenseIgnored="true"
+                    GitHubSponsorAccount="alice" />
+  </ItemGroup>
+</Project>
