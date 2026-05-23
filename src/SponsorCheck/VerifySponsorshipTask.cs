@@ -121,7 +121,7 @@ public sealed class VerifySponsorshipTask :
     }
 
     static string FirstNonEmpty(string a, string b) =>
-        !string.IsNullOrWhiteSpace(a) ? a.Trim() : (string.IsNullOrWhiteSpace(b) ? "" : b.Trim());
+        !string.IsNullOrWhiteSpace(a) ? a.Trim() : string.IsNullOrWhiteSpace(b) ? "" : b.Trim();
 
     public static IReadOnlyList<AuthorAccount> ResolveAuthorAccounts(string authorAccountsPath, string? landingUrlOverride = null)
     {
