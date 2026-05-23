@@ -10,6 +10,9 @@ public sealed class VerifySponsorshipTask :
     public string LandingUrlPath { get; set; } = "";
 
     public string IsCpm { get; set; } = "";
+    // Non-empty signals owner mode: the consumer configures sponsorship via global MSBuild
+    // properties (passed through the *FromRef parameters) rather than per-package item metadata.
+    public string OwnerId { get; set; } = "";
     public string ConsumerProjectPath { get; set; } = "";
     public string DirectoryPackagesPropsPath { get; set; } = "";
 
@@ -37,8 +40,9 @@ public sealed class VerifySponsorshipTask :
 
             // SC020 enforces that under CPM only <PackageVersion> carries SponsorCheck metadata,
             // and conversely under non-CPM only <PackageReference> does. Run this before merging
-            // so a wrong-side value doesn't silently flow through the merge.
-            if (!CheckPlacement(context))
+            // so a wrong-side value doesn't silently flow through the merge. Owner mode reads global
+            // properties (single source), so placement doesn't apply.
+            if (!context.IsOwner && !CheckPlacement(context))
             {
                 return false;
             }
@@ -74,18 +78,25 @@ public sealed class VerifySponsorshipTask :
 
     ConsumerContext BuildConsumerContext()
     {
-        var isCpm = string.Equals(IsCpm, "true", StringComparison.OrdinalIgnoreCase);
+        var isOwner = !string.IsNullOrWhiteSpace(OwnerId);
+        var isCpm = !isOwner && string.Equals(IsCpm, "true", StringComparison.OrdinalIgnoreCase);
+        var mode = isOwner
+            ? ConsumerMode.Owner
+            : isCpm
+                ? ConsumerMode.Cpm
+                : ConsumerMode.NonCpm;
         // Prefer the version from the side that's authoritative for CPM mode, but fall back to
         // either side so we still render a useful example when the consumer's setup is mixed.
         var resolvedVersion = isCpm
             ? FirstNonEmpty(PackageVersionFromVer, PackageVersionFromRef)
             : FirstNonEmpty(PackageVersionFromRef, PackageVersionFromVer);
         return new(
-            isCpm,
+            mode,
             ConsumerProjectPath,
             DirectoryPackagesPropsPath,
             ThePackageId,
-            resolvedVersion);
+            resolvedVersion,
+            isOwner ? OwnerId.Trim() : "");
     }
 
     bool CheckPlacement(ConsumerContext context)
@@ -121,7 +132,7 @@ public sealed class VerifySponsorshipTask :
     }
 
     static string FirstNonEmpty(string a, string b) =>
-        !string.IsNullOrWhiteSpace(a) ? a.Trim() : (string.IsNullOrWhiteSpace(b) ? "" : b.Trim());
+        !string.IsNullOrWhiteSpace(a) ? a.Trim() : string.IsNullOrWhiteSpace(b) ? "" : b.Trim();
 
     public static IReadOnlyList<AuthorAccount> ResolveAuthorAccounts(string authorAccountsPath, string? landingUrlOverride = null)
     {

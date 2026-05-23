@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- 'mallory' is not in the bundled sponsor list, so owner mode must fail with SC024. -->
+    <GitHubSponsorAccount>mallory</GitHubSponsorAccount>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
+  </ItemGroup>
+</Project>

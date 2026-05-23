@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Global property: read by the owner-mode package (ThePackageOwnerMode). -->
+    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Mixed fleet: an owner-mode package and a per-package package referenced together, with the
+         sponsor account declared in BOTH places. The two sources don't interfere, so both verify. -->
+    <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
+    <PackageReference Include="ThePackage" Version="1.0.0" GitHubSponsorAccount="alice" />
+  </ItemGroup>
+</Project>

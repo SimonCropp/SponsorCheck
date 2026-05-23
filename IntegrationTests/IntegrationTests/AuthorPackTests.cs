@@ -70,6 +70,25 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task OwnerMode_GeneratesOwnerVerifierTargets()
+    {
+        // ThePackageOwnerMode sets SponsorOwner="acme", so the bundler must emit the owner template
+        // (reads global MSBuild properties + bakes in the owner id) rather than the per-package
+        // template (reads item metadata off @(PackageReference)).
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOwnerMode");
+        var nupkg = Directory.GetFiles(feed, "ThePackageOwnerMode.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/ThePackageOwnerMode.targets")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+        await Assert.That(content).Contains("VerifySponsorshipTask");
+        await Assert.That(content).Contains("$(GitHubSponsorAccount)");
+        await Assert.That(content).Contains("_SponsorCheck_OwnerId>acme<");
+        await Assert.That(content).DoesNotContain("@(PackageReference");
+    }
+
+    [Test]
     public async Task BundledTargetsReferencesRightAssembly()
     {
         var feed = await ThePackageBuilder.EnsureBuilt();
@@ -97,9 +116,9 @@ public class AuthorPackTests
         using var stream = entry.Open();
         using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync();
-        // Each override metadatum applies to both the SC0xx code and its SC2xx CPM sibling, so the
-        // bundled file carries two entries per author-supplied override.
-        string[] expected = ["SC001=warning", "SC002=warning", "SC005=error", "SC006=error"];
+        // Each override metadatum applies to the per-package code, its CPM sibling, and its owner-mode
+        // sibling, so the bundled file carries three entries per author-supplied override.
+        string[] expected = ["SC001=warning", "SC002=warning", "SC021=warning", "SC005=error", "SC006=error", "SC023=error"];
         var lines = content.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
         await Assert.That(lines).IsEquivalentTo(expected);
     }

@@ -5,6 +5,7 @@
     <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck_TasksDir)netstandard2.0\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
     <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
     <_SponsorCheck_VerifierTemplate>$(MSBuildThisFileDirectory)ConsumerVerifier.targets</_SponsorCheck_VerifierTemplate>
+    <_SponsorCheck_VerifierOwnerTemplate>$(MSBuildThisFileDirectory)ConsumerVerifierOwner.targets</_SponsorCheck_VerifierOwnerTemplate>
   </PropertyGroup>
 
   <UsingTask TaskName="BundleSponsorListTask"
@@ -41,6 +42,8 @@
       <_SponsorCheck_OpenCollectiveFromVer>@(_SponsorCheck_SelfVer->'%(OpenCollectiveAccount)')</_SponsorCheck_OpenCollectiveFromVer>
       <_SponsorCheck_PolarFromRef>@(_SponsorCheck_Self->'%(PolarAccount)')</_SponsorCheck_PolarFromRef>
       <_SponsorCheck_PolarFromVer>@(_SponsorCheck_SelfVer->'%(PolarAccount)')</_SponsorCheck_PolarFromVer>
+      <_SponsorCheck_OwnerFromRef>@(_SponsorCheck_Self->'%(SponsorOwner)')</_SponsorCheck_OwnerFromRef>
+      <_SponsorCheck_OwnerFromVer>@(_SponsorCheck_SelfVer->'%(SponsorOwner)')</_SponsorCheck_OwnerFromVer>
       <_SponsorCheck_NoLicenseSpecifiedSevFromRef>@(_SponsorCheck_Self->'%(NoLicenseSpecifiedSeverityOverride)')</_SponsorCheck_NoLicenseSpecifiedSevFromRef>
       <_SponsorCheck_NoLicenseSpecifiedSevFromVer>@(_SponsorCheck_SelfVer->'%(NoLicenseSpecifiedSeverityOverride)')</_SponsorCheck_NoLicenseSpecifiedSevFromVer>
       <_SponsorCheck_LicenseIgnoredSevFromRef>@(_SponsorCheck_Self->'%(LicenseIgnoredSeverityOverride)')</_SponsorCheck_LicenseIgnoredSevFromRef>
@@ -68,6 +71,8 @@
         OpenCollectiveAccountFromVer="$(_SponsorCheck_OpenCollectiveFromVer)"
         PolarAccountFromRef="$(_SponsorCheck_PolarFromRef)"
         PolarAccountFromVer="$(_SponsorCheck_PolarFromVer)"
+        SponsorOwnerFromRef="$(_SponsorCheck_OwnerFromRef)"
+        SponsorOwnerFromVer="$(_SponsorCheck_OwnerFromVer)"
         NoLicenseSpecifiedSeverityOverrideFromRef="$(_SponsorCheck_NoLicenseSpecifiedSevFromRef)"
         NoLicenseSpecifiedSeverityOverrideFromVer="$(_SponsorCheck_NoLicenseSpecifiedSevFromVer)"
         LicenseIgnoredSeverityOverrideFromRef="$(_SponsorCheck_LicenseIgnoredSevFromRef)"
@@ -92,6 +97,7 @@
         UserSecretsId="$(UserSecretsId)"
         OverrideListPath="$(SponsorListOverride)"
         VerifierTargetsTemplatePath="$(_SponsorCheck_VerifierTemplate)"
+        VerifierOwnerTargetsTemplatePath="$(_SponsorCheck_VerifierOwnerTemplate)"
         ThePackageId="$(PackageId)"
         OutputHashListPath="$(_SponsorCheck_HashListPath)"
         OutputVerifierTargetsPath="$(_SponsorCheck_GeneratedTargetsPath)"
