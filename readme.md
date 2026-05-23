@@ -52,16 +52,15 @@ The trade for staying frictionless is honesty: hashing is not a security boundar
 
 ### License modes
 
-License modes are per package and mutually exclusive.
-
-Pick exactly one mode per package. Placement depends on whether the consumer uses Central Package Management:
+The license modes (sponsor account, time-bounded license, ignore) are mutually exclusive — pick exactly one. Where the declaration lives depends on how the package is configured:
 
 - **Without CPM**, set the metadata on the consumer csproj's `<PackageReference>`.
 - **With CPM** (`ManagePackageVersionsCentrally=true`), set it on the matching `<PackageVersion>` in `Directory.Packages.props`.
+- **In [owner mode](#owner-mode)** (the author opted the package in), set the license mode as a global MSBuild property instead of per-package metadata — once, covering every package from that owner.
 
-Setting the metadata on the wrong element raises [wrong location - SC020](docs/VerifierDiagnosticCodes.md#sc020) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC019](docs/VerifierDiagnosticCodes.md#sc019) is a defensive backstop for the rare case where SC020's check is bypassed.
+For the per-package modes, setting the metadata on the wrong element raises [wrong location - SC020](docs/VerifierDiagnosticCodes.md#sc020) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC019](docs/VerifierDiagnosticCodes.md#sc019) is a defensive backstop for the rare case where SC020's check is bypassed. (Owner mode reads a single property, so neither applies.)
 
-Verifier diagnostics that prompt changes to consumer-side metadata (SC001/SC002, SC005/SC006, SC007/SC008, SC009/SC010, SC011/SC012, SC013/SC014, SC015/SC016) render a copy-pasteable XML snippet pre-filled with the package id, version, and the path of the file to edit. Each odd/even pair is the non-CPM / CPM sibling of the same condition.
+Verifier diagnostics that prompt changes to consumer-side configuration (SC001/SC002, SC005/SC006, SC007/SC008, SC009/SC010, SC011/SC012, SC013/SC014, SC015/SC016, and the owner-mode SC021–SC028) render a copy-pasteable snippet pre-filled with the package id, version, and the file to edit. Each odd/even pair is the non-CPM / CPM sibling of the same condition; SC021–SC028 are the owner-mode (global-property) equivalents.
 
 
 #### Sponsor account match (any platform)
@@ -175,6 +174,42 @@ An escape hatch to disable licensing.
 <!-- endSnippet -->
 
 Build passes but emits the [license ignored - SC005](docs/VerifierDiagnosticCodes.md#sc005) warning on every build, flagging that the build is in breach of the package's license.
+
+
+### Owner mode
+
+By default each package is configured independently — the license mode lives on that package's `<PackageReference>` (or `<PackageVersion>`). When an author ships a family of packages covered by a single sponsor account (e.g. several libraries under one GitHub org), they can opt into **owner mode** so consumers configure sponsorship **once**, as a global MSBuild property that covers every package from that owner.
+
+The same license modes apply (sponsor account, time-bounded license, ignore) but are set as plain properties rather than per-package metadata — directly in a consuming project:
+
+<!-- snippet: Consumer.OwnerCsprojProperty.csproj -->
+<a id='snippet-Consumer.OwnerCsprojProperty.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Owner mode: sponsorship configured as a global MSBuild property, here directly in the csproj. -->
+    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.OwnerCsprojProperty/Consumer.OwnerCsprojProperty.csproj#L1-L10' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.OwnerCsprojProperty.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+…or once in `Directory.Build.props`, so it applies to every project under that directory (the natural fit for a monorepo or solution):
+
+```xml
+<Project>
+  <PropertyGroup>
+    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+  </PropertyGroup>
+</Project>
+```
+
+The property names match the per-package metadata names: `GitHubSponsorAccount`, `OpenCollectiveSponsorAccount`, `PolarSponsorAccount`, `SponsorshipLicensedUntil`, `SponsorshipLicenseIgnored`, and `SponsorshipStart`. Owner-mode builds emit the [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021) family — the single-source equivalents of the per-package SC001–SC016 codes (e.g. SC021 is the owner-mode "no license specified", SC024 the "account not in list"). Whether a package uses owner mode is decided by the author at pack time; a consumer can't switch a per-package package into owner mode or vice versa.
 
 
 ### Diagnostic codes
@@ -299,6 +334,35 @@ Each csproj declares the bare reference:
 Each project still bundles independently at its own pack time (one platform fetch per packable project).
 
 
+### Owner mode
+
+When a family of packages is covered by sponsoring a single account, add `SponsorOwner` to the SponsorCheck reference to opt the produced package into **owner mode**. Consumers then configure sponsorship once via a global MSBuild property (see [Owner mode](#owner-mode) under Consumer Usage) instead of per-package metadata — the natural shape for several libraries published under one GitHub org.
+
+<!-- snippet: ThePackageOwnerMode.csproj -->
+<a id='snippet-ThePackageOwnerMode.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- SponsorOwner opts this package into owner mode: consumers configure sponsorship once via
+         global MSBuild properties rather than per-package metadata. -->
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp"
+                      OpenCollectiveAccount="acme-org"
+                      PolarAccount="acme"
+                      SponsorOwner="acme" />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/_Shared/ThePackageOwnerMode/ThePackageOwnerMode.csproj#L1-L15' title='Snippet source file'>snippet source</a> | <a href='#snippet-ThePackageOwnerMode.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The `<Platform>Account` metadata is still required — the bundler fetches and bundles the sponsor list exactly as in per-package mode. `SponsorOwner` only changes the *consumer-side* verifier that gets bundled: it reads global MSBuild properties rather than `<PackageReference>` metadata, and de-duplicates so multiple owner-mode packages from the same owner verify once per build. The owner id is an opaque label — give every package in the family the same value. Owner-mode consumers see the [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021) diagnostics; the severity/message overrides below apply to them too.
+
+
 ### Tuning verifier severity and message text
 
 By default the verifier emits `SC001` (no license mode set), `SC007` (sponsor account not in list), and `SC009` (license expired) as **errors** that fail the consumer build, and `SC005` (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement, or a custom-worded message — can override the severity and/or the message text at pack time:
@@ -312,14 +376,14 @@ By default the verifier emits `SC001` (no license mode set), `SC007` (sponsor ac
                   LicenseIgnoredSeverityOverride="error" />
 ```
 
-Available metadata (severity + message pair per overrideable code). Each override applies to **both** members of the odd/even SC0xx pair — one knob covers the non-CPM and CPM siblings:
+Available metadata (severity + message pair per overrideable code). Each override applies to **all** siblings of the same condition — one knob covers the non-CPM, CPM, and owner-mode codes:
 
 | Codes | Severity metadata | Message metadata | Default severity |
 | --- | --- | --- | --- |
-| [SC001](docs/VerifierDiagnosticCodes.md#sc001) / [SC002](docs/VerifierDiagnosticCodes.md#sc002) | `NoLicenseSpecifiedSeverityOverride` | `NoLicenseSpecifiedMessageOverride` | error |
-| [SC005](docs/VerifierDiagnosticCodes.md#sc005) / [SC006](docs/VerifierDiagnosticCodes.md#sc006) | `LicenseIgnoredSeverityOverride` | `LicenseIgnoredMessageOverride` | warning |
-| [SC007](docs/VerifierDiagnosticCodes.md#sc007) / [SC008](docs/VerifierDiagnosticCodes.md#sc008) | `InvalidAccountSeverityOverride` | `InvalidAccountMessageOverride` | error |
-| [SC009](docs/VerifierDiagnosticCodes.md#sc009) / [SC010](docs/VerifierDiagnosticCodes.md#sc010) | `LicenseExpiredSeverityOverride` | `LicenseExpiredMessageOverride` | error |
+| [SC001](docs/VerifierDiagnosticCodes.md#sc001) / [SC002](docs/VerifierDiagnosticCodes.md#sc002) / [SC021](docs/VerifierDiagnosticCodes.md#sc021) | `NoLicenseSpecifiedSeverityOverride` | `NoLicenseSpecifiedMessageOverride` | error |
+| [SC005](docs/VerifierDiagnosticCodes.md#sc005) / [SC006](docs/VerifierDiagnosticCodes.md#sc006) / [SC023](docs/VerifierDiagnosticCodes.md#sc023) | `LicenseIgnoredSeverityOverride` | `LicenseIgnoredMessageOverride` | warning |
+| [SC007](docs/VerifierDiagnosticCodes.md#sc007) / [SC008](docs/VerifierDiagnosticCodes.md#sc008) / [SC024](docs/VerifierDiagnosticCodes.md#sc024) | `InvalidAccountSeverityOverride` | `InvalidAccountMessageOverride` | error |
+| [SC009](docs/VerifierDiagnosticCodes.md#sc009) / [SC010](docs/VerifierDiagnosticCodes.md#sc010) / [SC025](docs/VerifierDiagnosticCodes.md#sc025) | `LicenseExpiredSeverityOverride` | `LicenseExpiredMessageOverride` | error |
 
 Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name still prefixes and the docs link still suffixes). Other codes are consumer-side configuration bugs and aren't overrideable. Unrecognized severity values fail the pack with [SC104](docs/BundlerDiagnosticCodes.md#sc104). The chosen severities and messages are baked into the produced nupkg — consumers can't tamper with them.
 
@@ -385,7 +449,7 @@ The bundler runs at the OSS author's pack time (Release config, `IsPackable=true
 1. Reads `<Platform>Account` metadata from the SponsorCheck `PackageReference` / `PackageVersion`.
 1. For each enabled platform, calls the platform's API (or reads `SponsorListOverride` if set) to get the list of sponsor accounts.
 1. Hashes each as the first 12 hex chars (48 bits) of `SHA256(utf8("{platform-id}:{lowercase(account)}"))`. Platform-id prefix prevents cross-platform spoofing.
-1. Writes four files into the produced nupkg's `build/` folder: the sorted, deduped hashes (`SponsorCheck.SponsorHashes.txt`), the UTC pack date that powers the `SponsorshipStart` bypass (`SponsorCheck.PackDate.txt`), the enabled platform accounts used to render sponsor URLs in diagnostics (`SponsorCheck.AuthorAccounts.txt`), and the per-consumer verifier targets file (`<ThePackageId>.targets`). The verifier task DLL is packed under `tasks/`.
+1. Writes four files into the produced nupkg's `build/` folder: the sorted, deduped hashes (`SponsorCheck.SponsorHashes.txt`), the UTC pack date that powers the `SponsorshipStart` bypass (`SponsorCheck.PackDate.txt`), the enabled platform accounts used to render sponsor URLs in diagnostics (`SponsorCheck.AuthorAccounts.txt`), and the per-consumer verifier targets file (`<ThePackageId>.targets`). The verifier task DLL is packed under `tasks/`. When `SponsorOwner` is set, the generated targets are the owner-mode variant — they read global MSBuild properties instead of per-package metadata, with the owner id baked in.
 
 
 ### Verifier
@@ -395,6 +459,8 @@ The verifier runs in consumer projects on every build and:
 1. Locates the consumer's `PackageReference` and `PackageVersion` for ThePackage by id.
 1. Merges metadata across both. Reads license-mode declarations (`SponsorshipLicenseIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
 1. Applies the appropriate decision: ignored (warn), sponsor (check hash list), license (check expiry), or fail with the relevant SC code.
+
+In owner mode the same decision logic runs, but the declarations are read from global MSBuild properties (set once in `Directory.Build.props` or a consuming csproj) rather than per-package metadata, and the SC021–SC028 codes are emitted in place of their per-package siblings.
 
 <!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
 ```mermaid
@@ -420,6 +486,8 @@ flowchart TD
     Expired -->|Yes| SC009[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>SC009 Error<br/>License expired</a>]
     Expired -->|No| PassLicense([Build passes])
 ```
+
+> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each (SC005→SC006, SC007→SC008, …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent (Ignored→SC023, no match→SC024, expired→SC025, invalid date→SC026, future start→SC028; SC017 is shared).
 <!-- endInclude -->
 
 

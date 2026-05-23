@@ -1,0 +1,48 @@
+<Project>
+  <PropertyGroup>
+    <_SponsorCheck_ThePackageId>__SC_PACKAGE_ID_RAW__</_SponsorCheck_ThePackageId>
+    <_SponsorCheck_OwnerId>__SC_OWNER_ID_RAW__</_SponsorCheck_OwnerId>
+    <_SponsorCheck_TasksDir>$(MSBuildThisFileDirectory)..\tasks\</_SponsorCheck_TasksDir>
+    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck_TasksDir)netstandard2.0\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
+    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
+    <_SponsorCheck_HashListPath>$(MSBuildThisFileDirectory)SponsorCheck.SponsorHashes.txt</_SponsorCheck_HashListPath>
+    <_SponsorCheck_PackDatePath>$(MSBuildThisFileDirectory)SponsorCheck.PackDate.txt</_SponsorCheck_PackDatePath>
+    <_SponsorCheck_AuthorAccountsPath>$(MSBuildThisFileDirectory)SponsorCheck.AuthorAccounts.txt</_SponsorCheck_AuthorAccountsPath>
+    <_SponsorCheck_SeverityOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.SeverityOverrides.txt</_SponsorCheck_SeverityOverridesPath>
+    <_SponsorCheck_MessageOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.MessageOverrides.json</_SponsorCheck_MessageOverridesPath>
+    <_SponsorCheck_LandingUrlPath>$(MSBuildThisFileDirectory)SponsorCheck.LandingUrl.txt</_SponsorCheck_LandingUrlPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="VerifySponsorshipTask"
+             AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
+
+  <!-- Owner mode: sponsorship is configured once via global MSBuild properties (in
+       Directory.Build.props or the consuming project), not per-package metadata. So this template
+       reads $(GitHubSponsorAccount) etc. directly — no item flatten, no CPM/Ref-Ver split. The
+       run-once guard keyed by the owner id means N packages from the same owner verify a single
+       time instead of repeating the diagnostic per package. -->
+  <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__"
+          BeforeTargets="BeforeBuild"
+          Condition="'$(_SponsorCheck_OwnerVerified___SC_OWNER_ID__)' != 'true'">
+    <PropertyGroup>
+      <_SponsorCheck_OwnerVerified___SC_OWNER_ID__>true</_SponsorCheck_OwnerVerified___SC_OWNER_ID__>
+    </PropertyGroup>
+
+    <VerifySponsorshipTask
+        ThePackageId="$(_SponsorCheck_ThePackageId)"
+        OwnerId="$(_SponsorCheck_OwnerId)"
+        SponsorHashListPath="$(_SponsorCheck_HashListPath)"
+        PackDatePath="$(_SponsorCheck_PackDatePath)"
+        AuthorAccountsPath="$(_SponsorCheck_AuthorAccountsPath)"
+        SeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
+        MessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
+        LandingUrlPath="$(_SponsorCheck_LandingUrlPath)"
+        ConsumerProjectPath="$(MSBuildProjectFullPath)"
+        IgnoredFromRef="$(SponsorshipLicenseIgnored)"
+        LicensedUntilFromRef="$(SponsorshipLicensedUntil)"
+        SponsorshipStartFromRef="$(SponsorshipStart)"
+        GitHubFromRef="$(GitHubSponsorAccount)"
+        OpenCollectiveFromRef="$(OpenCollectiveSponsorAccount)"
+        PolarFromRef="$(PolarSponsorAccount)" />
+  </Target>
+</Project>

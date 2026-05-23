@@ -8,9 +8,20 @@ public class ConsumerBuildTests
         var workDir = TestEnvironment.MakeWorkDir(fixtureName);
         TestEnvironment.CopyDirectory(Path.Combine(TestEnvironment.FixturesDir, fixtureName), workDir);
         TestEnvironment.WriteNugetConfig(workDir, feed);
-        // Empty Directory.Build.props/targets so the temp dir doesn't pick up parent IntegrationTests config.
-        File.WriteAllText(Path.Combine(workDir, "Directory.Build.props"), "<Project/>");
-        File.WriteAllText(Path.Combine(workDir, "Directory.Build.targets"), "<Project/>");
+        // Empty Directory.Build.props/targets so the temp dir doesn't pick up parent IntegrationTests
+        // config — but only when the fixture didn't ship its own. Owner-mode fixtures put their
+        // sponsorship property in Directory.Build.props, which must survive.
+        var directoryBuildProps = Path.Combine(workDir, "Directory.Build.props");
+        if (!File.Exists(directoryBuildProps))
+        {
+            File.WriteAllText(directoryBuildProps, "<Project/>");
+        }
+
+        var directoryBuildTargets = Path.Combine(workDir, "Directory.Build.targets");
+        if (!File.Exists(directoryBuildTargets))
+        {
+            File.WriteAllText(directoryBuildTargets, "<Project/>");
+        }
 
         var packagesDir = Path.Combine(workDir, ".pkgs");
         Directory.CreateDirectory(packagesDir);
@@ -247,6 +258,55 @@ public class ConsumerBuildTests
             authorFixture: "ThePackageOverridden");
         await Assert.That(result.Combined).Contains("You agreed not to free-ride this library.");
         await Assert.That(result.Combined).DoesNotContain("Build is allowed but is in breach");
+    }
+
+    [Test]
+    public async Task OwnerMode_PropertyInDirectoryBuildProps_BuildsCleanly()
+    {
+        // Owner mode: the author published ThePackageOwnerMode with SponsorOwner="acme". The consumer
+        // declares its sponsor account once as a global property — here in Directory.Build.props,
+        // which the fixture ships and BuildFixture must not clobber. 'alice' is in the bundled list.
+        var result = await BuildFixture("Consumer.OwnerDirectoryBuildProps", authorFixture: "ThePackageOwnerMode");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC00");
+        await Assert.That(result.Combined).DoesNotContain("SC02");
+    }
+
+    [Test]
+    public async Task OwnerMode_PropertyInCsproj_BuildsCleanly()
+    {
+        // Same as above but the global property is set directly in the consuming csproj.
+        var result = await BuildFixture("Consumer.OwnerCsprojProperty", authorFixture: "ThePackageOwnerMode");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC00");
+        await Assert.That(result.Combined).DoesNotContain("SC02");
+    }
+
+    [Test]
+    public async Task OwnerMode_NoConfig_FailsWithSC021()
+    {
+        // Owner-mode counterpart of SC001/SC002: no sponsorship property set anywhere.
+        var result = await BuildFixture("Consumer.OwnerNoConfig", authorFixture: "ThePackageOwnerMode");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC021");
+    }
+
+    [Test]
+    public async Task OwnerMode_InvalidSponsor_FailsWithSC024()
+    {
+        // Owner-mode counterpart of SC007/SC008: the property names an account not in the bundled list.
+        var result = await BuildFixture("Consumer.OwnerInvalidSponsor", authorFixture: "ThePackageOwnerMode");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC024");
+    }
+
+    [Test]
+    public async Task OwnerMode_Ignored_BuildsWithSC023Warning()
+    {
+        // Owner-mode counterpart of SC005/SC006: SponsorshipLicenseIgnored property opts out.
+        var result = await BuildFixture("Consumer.OwnerIgnored", authorFixture: "ThePackageOwnerMode");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC023");
     }
 
     [Test]

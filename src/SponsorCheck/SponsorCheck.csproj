@@ -27,6 +27,7 @@
   <ItemGroup>
     <None Include="build\SponsorCheck.targets" Pack="true" PackagePath="build\SponsorCheck.targets;buildMultiTargeting\SponsorCheck.targets" />
     <None Include="EmbeddedTemplates\ConsumerVerifier.targets" Pack="true" PackagePath="build\ConsumerVerifier.targets;buildMultiTargeting\ConsumerVerifier.targets" Visible="false" />
+    <None Include="EmbeddedTemplates\ConsumerVerifierOwner.targets" Pack="true" PackagePath="build\ConsumerVerifierOwner.targets;buildMultiTargeting\ConsumerVerifierOwner.targets" Visible="false" />
     <None Include="nuget-readme.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 

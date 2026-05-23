@@ -383,6 +383,58 @@ public class BundleSponsorListTaskTests
     }
 
     [Test]
+    public async Task OwnerMode_SelectsOwnerTemplateAndSubstitutesOwnerId()
+    {
+        // When SponsorOwner is set the bundler must render the OWNER template (reads global
+        // properties) rather than the per-package template, and substitute both the package-id and
+        // owner-id placeholders. __SC_OWNER_ID__ becomes the sanitized guard-property suffix;
+        // __SC_OWNER_ID_RAW__ becomes the literal owner id.
+        using var dir = new TempDirectory();
+        var perPackageTemplate = Path.Combine(dir, "ConsumerVerifier.targets");
+        await File.WriteAllTextAsync(perPackageTemplate, "<Project><!-- per-package template --></Project>");
+        var ownerTemplate = Path.Combine(dir, "ConsumerVerifierOwner.targets");
+        await File.WriteAllTextAsync(
+            ownerTemplate,
+            """
+            <Project>
+              <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__"
+                      Condition="'$(_SponsorCheck_OwnerVerified___SC_OWNER_ID__)' != 'true'" />
+              <PropertyGroup>
+                <_SponsorCheck_OwnerId>__SC_OWNER_ID_RAW__</_SponsorCheck_OwnerId>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        var override_ = WriteOverride(dir, "[]");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            SponsorOwnerFromRef = "acme",
+            VerifierTargetsTemplatePath = perPackageTemplate,
+            VerifierOwnerTargetsTemplatePath = ownerTemplate,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var rendered = await File.ReadAllTextAsync(task.OutputVerifierTargetsPath);
+        await Assert.That(rendered).DoesNotContain("per-package template");
+        await Assert.That(rendered).Contains("_SponsorCheck_OwnerId>acme<");
+        await Assert.That(rendered).Contains($"_SponsorCheck_Verify_{BundleSponsorListTask.Sanitize("MyOssLib")}");
+        await Assert.That(rendered).Contains($"_SponsorCheck_OwnerVerified_{BundleSponsorListTask.Sanitize("acme")}");
+        await Assert.That(rendered).DoesNotContain("__SC_OWNER_ID__");
+        await Assert.That(rendered).DoesNotContain("__SC_OWNER_ID_RAW__");
+    }
+
+    [Test]
     public async Task Sanitize_DistinguishesIdsThatCollideUnderCharReplacement()
     {
         // Package ids that differ only by separator (. vs - vs _) all map to the same

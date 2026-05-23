@@ -3,12 +3,17 @@
 // "<version>" when neither the PackageReference nor the PackageVersion item carried %(Version),
 // which keeps the rendered snippet syntactically valid as a placeholder.
 public sealed record ConsumerContext(
-    bool IsCpm,
+    ConsumerMode Mode,
     string ConsumerProjectPath,
     string DirectoryPackagesPropsPath,
     string PackageId,
-    string ResolvedVersion)
+    string ResolvedVersion,
+    string OwnerId = "")
 {
+    public bool IsCpm => Mode == ConsumerMode.Cpm;
+
+    public bool IsOwner => Mode == ConsumerMode.Owner;
+
     public string ElementName => IsCpm ? "PackageVersion" : "PackageReference";
 
     public string TargetFilePath =>

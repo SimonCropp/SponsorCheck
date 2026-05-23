@@ -15,11 +15,16 @@ public static class ConsumerMetadataExamples
     {
         // Sponsor options come first, then time-bounded license, then the ignore escape hatch
         // last — same ordering convention as the SC003/SC004 conflict message.
-        var lines = new List<string>
-        {
-            $"Add ONE of the following attributes to the existing <{context.ElementName}> for '{context.PackageId}' in:",
-            $"  {context.TargetFilePath}"
-        };
+        var lines = context.IsOwner
+            ? new List<string>
+            {
+                "Set ONE of the following properties (in a <PropertyGroup> in Directory.Build.props or the consuming project):"
+            }
+            : new List<string>
+            {
+                $"Add ONE of the following attributes to the existing <{context.ElementName}> for '{context.PackageId}' in:",
+                $"  {context.TargetFilePath}"
+            };
 
         foreach (var account in authorAccounts)
         {
@@ -57,6 +62,17 @@ public static class ConsumerMetadataExamples
             ? Array.Empty<(string, string)>()
             : [(ConsumerMetadataNames.For(pair.Key), pair.Value)];
         var attributes = existing.Concat([("SponsorshipStart", "yyyy-MM-dd")]).ToArray();
+
+        if (context.IsOwner)
+        {
+            return $"""
+                    If sponsorship started after this package was released, attest to the start date by setting the SponsorshipStart property in Directory.Build.props or the consuming project.
+
+                    Example format:
+
+                      {RenderItem(context, attributes)}
+                    """;
+        }
 
         return $"""
                 If sponsorship started after this package was released, attest to the start date in:
@@ -106,37 +122,61 @@ public static class ConsumerMetadataExamples
     }
 
     public static string RenderLicensedUntilRenewal(ConsumerContext context) =>
-        $"""
-         Renew the license in:
+        context.IsOwner
+            ? $"""
+               Renew the license by updating the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
-           {context.TargetFilePath}
+               Example format:
 
-         Example format:
+                 {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+               """
+            : $"""
+               Renew the license in:
 
-           {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
-         """;
+                 {context.TargetFilePath}
+
+               Example format:
+
+                 {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+               """;
 
     public static string RenderLicensedUntilFormatFix(ConsumerContext context) =>
-        $"""
-         Fix the SponsorshipLicensedUntil attribute in:
+        context.IsOwner
+            ? $"""
+               Fix the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
-           {context.TargetFilePath}
+               Example format:
 
-         Example format:
+                 {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+               """
+            : $"""
+               Fix the SponsorshipLicensedUntil attribute in:
 
-           {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
-         """;
+                 {context.TargetFilePath}
+
+               Example format:
+
+                 {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+               """;
 
     public static string RenderSponsorshipStartFix(ConsumerContext context) =>
-        $"""
-         Fix the SponsorshipStart attribute in:
+        context.IsOwner
+            ? $"""
+               Fix the SponsorshipStart property in Directory.Build.props or the consuming project.
 
-           {context.TargetFilePath}
+               Example format:
 
-         Example format:
+                 {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}
+               """
+            : $"""
+               Fix the SponsorshipStart attribute in:
 
-           {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}
-         """;
+                 {context.TargetFilePath}
+
+               Example format:
+
+                 {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}
+               """;
 
     public static string RenderPlacementError(
         ConsumerContext context,
@@ -183,6 +223,14 @@ public static class ConsumerMetadataExamples
 
     static string RenderItem(ConsumerContext context, params (string Attribute, string Value)[] extraAttributes)
     {
+        // Owner mode is property-based: render each license mode as its own MSBuild property element
+        // rather than item metadata on a <PackageReference>/<PackageVersion>. Continuation lines are
+        // indented two spaces so multi-property examples stay aligned under the caller's leading indent.
+        if (context.IsOwner)
+        {
+            return string.Join($"{newline}  ", extraAttributes.Select(_ => $"<{_.Attribute}>{_.Value}</{_.Attribute}>"));
+        }
+
         // Both <PackageReference> (no-CPM) and <PackageVersion> (CPM) carry a Version attribute,
         // so always render it.
         var sb = new StringBuilder();

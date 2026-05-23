@@ -1,0 +1,24 @@
+﻿{
+  Warnings: [
+    {
+      Code: SC023,
+      Message:
+License ignored. Package 'MyOssLib': SponsorshipLicenseIgnored="true" property is set. Build is allowed but is in breach of the package license.
+
+Set ONE of the following properties (in a <PropertyGroup> in Directory.Build.props or the consuming project):
+
+Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
+  <GitHubSponsorAccount><your-github-account></GitHubSponsorAccount>
+
+Option — Time-bounded license (replace yyyy-MM with the last covered month):
+  <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+
+Option — Mark as ignored (you accept that the build is in breach of the package license):
+  <SponsorshipLicenseIgnored>true</SponsorshipLicenseIgnored>
+
+Sponsor at https://github.com/sponsors/acmecorp
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023
+    }
+  ]
+}
