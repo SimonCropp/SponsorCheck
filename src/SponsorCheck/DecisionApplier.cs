@@ -15,11 +15,11 @@ public static class DecisionApplier
     {
         switch (decision)
         {
-            case LicenseDecision.MissingConfig m:
+            case LicenseDecision.MissingConfig missingConfig:
             {
                 var (code, opener) = context.IsCpm
-                    ? ("SC002", $"Package '{m.PackageId}' requires license metadata on the <PackageVersion> for '{m.PackageId}' in Directory.Packages.props.")
-                    : ("SC001", $"Package '{m.PackageId}' requires license metadata on the <PackageReference> for '{m.PackageId}'.");
+                    ? ("SC002", $"Package '{missingConfig.PackageId}' requires license metadata on the <PackageVersion> for '{missingConfig.PackageId}' in Directory.Packages.props.")
+                    : ("SC001", $"Package '{missingConfig.PackageId}' requires license metadata on the <PackageReference> for '{missingConfig.PackageId}'.");
                 return SponsorCheckLog.Emit(
                     log,
                     code,
@@ -33,18 +33,18 @@ public static class DecisionApplier
                      """);
             }
 
-            case LicenseDecision.ConflictingModes c:
+            case LicenseDecision.ConflictingModes conflictingModes:
             {
                 var (code, opener) = context.IsCpm
-                    ? ("SC004", $"Package '{c.PackageId}': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props ({string.Join(", ", c.Modes)}). Pick one.")
-                    : ("SC003", $"Package '{c.PackageId}': mutually exclusive license modes are set on the <PackageReference> ({string.Join(", ", c.Modes)}). Pick one.");
+                    ? ("SC004", $"Package '{conflictingModes.PackageId}': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props ({string.Join(", ", conflictingModes.Modes)}). Pick one.")
+                    : ("SC003", $"Package '{conflictingModes.PackageId}': mutually exclusive license modes are set on the <PackageReference> ({string.Join(", ", conflictingModes.Modes)}). Pick one.");
                 SponsorCheckLog.Error(
                     log,
                     code,
                     $"""
                      {opener}
 
-                     Edit the <{context.ElementName}> for '{c.PackageId}' in:
+                     Edit the <{context.ElementName}> for '{conflictingModes.PackageId}' in:
                        {context.TargetFilePath}
 
                      Keep exactly one of: {string.Join(", ", ConsumerMetadataNames.All)}, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
@@ -52,11 +52,11 @@ public static class DecisionApplier
                 return false;
             }
 
-            case LicenseDecision.Ignored i:
+            case LicenseDecision.Ignored ignored:
             {
                 var (code, opener) = context.IsCpm
-                    ? ("SC006", $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license.")
-                    : ("SC005", $"Package '{i.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageReference>. Build is allowed but is in breach of the package license.");
+                    ? ("SC006", $"Package '{ignored.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license.")
+                    : ("SC005", $"Package '{ignored.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageReference>. Build is allowed but is in breach of the package license.");
                 return SponsorCheckLog.Emit(
                     log,
                     code,
@@ -70,11 +70,11 @@ public static class DecisionApplier
                      """);
             }
 
-            case LicenseDecision.Sponsor s:
-                return ApplySponsor(s, sponsorHashListPath, packDatePath, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
+            case LicenseDecision.Sponsor sponsor:
+                return ApplySponsor(sponsor, sponsorHashListPath, packDatePath, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
 
-            case LicenseDecision.Licensed l:
-                return ApplyLicensed(l, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
+            case LicenseDecision.Licensed licensed:
+                return ApplyLicensed(licensed, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
 
             default:
                 throw new InvalidOperationException($"Unknown decision: {decision.GetType().Name}");

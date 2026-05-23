@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
     <IsPackable>false</IsPackable>
+    <UserSecretsId>bf24ebf3-5597-4c20-9c73-f8f24e39fca1</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\SponsorCheck\SponsorCheck.csproj"
