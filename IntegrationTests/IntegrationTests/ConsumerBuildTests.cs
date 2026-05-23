@@ -5,6 +5,11 @@ public class ConsumerBuildTests
     static async Task<CliResult> BuildFixture(string fixtureName, string configuration = "Release", string authorFixture = "ThePackage")
     {
         var feed = await ThePackageBuilder.EnsureBuilt(authorFixture);
+        return await BuildFixtureInFeed(fixtureName, feed, configuration);
+    }
+
+    static async Task<CliResult> BuildFixtureInFeed(string fixtureName, string feed, string configuration = "Release")
+    {
         var workDir = TestEnvironment.MakeWorkDir(fixtureName);
         TestEnvironment.CopyDirectory(Path.Combine(TestEnvironment.FixturesDir, fixtureName), workDir);
         TestEnvironment.WriteNugetConfig(workDir, feed);
@@ -307,6 +312,45 @@ public class ConsumerBuildTests
         var result = await BuildFixture("Consumer.OwnerIgnored", authorFixture: "ThePackageOwnerMode");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
         await Assert.That(result.Combined).Contains("SC023");
+    }
+
+    [Test]
+    public async Task OwnerMode_LeftoverPackageReferenceMetadata_StillFailsWithSC021()
+    {
+        // Transition per-package -> owner. The package is now owner mode but the consumer left the
+        // sponsor account as <PackageReference> metadata (the per-package way) and set no global
+        // property. Owner mode reads the property only: the leftover metadata is ignored (so no
+        // SC020 placement error fires), and the build fails with SC021 directing them to the property.
+        var result = await BuildFixture("Consumer.OwnerLeftoverMetadata", authorFixture: "ThePackageOwnerMode");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC021");
+        await Assert.That(result.Combined).DoesNotContain("SC020");
+    }
+
+    [Test]
+    public async Task PerPackageMode_StrayGlobalProperty_FailsWithSC001()
+    {
+        // Transition owner -> per-package. ThePackage is per-package mode but the consumer left the
+        // sponsor account as a global property (the owner-mode way) and set no <PackageReference>
+        // metadata. Per-package mode reads item metadata only, so the property is ignored -> SC001.
+        var result = await BuildFixture("Consumer.PerPackageStrayProperty");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC001");
+    }
+
+    [Test]
+    public async Task OwnerAndPerPackage_BothConfigured_MixedFleetBuildsCleanly()
+    {
+        // Backs the README "set both during transition" guidance. One project references an owner-mode
+        // package (ThePackageOwnerMode) and a per-package package (ThePackage), with the sponsor
+        // account declared BOTH as a global property (read by the owner-mode package) and as
+        // <PackageReference> metadata (read by the per-package package). The two MSBuild sources don't
+        // interfere, so every package verifies and the build is clean.
+        var feed = await ThePackageBuilder.EnsureBuiltCombined("ThePackage", "ThePackageOwnerMode");
+        var result = await BuildFixtureInFeed("Consumer.OwnerMixedFleet", feed);
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC00");
+        await Assert.That(result.Combined).DoesNotContain("SC02");
     }
 
     [Test]

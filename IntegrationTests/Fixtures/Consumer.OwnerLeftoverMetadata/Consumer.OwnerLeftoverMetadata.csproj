@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Transition per-package -> owner: ThePackageOwnerMode is now owner mode, but the sponsor
+         account is still declared the per-package way (as <PackageReference> metadata) with no
+         global property. Owner mode reads the property only, so this is ignored -> SC021. -->
+    <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" GitHubSponsorAccount="alice" />
+  </ItemGroup>
+</Project>

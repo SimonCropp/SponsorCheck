@@ -212,6 +212,29 @@ The same license modes apply (sponsor account, time-bounded license, ignore) but
 The property names match the per-package metadata names: `GitHubSponsorAccount`, `OpenCollectiveSponsorAccount`, `PolarSponsorAccount`, `SponsorshipLicensedUntil`, `SponsorshipLicenseIgnored`, and `SponsorshipStart`. Owner-mode builds emit the [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021) family — the single-source equivalents of the per-package SC001–SC016 codes (e.g. SC021 is the owner-mode "no license specified", SC024 the "account not in list"). Whether a package uses owner mode is decided by the author at pack time; a consumer can't switch a per-package package into owner mode or vice versa.
 
 
+#### Migrating to or from owner mode
+
+The mode is fixed per package version at pack time, so it can change on upgrade — a version published in per-package mode reads the `<PackageReference>` / `<PackageVersion>` metadata, while a version published in owner mode reads the global property. The two are independent MSBuild sources, so neither reads the other.
+
+A flip never mis-verifies silently: if sponsorship is declared in the place the new version doesn't read, the build fails with a clear code — [SC021](docs/VerifierDiagnosticCodes.md#sc021) when a package moves *into* owner mode (set the property), or [SC001](docs/VerifierDiagnosticCodes.md#sc001)/[SC002](docs/VerifierDiagnosticCodes.md#sc002) when it moves *out* (set the metadata).
+
+Because the two sources don't interfere, a consumer can ride out the transition with **zero failed builds** by declaring sponsorship in *both* places at once:
+
+```xml
+<!-- Directory.Build.props — read by owner-mode packages -->
+<PropertyGroup>
+  <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+</PropertyGroup>
+```
+
+```xml
+<!-- the consuming csproj (or Directory.Packages.props under CPM) — read by per-package packages -->
+<PackageReference Include="ThePackage" Version="1.1.0" GitHubSponsorAccount="alice" />
+```
+
+Owner-mode packages read the property and per-package packages read the metadata, with no conflict — so a mixed fleet, where some referenced versions have flipped and some haven't, all builds cleanly. Once every referenced package is on the same mode, the now-unused declaration can be dropped.
+
+
 ### Diagnostic codes
 
 [Verifier diagnostic codes (SC0xx)](docs/VerifierDiagnosticCodes.md) — emitted in consumer projects.
