@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- ThePackage is pulled in only transitively, via MiddlePackageDefault. The default (build/)
+         verifier is not imported for transitive references, so this builds cleanly with no sponsor
+         account and no SC0xx diagnostic. -->
+    <PackageReference Include="MiddlePackageDefault" Version="1.0.0" />
+  </ItemGroup>
+</Project>

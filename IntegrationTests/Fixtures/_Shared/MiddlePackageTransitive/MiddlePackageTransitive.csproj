@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- A library that sits between the consumer and ThePackageTransitive. As a *direct* consumer it
+         must declare a valid sponsor account so it packs cleanly; default assets (no PrivateAssets)
+         let ThePackageTransitive's buildTransitive verifier flow on to this package's own consumers. -->
+    <PackageReference Include="ThePackageTransitive" Version="1.0.0" GitHubSponsorAccount="alice" />
+  </ItemGroup>
+</Project>

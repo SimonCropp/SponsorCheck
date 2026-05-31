@@ -369,4 +369,30 @@ public class ConsumerBuildTests
         await Assert.That(result.Combined).DoesNotContain("https://opencollective.com/acme-org");
         await Assert.That(result.Combined).DoesNotContain("https://polar.sh/acme");
     }
+
+    [Test]
+    public async Task TransitiveReference_WhenCheckTransitiveEnabled_IsVerified()
+    {
+        // ThePackageTransitive sets CheckTransitiveReferences="true", so its verifier ships under
+        // buildTransitive/ and flows through MiddlePackageTransitive to the consumer. The consumer
+        // references ThePackageTransitive only transitively (no <PackageReference> of its own) and
+        // declares no sponsor account, so the transitively-imported verifier fails the build with SC001.
+        var feed = await ThePackageBuilder.EnsureBuiltCombined("ThePackageTransitive", "MiddlePackageTransitive");
+        var result = await BuildFixtureInFeed("Consumer.TransitiveChecked", feed);
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC001");
+    }
+
+    [Test]
+    public async Task TransitiveReference_ByDefault_IsNotVerified()
+    {
+        // The default ThePackage (no CheckTransitiveReferences) keeps its verifier under build/, which
+        // NuGet imports only for direct references. MiddlePackageDefault references ThePackage directly
+        // (and verifies fine at its own pack time); the consumer pulls ThePackage in only transitively,
+        // so the verifier never runs there and the build is clean despite declaring no sponsor account.
+        var feed = await ThePackageBuilder.EnsureBuiltCombined("ThePackage", "MiddlePackageDefault");
+        var result = await BuildFixtureInFeed("Consumer.TransitiveNotChecked", feed);
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC00");
+    }
 }
