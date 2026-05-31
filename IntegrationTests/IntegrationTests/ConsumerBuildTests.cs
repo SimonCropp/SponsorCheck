@@ -315,6 +315,28 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task OwnerMode_FutureLicense_BuildsCleanly()
+    {
+        // Owner-mode counterpart of Consumer.FutureLicense: a time-bounded private license declared as
+        // the global SponsorshipLicensedUntil property, valid through a future month, builds silently.
+        var result = await BuildFixture("Consumer.OwnerFutureLicense", authorFixture: "ThePackageOwnerMode");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC00");
+        await Assert.That(result.Combined).DoesNotContain("SC02");
+    }
+
+    [Test]
+    public async Task OwnerMode_ExpiredLicense_FailsWithSC025()
+    {
+        // Owner-mode counterpart of SC009/SC010 (Consumer.ExpiredLicense / Consumer.CpmExpiredLicense):
+        // an expired SponsorshipLicensedUntil global property must trip SC025, not SC009.
+        var result = await BuildFixture("Consumer.OwnerExpiredLicense", authorFixture: "ThePackageOwnerMode");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC025");
+        await Assert.That(result.Combined).DoesNotContain("SC009");
+    }
+
+    [Test]
     public async Task OwnerMode_LeftoverPackageReferenceMetadata_StillFailsWithSC021()
     {
         // Transition per-package -> owner. The package is now owner mode but the consumer left the
