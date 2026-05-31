@@ -15,6 +15,29 @@ public class AuthorPackTests
         await Assert.That(entries).Contains("build/SponsorCheck.SponsorHashes.txt");
         await Assert.That(entries.Any(e => e.StartsWith("tasks/netstandard2.0/SponsorCheck.dll"))).IsTrue();
         await Assert.That(entries.Any(e => e.StartsWith("tasks/net472/SponsorCheck.dll"))).IsTrue();
+        // Default (no CheckTransitiveReferences): everything stays under build/, so NuGet only imports
+        // the verifier for direct references. Nothing leaks into buildTransitive/.
+        await Assert.That(entries.Any(e => e.StartsWith("buildTransitive/"))).IsFalse();
+    }
+
+    [Test]
+    public async Task CheckTransitiveReferences_PacksVerifierIntoBuildTransitive()
+    {
+        // ThePackageTransitive sets CheckTransitiveReferences="true". The bundler must ship the
+        // generated verifier and its sidecars under buildTransitive/ (imported for direct *and*
+        // transitive references) instead of build/ (direct only). The tasks/ DLLs are unaffected.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageTransitive");
+        var nupkg = Directory.GetFiles(feed, "ThePackageTransitive.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entries = zip.Entries.Select(e => e.FullName).ToList();
+        await Assert.That(entries).Contains("buildTransitive/ThePackageTransitive.targets");
+        await Assert.That(entries).Contains("buildTransitive/SponsorCheck.SponsorHashes.txt");
+        await Assert.That(entries).Contains("buildTransitive/SponsorCheck.PackDate.txt");
+        await Assert.That(entries).Contains("buildTransitive/SponsorCheck.AuthorAccounts.txt");
+        // The build/ folder must be empty of the verifier — otherwise a direct reference would import
+        // it twice (build/ + buildTransitive/) and the data sidecars would be split across folders.
+        await Assert.That(entries.Any(e => e.StartsWith("build/"))).IsFalse();
+        await Assert.That(entries.Any(e => e.StartsWith("tasks/netstandard2.0/SponsorCheck.dll"))).IsTrue();
     }
 
     [Test]

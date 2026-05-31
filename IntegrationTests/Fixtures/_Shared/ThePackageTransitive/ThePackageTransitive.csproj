@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- CheckTransitiveReferences opts transitive consumers into verification: the bundled verifier
+         ships under buildTransitive/ so NuGet imports it for indirect references too, not just direct. -->
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp"
+                      OpenCollectiveAccount="acme-org"
+                      PolarAccount="acme"
+                      CheckTransitiveReferences="true" />
+  </ItemGroup>
+</Project>

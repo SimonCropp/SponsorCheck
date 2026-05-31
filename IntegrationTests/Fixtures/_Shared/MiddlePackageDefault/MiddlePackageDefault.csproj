@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Same shape as MiddlePackageTransitive, but referencing the default ThePackage (no
+         CheckTransitiveReferences). ThePackage's verifier ships under build/, which NuGet keeps
+         private to this direct consumer and does not flow on to transitive consumers. -->
+    <PackageReference Include="ThePackage" Version="1.0.0" GitHubSponsorAccount="alice" />
+  </ItemGroup>
+</Project>
