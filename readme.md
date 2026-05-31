@@ -119,6 +119,30 @@ If `SponsorshipStart` is **after** the package's pack date, the verifier trusts 
 `SponsorshipStart` in the future fails with [future SponsorshipStart - SC015](docs/VerifierDiagnosticCodes.md#sc015). Once the OSS author ships a new version of ThePackage that includes the new sponsor in its hash list **and the consumer upgrades to it**, `SponsorshipStart` can be dropped. If the consumer stays on the older version, the attestation must remain.
 
 
+#### Sponsor account match (owner mode)
+
+When the author opted the package into [owner mode](#owner-mode), the same sponsor-account match is declared once as a global MSBuild property rather than `<PackageReference>` metadata. The property names mirror the per-package metadata — `GitHubSponsorAccount`, `OpenCollectiveSponsorAccount`, `PolarSponsorAccount`:
+
+<!-- snippet: Consumer.OwnerCsprojProperty.csproj -->
+<a id='snippet-Consumer.OwnerCsprojProperty.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Owner mode: sponsorship configured as a global MSBuild property, here directly in the csproj. -->
+    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.OwnerCsprojProperty/Consumer.OwnerCsprojProperty.csproj#L1-L10' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.OwnerCsprojProperty.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The property can sit in the consuming csproj (above) or once in `Directory.Build.props` to cover every owner-mode package under that directory. The any-match rule is unchanged: declare one property per platform the consumer sponsors on, and the verifier passes if any matches the bundled list. `SponsorshipStart` works identically as a property for sponsors who joined after the pack date. Owner-mode builds surface the [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021) diagnostics in place of their per-package siblings — see [Owner mode](#owner-mode) for how a family of packages from one owner de-duplicates to a single check and how a package migrates into or out of owner mode.
+
+
 #### Sponsorship lifecycle: what happens after sponsorship lapses
 
 The bundled hash list is frozen per package version. The verifier has no notion of "currently sponsoring" — it only checks whether the consumer's account hash was in the list at pack time, or whether the consumer has attested to a `SponsorshipStart` after that pack date. That has three practical consequences when sponsorship lapses:
