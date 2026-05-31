@@ -174,6 +174,27 @@ The bundled hash list is frozen per package version. The verifier has no notion 
 
 For private B2B licensing arrangements outside of the platforms. Format is `yyyy-MM`; the license is valid through the end of that month UTC.
 
+In [owner mode](#owner-mode) the same license is declared once as a global `SponsorshipLicensedUntil` property — in the consuming csproj or in `Directory.Build.props` — rather than `<PackageReference>` metadata:
+
+<!-- snippet: Consumer.OwnerFutureLicense.csproj -->
+<a id='snippet-Consumer.OwnerFutureLicense.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Owner mode: a time-bounded private license configured as a global MSBuild property. Valid through end of 2099-12 UTC. -->
+    <SponsorshipLicensedUntil>2099-12</SponsorshipLicensedUntil>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.OwnerFutureLicense/Consumer.OwnerFutureLicense.csproj#L1-L10' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.OwnerFutureLicense.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+An expired value fails with [SC025](docs/VerifierDiagnosticCodes.md#sc025), the owner-mode counterpart of the per-package [SC009](docs/VerifierDiagnosticCodes.md#sc009)/[SC010](docs/VerifierDiagnosticCodes.md#sc010).
+
 
 ### Explicit ignore
 
