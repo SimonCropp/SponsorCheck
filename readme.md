@@ -58,9 +58,9 @@ The license modes (sponsor account, time-bounded license, ignore) are mutually e
 - **With CPM** (`ManagePackageVersionsCentrally=true`), set it on the matching `<PackageVersion>` in `Directory.Packages.props`.
 - **In [owner mode](#owner-mode)** (the author opted the package in), set the license mode as a global MSBuild property instead of per-package metadata — once, covering every package from that owner.
 
-For the per-package modes, setting the metadata on the wrong element raises [wrong location - SC020](docs/VerifierDiagnosticCodes.md#sc020) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC019](docs/VerifierDiagnosticCodes.md#sc019) is a defensive backstop for the rare case where SC020's check is bypassed. (Owner mode reads a single property, so neither applies.)
+For the per-package modes, setting the metadata on the wrong element raises [wrong location - SC020](docs/VerifierDiagnosticCodes.md#sc020) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC019](docs/VerifierDiagnosticCodes.md#sc019) is a defensive backstop for the rare case where [SC020](docs/VerifierDiagnosticCodes.md#sc020)'s check is bypassed. (Owner mode reads a single property, so neither applies.)
 
-Verifier diagnostics that prompt changes to consumer-side configuration (SC001/SC002, SC005/SC006, SC007/SC008, SC009/SC010, SC011/SC012, SC013/SC014, SC015/SC016, and the owner-mode SC021–SC028) render a copy-pasteable snippet pre-filled with the package id, version, and the file to edit. Each odd/even pair is the non-CPM / CPM sibling of the same condition; SC021–SC028 are the owner-mode (global-property) equivalents.
+Verifier diagnostics that prompt changes to consumer-side configuration ([SC001](docs/VerifierDiagnosticCodes.md#sc001)/[SC002](docs/VerifierDiagnosticCodes.md#sc002), [SC005](docs/VerifierDiagnosticCodes.md#sc005)/[SC006](docs/VerifierDiagnosticCodes.md#sc006), [SC007](docs/VerifierDiagnosticCodes.md#sc007)/[SC008](docs/VerifierDiagnosticCodes.md#sc008), [SC009](docs/VerifierDiagnosticCodes.md#sc009)/[SC010](docs/VerifierDiagnosticCodes.md#sc010), [SC011](docs/VerifierDiagnosticCodes.md#sc011)/[SC012](docs/VerifierDiagnosticCodes.md#sc012), [SC013](docs/VerifierDiagnosticCodes.md#sc013)/[SC014](docs/VerifierDiagnosticCodes.md#sc014), [SC015](docs/VerifierDiagnosticCodes.md#sc015)/[SC016](docs/VerifierDiagnosticCodes.md#sc016), and the owner-mode [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021)) render a copy-pasteable snippet pre-filled with the package id, version, and the file to edit. Each odd/even pair is the non-CPM / CPM sibling of the same condition; SC021–SC028 are the owner-mode (global-property) equivalents.
 
 
 #### Sponsor account match (any platform)
@@ -209,7 +209,7 @@ The same license modes apply (sponsor account, time-bounded license, ignore) but
 </Project>
 ```
 
-The property names match the per-package metadata names: `GitHubSponsorAccount`, `OpenCollectiveSponsorAccount`, `PolarSponsorAccount`, `SponsorshipLicensedUntil`, `SponsorshipLicenseIgnored`, and `SponsorshipStart`. Owner-mode builds emit the [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021) family — the single-source equivalents of the per-package SC001–SC016 codes (e.g. SC021 is the owner-mode "no license specified", SC024 the "account not in list"). Whether a package uses owner mode is decided by the author at pack time; a consumer can't switch a per-package package into owner mode or vice versa.
+The property names match the per-package metadata names: `GitHubSponsorAccount`, `OpenCollectiveSponsorAccount`, `PolarSponsorAccount`, `SponsorshipLicensedUntil`, `SponsorshipLicenseIgnored`, and `SponsorshipStart`. Owner-mode builds emit the [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021) family — the single-source equivalents of the per-package [SC001–SC016](docs/VerifierDiagnosticCodes.md#sc001) codes (e.g. [SC021](docs/VerifierDiagnosticCodes.md#sc021) is the owner-mode "no license specified", [SC024](docs/VerifierDiagnosticCodes.md#sc024) the "account not in list"). Whether a package uses owner mode is decided by the author at pack time; a consumer can't switch a per-package package into owner mode or vice versa.
 
 
 #### Migrating to or from owner mode
@@ -402,7 +402,7 @@ A transitively-referenced consumer has no `<PackageReference>` of its own to car
 
 ### Tuning verifier severity and message text
 
-By default the verifier emits `SC001` (no license mode set), `SC007` (sponsor account not in list), and `SC009` (license expired) as **errors** that fail the consumer build, and `SC005` (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement, or a custom-worded message — can override the severity and/or the message text at pack time:
+By default the verifier emits [`SC001`](docs/VerifierDiagnosticCodes.md#sc001) (no license mode set), [`SC007`](docs/VerifierDiagnosticCodes.md#sc007) (sponsor account not in list), and [`SC009`](docs/VerifierDiagnosticCodes.md#sc009) (license expired) as **errors** that fail the consumer build, and [`SC005`](docs/VerifierDiagnosticCodes.md#sc005) (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement, or a custom-worded message — can override the severity and/or the message text at pack time:
 
 ```xml
 <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
@@ -426,7 +426,7 @@ Severity values: `error`, `warning`, `message`. Message values: any string (the 
 
 ### Custom sponsor landing URL
 
-By default, the verifier surfaces each enabled platform's public sponsor page (e.g. `https://github.com/sponsors/acmecorp`, `https://opencollective.com/acme-org`, `https://polar.sh/acme`) wherever a sponsor URL appears in an `SC0xx` message — the per-platform `Option — Sponsor on ...` lines in SC001/SC002/SC005/SC006 and the `Sponsor at ...` block in SC007/SC008/SC009/SC010.
+By default, the verifier surfaces each enabled platform's public sponsor page (e.g. `https://github.com/sponsors/acmecorp`, `https://opencollective.com/acme-org`, `https://polar.sh/acme`) wherever a sponsor URL appears in an `SC0xx` message — the per-platform `Option — Sponsor on ...` lines in [SC001](docs/VerifierDiagnosticCodes.md#sc001)/[SC002](docs/VerifierDiagnosticCodes.md#sc002)/[SC005](docs/VerifierDiagnosticCodes.md#sc005)/[SC006](docs/VerifierDiagnosticCodes.md#sc006) and the `Sponsor at ...` block in [SC007](docs/VerifierDiagnosticCodes.md#sc007)/[SC008](docs/VerifierDiagnosticCodes.md#sc008)/[SC009](docs/VerifierDiagnosticCodes.md#sc009)/[SC010](docs/VerifierDiagnosticCodes.md#sc010).
 
 Authors who prefer to drive consumers to a single page they control — e.g. an author-owned "How to sponsor" landing page, an internal CRM, or a Stripe/Lemon Squeezy checkout — can set `SponsorLandingUrl` on the SponsorCheck reference. When set, every URL the verifier prints points at that page instead of the platform-native ones, and the multi-line `Sponsor at:` block collapses to a single `Sponsor at <landing-url>` line:
 
@@ -497,7 +497,7 @@ The verifier runs in consumer projects on every build and:
 1. Merges metadata across both. Reads license-mode declarations (`SponsorshipLicenseIgnored`, `SponsorshipLicensedUntil`, `<Platform>SponsorAccount`).
 1. Applies the appropriate decision: ignored (warn), sponsor (check hash list), license (check expiry), or fail with the relevant SC code.
 
-In owner mode the same decision logic runs, but the declarations are read from global MSBuild properties (set once in `Directory.Build.props` or a consuming csproj) rather than per-package metadata, and the SC021–SC028 codes are emitted in place of their per-package siblings.
+In owner mode the same decision logic runs, but the declarations are read from global MSBuild properties (set once in `Directory.Build.props` or a consuming csproj) rather than per-package metadata, and the [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021) codes are emitted in place of their per-package siblings.
 
 <!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
 ```mermaid
@@ -524,7 +524,7 @@ flowchart TD
     Expired -->|No| PassLicense([Build passes])
 ```
 
-> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each (SC005→SC006, SC007→SC008, …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent (Ignored→SC023, no match→SC024, expired→SC025, invalid date→SC026, future start→SC028; SC017 is shared).
+> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028); [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared).
 <!-- endInclude -->
 
 
