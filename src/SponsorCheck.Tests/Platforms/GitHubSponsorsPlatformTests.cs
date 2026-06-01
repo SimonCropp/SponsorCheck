@@ -184,8 +184,8 @@ public class GitHubSponsorsPlatformTests
         """;
         var ex = Assert.Throws<MaintenanceFeeException>(() => GitHubSponsorsPlatform.ParseResponse(json));
         await Assert.That(ex.Message).Contains("VerifyTests");
-        await Assert.That(ex.Message).Contains("fine-grained PAT");
-        await Assert.That(ex.Message).Contains("Sponsorships: Read-only");
+        await Assert.That(ex.Message).Contains("classic PAT");
+        await Assert.That(ex.Message).Contains("re-enable classic-PAT access");
     }
 
     [Test]

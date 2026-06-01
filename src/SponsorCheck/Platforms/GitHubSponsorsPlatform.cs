@@ -177,8 +177,9 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
                 {
                     throw new MaintenanceFeeException(
                         $"GitHub Sponsors: organization '{orgName}' has disabled access via classic personal access tokens. " +
-                        "Create a fine-grained PAT at https://github.com/settings/personal-access-tokens/new with " +
-                        $"Resource owner = '{orgName}' and Sponsorships: Read-only, then update the SponsorCheck:GitHubToken user-secret " +
+                        "Fine-grained PATs don't expose a Sponsorships permission, so a classic PAT is the only token type " +
+                        $"that can read private sponsors. Ask an admin of '{orgName}' to re-enable classic-PAT access in the " +
+                        "org's personal-access-token settings, then refresh SponsorCheck:GitHubToken " +
                         "(or the GitHubToken MSBuild property / env var).");
                 }
 
