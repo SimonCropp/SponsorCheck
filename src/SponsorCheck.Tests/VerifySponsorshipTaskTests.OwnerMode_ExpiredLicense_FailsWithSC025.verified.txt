@@ -1,0 +1,19 @@
+﻿{
+  Errors: [
+    {
+      Code: SC025,
+      Message:
+License expired. Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' property has expired (end of month 2000-01-31 UTC).
+
+Renew the license by updating the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+
+Example format:
+
+  <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+
+Sponsor at https://github.com/sponsors/acmecorp
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025
+    }
+  ]
+}

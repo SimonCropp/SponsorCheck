@@ -5,6 +5,7 @@
     <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck_TasksDir)netstandard2.0\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
     <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
     <_SponsorCheck_VerifierTemplate>$(MSBuildThisFileDirectory)ConsumerVerifier.targets</_SponsorCheck_VerifierTemplate>
+    <_SponsorCheck_VerifierOwnerTemplate>$(MSBuildThisFileDirectory)ConsumerVerifierOwner.targets</_SponsorCheck_VerifierOwnerTemplate>
   </PropertyGroup>
 
   <UsingTask TaskName="BundleSponsorListTask"
@@ -41,6 +42,8 @@
       <_SponsorCheck_OpenCollectiveFromVer>@(_SponsorCheck_SelfVer->'%(OpenCollectiveAccount)')</_SponsorCheck_OpenCollectiveFromVer>
       <_SponsorCheck_PolarFromRef>@(_SponsorCheck_Self->'%(PolarAccount)')</_SponsorCheck_PolarFromRef>
       <_SponsorCheck_PolarFromVer>@(_SponsorCheck_SelfVer->'%(PolarAccount)')</_SponsorCheck_PolarFromVer>
+      <_SponsorCheck_OwnerFromRef>@(_SponsorCheck_Self->'%(SponsorOwner)')</_SponsorCheck_OwnerFromRef>
+      <_SponsorCheck_OwnerFromVer>@(_SponsorCheck_SelfVer->'%(SponsorOwner)')</_SponsorCheck_OwnerFromVer>
       <_SponsorCheck_NoLicenseSpecifiedSevFromRef>@(_SponsorCheck_Self->'%(NoLicenseSpecifiedSeverityOverride)')</_SponsorCheck_NoLicenseSpecifiedSevFromRef>
       <_SponsorCheck_NoLicenseSpecifiedSevFromVer>@(_SponsorCheck_SelfVer->'%(NoLicenseSpecifiedSeverityOverride)')</_SponsorCheck_NoLicenseSpecifiedSevFromVer>
       <_SponsorCheck_LicenseIgnoredSevFromRef>@(_SponsorCheck_Self->'%(LicenseIgnoredSeverityOverride)')</_SponsorCheck_LicenseIgnoredSevFromRef>
@@ -59,6 +62,19 @@
       <_SponsorCheck_LicenseExpiredMsgFromVer>@(_SponsorCheck_SelfVer->'%(LicenseExpiredMessageOverride)')</_SponsorCheck_LicenseExpiredMsgFromVer>
       <_SponsorCheck_LandingUrlFromRef>@(_SponsorCheck_Self->'%(SponsorLandingUrl)')</_SponsorCheck_LandingUrlFromRef>
       <_SponsorCheck_LandingUrlFromVer>@(_SponsorCheck_SelfVer->'%(SponsorLandingUrl)')</_SponsorCheck_LandingUrlFromVer>
+      <_SponsorCheck_CheckTransitiveFromRef>@(_SponsorCheck_Self->'%(CheckTransitiveReferences)')</_SponsorCheck_CheckTransitiveFromRef>
+      <_SponsorCheck_CheckTransitiveFromVer>@(_SponsorCheck_SelfVer->'%(CheckTransitiveReferences)')</_SponsorCheck_CheckTransitiveFromVer>
+
+      <!-- CheckTransitiveReferences="true" ships the generated verifier (and its sidecars) under
+           buildTransitive/ instead of build/. NuGet imports build/<id>.targets only for *direct*
+           PackageReferences, but buildTransitive/<id>.targets for direct *and* transitive ones — so
+           the folder choice is the direct-vs-transitive toggle. Default (unset/false) keeps build/:
+           direct references only, preserving the prior behaviour. Prefer the value off the
+           PackageReference, falling back to PackageVersion (CPM), mirroring the merges above. -->
+      <_SponsorCheck_CheckTransitive>$(_SponsorCheck_CheckTransitiveFromRef)</_SponsorCheck_CheckTransitive>
+      <_SponsorCheck_CheckTransitive Condition="'$(_SponsorCheck_CheckTransitive)' == ''">$(_SponsorCheck_CheckTransitiveFromVer)</_SponsorCheck_CheckTransitive>
+      <_SponsorCheck_BuildFolder>build</_SponsorCheck_BuildFolder>
+      <_SponsorCheck_BuildFolder Condition="'$(_SponsorCheck_CheckTransitive)' == 'true'">buildTransitive</_SponsorCheck_BuildFolder>
     </PropertyGroup>
 
     <BundleSponsorListTask
@@ -68,6 +84,8 @@
         OpenCollectiveAccountFromVer="$(_SponsorCheck_OpenCollectiveFromVer)"
         PolarAccountFromRef="$(_SponsorCheck_PolarFromRef)"
         PolarAccountFromVer="$(_SponsorCheck_PolarFromVer)"
+        SponsorOwnerFromRef="$(_SponsorCheck_OwnerFromRef)"
+        SponsorOwnerFromVer="$(_SponsorCheck_OwnerFromVer)"
         NoLicenseSpecifiedSeverityOverrideFromRef="$(_SponsorCheck_NoLicenseSpecifiedSevFromRef)"
         NoLicenseSpecifiedSeverityOverrideFromVer="$(_SponsorCheck_NoLicenseSpecifiedSevFromVer)"
         LicenseIgnoredSeverityOverrideFromRef="$(_SponsorCheck_LicenseIgnoredSevFromRef)"
@@ -92,6 +110,7 @@
         UserSecretsId="$(UserSecretsId)"
         OverrideListPath="$(SponsorListOverride)"
         VerifierTargetsTemplatePath="$(_SponsorCheck_VerifierTemplate)"
+        VerifierOwnerTargetsTemplatePath="$(_SponsorCheck_VerifierOwnerTemplate)"
         ThePackageId="$(PackageId)"
         OutputHashListPath="$(_SponsorCheck_HashListPath)"
         OutputVerifierTargetsPath="$(_SponsorCheck_GeneratedTargetsPath)"
@@ -105,31 +124,31 @@
     <ItemGroup>
       <None Include="$(_SponsorCheck_HashListPath)"
             Pack="true"
-            PackagePath="build\SponsorCheck.SponsorHashes.txt"
+            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.SponsorHashes.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_PackDatePath)"
             Pack="true"
-            PackagePath="build\SponsorCheck.PackDate.txt"
+            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.PackDate.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_AuthorAccountsPath)"
             Pack="true"
-            PackagePath="build\SponsorCheck.AuthorAccounts.txt"
+            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.AuthorAccounts.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_SeverityOverridesPath)"
             Pack="true"
-            PackagePath="build\SponsorCheck.SeverityOverrides.txt"
+            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.SeverityOverrides.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_MessageOverridesPath)"
             Pack="true"
-            PackagePath="build\SponsorCheck.MessageOverrides.json"
+            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.MessageOverrides.json"
             Visible="false" />
       <None Include="$(_SponsorCheck_LandingUrlPath)"
             Pack="true"
-            PackagePath="build\SponsorCheck.LandingUrl.txt"
+            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.LandingUrl.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_GeneratedTargetsPath)"
             Pack="true"
-            PackagePath="build\$(PackageId).targets"
+            PackagePath="$(_SponsorCheck_BuildFolder)\$(PackageId).targets"
             Visible="false" />
       <None Include="$(_SponsorCheck_TasksDir)netstandard2.0\*.dll"
             Pack="true"

@@ -1,0 +1,7 @@
+<Project>
+  <!-- Owner mode: sponsorship configured once as a global MSBuild property, here in
+       Directory.Build.props. Covers every owner-mode package referenced under this directory. -->
+  <PropertyGroup>
+    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+  </PropertyGroup>
+</Project>

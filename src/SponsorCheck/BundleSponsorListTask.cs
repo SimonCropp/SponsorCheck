@@ -8,6 +8,11 @@ public sealed class BundleSponsorListTask :
     public string PolarAccountFromRef { get; set; } = "";
     public string PolarAccountFromVer { get; set; } = "";
 
+    // Owner mode opt-in. When set, the generated verifier targets read global MSBuild properties
+    // instead of per-package item metadata, so one config covers every package from this owner.
+    public string SponsorOwnerFromRef { get; set; } = "";
+    public string SponsorOwnerFromVer { get; set; } = "";
+
     public string GitHubToken { get; set; } = "";
     public string OpenCollectiveToken { get; set; } = "";
     public string PolarToken { get; set; } = "";
@@ -36,6 +41,7 @@ public sealed class BundleSponsorListTask :
     public string LicenseExpiredMessageOverrideFromVer { get; set; } = "";
 
     [Required] public string VerifierTargetsTemplatePath { get; set; } = "";
+    public string VerifierOwnerTargetsTemplatePath { get; set; } = "";
     [Required] public string ThePackageId { get; set; } = "";
     [Required] public string OutputHashListPath { get; set; } = "";
     [Required] public string OutputVerifierTargetsPath { get; set; } = "";
@@ -116,7 +122,10 @@ public sealed class BundleSponsorListTask :
                 packDate = OverridePackDate.Trim();
             }
             File.WriteAllText(OutputPackDatePath, packDate);
-            var template = File.ReadAllText(VerifierTargetsTemplatePath);
+            var ownerId = PackageMetadataMerger.Merge("SponsorOwner", SponsorOwnerFromRef, SponsorOwnerFromVer);
+            var isOwnerMode = !string.IsNullOrWhiteSpace(ownerId);
+            var templatePath = isOwnerMode ? VerifierOwnerTargetsTemplatePath : VerifierTargetsTemplatePath;
+            var template = File.ReadAllText(templatePath);
             // Substitute package id into target/item names. Package IDs are restricted to
             // alphanumeric + . _ - so MSBuild-safe; we replace . - with _ to keep MSBuild
             // identifier rules happy (no dots/dashes in target/item names).
@@ -124,6 +133,15 @@ public sealed class BundleSponsorListTask :
             var rendered = template
                 .Replace("__SC_PACKAGE_ID__", sanitizedId)
                 .Replace(">__SC_PACKAGE_ID_RAW__<", $">{ThePackageId}<");
+            if (isOwnerMode)
+            {
+                // __SC_OWNER_ID__ keys the per-owner run-once guard property (must be an MSBuild-safe
+                // identifier); __SC_OWNER_ID_RAW__ is the literal owner id used in diagnostics.
+                rendered = rendered
+                    .Replace("__SC_OWNER_ID__", Sanitize(ownerId!))
+                    .Replace(">__SC_OWNER_ID_RAW__<", $">{ownerId}<");
+            }
+
             File.WriteAllText(OutputVerifierTargetsPath, rendered);
 
             Log.LogMessage(
@@ -171,6 +189,7 @@ public sealed class BundleSponsorListTask :
 
             overrides[entry.Code] = severity;
             overrides[entry.CpmCode] = severity;
+            overrides[entry.OwnerCode] = severity;
         }
 
         return true;
@@ -187,6 +206,7 @@ public sealed class BundleSponsorListTask :
             {
                 overrides[entry.Code] = raw!;
                 overrides[entry.CpmCode] = raw!;
+                overrides[entry.OwnerCode] = raw!;
             }
         }
 

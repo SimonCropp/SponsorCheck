@@ -1,0 +1,15 @@
+﻿{
+  Errors: [
+    {
+      Code: SC022,
+      Message:
+Conflicting license modes. Package 'MyOssLib': mutually exclusive license properties are set (Sponsor, SponsorshipLicenseIgnored). Pick one.
+
+Edit the SponsorCheck properties for 'MyOssLib' in Directory.Build.props or the consuming project.
+
+Keep exactly one of: GitHubSponsorAccount, OpenCollectiveSponsorAccount, PolarSponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc022
+    }
+  ]
+}

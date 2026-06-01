@@ -19,7 +19,7 @@ public class VerifySponsorshipTaskTests
     }
 
     static ConsumerContext NonCpmContext(string packageId = "MyOssLib", string version = "1.2.3") =>
-        new(false, consumerProject, "", packageId, version);
+        new(ConsumerMode.NonCpm, consumerProject, "", packageId, version);
 
     [Test]
     public async Task NoConfig_FailsWithSC001()
@@ -1779,6 +1779,195 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC007");
+        await Verify(engine);
+    }
+
+    // Owner mode: OwnerId is set and configuration arrives via the *FromRef parameters (the owner
+    // template feeds global MSBuild properties through those). Placement (SC019/SC020) is skipped.
+
+    [Test]
+    public async Task OwnerMode_NoConfig_FailsWithSC021()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            OwnerId = "acme",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC021");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerMode_ConflictingModes_FailsWithSC022()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            OwnerId = "acme",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            IgnoredFromRef = "true",
+            GitHubFromRef = "alice"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC022");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerMode_Ignored_PassesWithSC023Warning()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            OwnerId = "acme",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromRef = "true"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC023");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerMode_ValidSponsor_Passes()
+    {
+        using var dir = new TempDirectory();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            ThePackageId = "MyOssLib",
+            OwnerId = "acme",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice"), ("GitHubSponsors", "bob")),
+            GitHubFromRef = "alice"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+    }
+
+    [Test]
+    public async Task OwnerMode_InvalidSponsor_FailsWithSC024()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            OwnerId = "acme",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            GitHubFromRef = "mallory"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC024");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerMode_ExpiredLicense_FailsWithSC025()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            OwnerId = "acme",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            LicensedUntilFromRef = "2000-01"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC025");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerMode_BadLicenseFormat_FailsWithSC026()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            OwnerId = "acme",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            LicensedUntilFromRef = "not-a-date"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC026");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerMode_BadSponsorshipStartFormat_FailsWithSC027()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            OwnerId = "acme",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            GitHubFromRef = "carol",
+            SponsorshipStartFromRef = "yesterday"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC027");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerMode_FutureSponsorshipStart_FailsWithSC028()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            OwnerId = "acme",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            GitHubFromRef = "carol",
+            SponsorshipStartFromRef = "9999-12-31"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC028");
         await Verify(engine);
     }
 }

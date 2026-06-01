@@ -2,11 +2,13 @@
 
 Codes in the `SC0xx` range are emitted by the verifier in consumer projects. Pairs are interleaved by mode: **odd-numbered codes** fire when the consumer is **not** using Central Package Management (metadata lives on `<PackageReference>` in the consumer csproj); **even-numbered codes** fire when the consumer **is** using CPM (metadata lives on `<PackageVersion>` in `Directory.Packages.props`). Sibling = `code ± 1` — SC001/SC002, SC003/SC004, SC011/SC012, and so on. The trailing SC017–SC020 codes are unpaired (audit message, install-integrity check, and the two placement errors).
 
-Each paired scenario shares one author-side override metadatum: `NoLicenseSpecifiedSeverityOverride` applies to both SC001 and SC002, and similarly for the rest. The split exists so each code can be documented, linked, and triaged independently — the underlying scenario is the same.
+**Owner mode (SC021–SC028).** When the OSS author opts a package into *owner mode* (`SponsorOwner="<id>"` at pack time), the consumer configures sponsorship **once**, via global MSBuild **properties** (in `Directory.Build.props` or the consuming project), rather than per-package metadata. Because there is a single property source — no `<PackageReference>`/`<PackageVersion>` split — each scenario needs only one code, so SC021–SC028 are **unpaired** owner-mode counterparts of the per-package family: SC021↔SC001/SC002 (no config), SC022↔SC003/SC004 (conflicting modes), SC023↔SC005/SC006 (ignored), SC024↔SC007/SC008 (invalid account), SC025↔SC009/SC010 (expired), SC026↔SC011/SC012 (bad license date), SC027↔SC013/SC014 (bad SponsorshipStart), SC028↔SC015/SC016 (future SponsorshipStart). The placement-agnostic SC017 (attestation) and SC018 (missing hash file) are reused as-is; SC019/SC020 do not apply (no items to misplace).
+
+Each paired scenario shares one author-side override metadatum: `NoLicenseSpecifiedSeverityOverride` applies to SC001, SC002, **and** the owner-mode SC021, and similarly for the rest. The split exists so each code can be documented, linked, and triaged independently — the underlying scenario is the same.
 
 Every emitted message is prefixed with the code's short **Name** (e.g. `No license specified. Package 'MyOssLib'...`) and suffixed with ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#<code>`. The Syntax/Example entries below show the inner format string only — the name and link wrap is added at log time.
 
-The default severities below can be overridden by the OSS author at pack time, and the message body can be replaced with custom text, via paired metadata on `<PackageReference Include="SponsorCheck">`: `<Stem>SeverityOverride` and `<Stem>MessageOverride` for each of `NoLicenseSpecified` (SC001/SC002), `LicenseIgnored` (SC005/SC006), `InvalidAccount` (SC007/SC008), `LicenseExpired` (SC009/SC010). Other codes are consumer-side configuration bugs that the consumer must fix and so cannot be tuned. Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name and the docs link wrap still apply).
+The default severities below can be overridden by the OSS author at pack time, and the message body can be replaced with custom text, via paired metadata on `<PackageReference Include="SponsorCheck">`: `<Stem>SeverityOverride` and `<Stem>MessageOverride` for each of `NoLicenseSpecified` (SC001/SC002/SC021), `LicenseIgnored` (SC005/SC006/SC023), `InvalidAccount` (SC007/SC008/SC024), `LicenseExpired` (SC009/SC010/SC025). A single override value applies across the per-package, CPM, and owner-mode siblings. Other codes are consumer-side configuration bugs that the consumer must fix and so cannot be tuned. Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name and the docs link wrap still apply).
 
 <!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
 ```mermaid
@@ -32,6 +34,8 @@ flowchart TD
     Expired -->|Yes| SC009[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>SC009 Error<br/>License expired</a>]
     Expired -->|No| PassLicense([Build passes])
 ```
+
+> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028); [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared).
 <!-- endInclude -->
 
 ### SC001
@@ -463,3 +467,202 @@ flowchart TD
   Move the SponsorshipLicenseIgnored attribute from the <PackageReference> for 'MyOssLib' to the <PackageVersion> for 'MyOssLib' in:
     /work/MyApp/Directory.Packages.props
   ```
+
+
+### SC021
+
+- **Name:** No license specified
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC001](#sc001)/[SC002](#sc002): the package is published in owner mode (`SponsorOwner`), so sponsorship is configured via a global MSBuild property, but none was set. Author override metadatum: `NoLicenseSpecifiedSeverityOverride` / `NoLicenseSpecifiedMessageOverride`.
+- **Syntax:**
+
+  ```
+  Package '{PackageId}' requires a SponsorCheck license property. '{PackageId}' is published in owner mode, so sponsorship is configured once via an MSBuild property (in Directory.Build.props or the consuming project), not on the <PackageReference>.
+
+  Set ONE of the following properties (in a <PropertyGroup> in Directory.Build.props or the consuming project):
+
+  Option — Sponsor on {PlatformName} ({sponsorUrl}):
+    <{PlatformMetadataName}><your-{platform}-account></{PlatformMetadataName}>
+
+  Option — Time-bounded license (replace yyyy-MM with the last covered month):
+    <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+
+  Option — Mark as ignored (you accept that the build is in breach of the package license):
+    <SponsorshipLicenseIgnored>true</SponsorshipLicenseIgnored>
+
+  Sponsor at:
+    {sponsorUrls}
+  ```
+
+  One "Sponsor on..." option is rendered per platform the author has enabled. The property names match the per-package metadata names, used here as MSBuild properties. The "Sponsor at:" block collapses to a single inline line when only one platform is configured.
+- **Example:**
+
+  ```
+  Package 'MyOssLib' requires a SponsorCheck license property. 'MyOssLib' is published in owner mode, so sponsorship is configured once via an MSBuild property (in Directory.Build.props or the consuming project), not on the <PackageReference>.
+
+  Set ONE of the following properties (in a <PropertyGroup> in Directory.Build.props or the consuming project):
+
+  Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
+    <GitHubSponsorAccount><your-github-account></GitHubSponsorAccount>
+
+  Option — Time-bounded license (replace yyyy-MM with the last covered month):
+    <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+
+  Option — Mark as ignored (you accept that the build is in breach of the package license):
+    <SponsorshipLicenseIgnored>true</SponsorshipLicenseIgnored>
+
+  Sponsor at https://github.com/sponsors/acmecorp
+  ```
+
+
+### SC022
+
+- **Name:** Conflicting license modes
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC003](#sc003)/[SC004](#sc004): mutually exclusive license properties are set (e.g. both a sponsor account property and `SponsorshipLicenseIgnored`).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': mutually exclusive license properties are set ({modes}). Pick one.
+
+  Edit the SponsorCheck properties for '{PackageId}' in Directory.Build.props or the consuming project.
+
+  Keep exactly one of: GitHubSponsorAccount, OpenCollectiveSponsorAccount, PolarSponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
+  ```
+- **Example opener:** `Package 'MyOssLib': mutually exclusive license properties are set (Sponsor, SponsorshipLicenseIgnored). Pick one.`
+
+
+### SC023
+
+- **Name:** License ignored
+- **Level**: Warning
+- **Meaning:** Owner-mode equivalent of [SC005](#sc005)/[SC006](#sc006): the `SponsorshipLicenseIgnored=true` property is set — the consumer has opted out. Author override metadatum: `LicenseIgnoredSeverityOverride` / `LicenseIgnoredMessageOverride`.
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipLicenseIgnored="true" property is set. Build is allowed but is in breach of the package license.
+
+  <SC021-style remediation block — see SC021 for the full format>
+  ```
+- **Example opener:** `Package 'MyOssLib': SponsorshipLicenseIgnored="true" property is set. Build is allowed but is in breach of the package license.`
+
+
+### SC024
+
+- **Name:** Invalid account
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC007](#sc007)/[SC008](#sc008): no sponsor account property matches the bundled hash list. Author override metadatum: `InvalidAccountSeverityOverride` / `InvalidAccountMessageOverride`.
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': no sponsor account property matches the bundled list.
+
+  Tried: {attempts}
+
+  Sponsor at:
+    {sponsorUrl1}
+    {sponsorUrl2}
+
+  If sponsorship started after this package was released, attest to the start date by setting the SponsorshipStart property in Directory.Build.props or the consuming project.
+
+  Example format:
+
+    <{PlatformMetadataName}>{accountValue}</{PlatformMetadataName}>
+    <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+  ```
+
+  The "If sponsorship started after this package was released..." block is omitted when `SponsorshipStart` is already set.
+- **Example:**
+
+  ```
+  Package 'MyOssLib': no sponsor account property matches the bundled list.
+
+  Tried: GitHubSponsors=mallory
+
+  Sponsor at https://github.com/sponsors/acmecorp
+
+  If sponsorship started after this package was released, attest to the start date by setting the SponsorshipStart property in Directory.Build.props or the consuming project.
+
+  Example format:
+
+    <GitHubSponsorAccount>mallory</GitHubSponsorAccount>
+    <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+  ```
+
+
+### SC025
+
+- **Name:** License expired
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC009](#sc009)/[SC010](#sc010): the `SponsorshipLicensedUntil` property has expired. Author override metadatum: `LicenseExpiredSeverityOverride` / `LicenseExpiredMessageOverride`.
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipLicensedUntil='{value}' property has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).
+
+  Renew the license by updating the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+
+  Example format:
+
+    <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+
+  Sponsor at {sponsorUrl}
+  ```
+- **Example opener:** `Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' property has expired (end of month 2000-01-31 UTC).`
+
+
+### SC026
+
+- **Name:** Invalid license date format
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC011](#sc011)/[SC012](#sc012): the `SponsorshipLicensedUntil` property is not in `yyyy-MM` format.
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipLicensedUntil='{value}' property is not in 'yyyy-MM' format.
+
+  Fix the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+
+  Example format:
+
+    <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+  ```
+- **Example opener:** `Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' property is not in 'yyyy-MM' format.`
+
+
+### SC027
+
+- **Name:** Invalid SponsorshipStart format
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC013](#sc013)/[SC014](#sc014): the `SponsorshipStart` property is not in `yyyy-MM-dd` format.
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipStart='{value}' property is not in 'yyyy-MM-dd' format.
+
+  Fix the SponsorshipStart property in Directory.Build.props or the consuming project.
+
+  Example format:
+
+    <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+  ```
+- **Example opener:** `Package 'MyOssLib': SponsorshipStart='yesterday' property is not in 'yyyy-MM-dd' format.`
+
+
+### SC028
+
+- **Name:** SponsorshipStart in the future
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC015](#sc015)/[SC016](#sc016): the `SponsorshipStart` property is in the future.
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipStart='{value}' property is in the future.
+
+  Fix the SponsorshipStart property in Directory.Build.props or the consuming project.
+
+  Example format:
+
+    <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+  ```
+- **Example opener:** `Package 'MyOssLib': SponsorshipStart='2099-01-01' property is in the future.`

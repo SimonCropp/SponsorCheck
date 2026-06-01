@@ -81,6 +81,76 @@ public static class ThePackageBuilder
         }
     }
 
+    /// Packs several author fixtures into a single shared feed so one consumer can reference more
+    /// than one of them at once (e.g. an owner-mode package alongside a per-package one, to exercise
+    /// the migration "set both" scenario). Cached by the combined fixture set.
+    public static async Task<string> EnsureBuiltCombined(params string[] fixtureNames)
+    {
+        var key = string.Join("+", fixtureNames.OrderBy(_ => _, StringComparer.Ordinal));
+        await Gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (feedsByFixture.TryGetValue(key, out var existing))
+            {
+                return existing;
+            }
+
+            var feed = Path.Combine(Path.GetTempPath(), "sponsorcheck-it-feed", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(feed);
+
+            var srcNugets = TestEnvironment.SrcNugetsDir;
+            var sponsorCheckNupkgs = Directory.Exists(srcNugets)
+                ? Directory.GetFiles(srcNugets, "SponsorCheck.*.nupkg")
+                : [];
+            if (sponsorCheckNupkgs.Length != 1)
+            {
+                throw new InvalidOperationException(
+                    sponsorCheckNupkgs.Length == 0
+                        ? $"No SponsorCheck nupkg in {srcNugets}. Run `dotnet build src --configuration Release` first."
+                        : $"Expected exactly one SponsorCheck.*.nupkg in {srcNugets}, found {sponsorCheckNupkgs.Length}. Clean stale nupkgs and rebuild src.");
+            }
+
+            var sponsorCheckNupkg = sponsorCheckNupkgs[0];
+            File.Copy(sponsorCheckNupkg, Path.Combine(feed, Path.GetFileName(sponsorCheckNupkg)), overwrite: true);
+            var sponsorCheckVersion = ExtractVersion(sponsorCheckNupkg);
+            var packagesDir = Path.Combine(feed, ".pkgs");
+            Directory.CreateDirectory(packagesDir);
+
+            foreach (var fixtureName in fixtureNames)
+            {
+                var workDir = TestEnvironment.MakeWorkDir($"{fixtureName}-pack");
+                TestEnvironment.CopyDirectory(Path.Combine(TestEnvironment.FixturesDir, "_Shared", fixtureName), workDir);
+                TestEnvironment.WriteNugetConfig(workDir, feed);
+                var result = await DotnetCliRunner.Run(
+                    "pack",
+                    Path.Combine(workDir, $"{fixtureName}.csproj"),
+                    "Release",
+                    new Dictionary<string, string>
+                    {
+                        ["SponsorListOverride"] = TestEnvironment.OverrideListPath,
+                        ["PackageOutputPath"] = feed,
+                        ["SponsorCheckVersion"] = sponsorCheckVersion,
+                        ["SponsorCheck_PackDateOverride"] = "2024-01-01"
+                    },
+                    workDir,
+                    packagesDir).ConfigureAwait(false);
+
+                if (result.ExitCode != 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to pack {fixtureName}:\nSTDOUT:\n{result.Stdout}\nSTDERR:\n{result.Stderr}");
+                }
+            }
+
+            feedsByFixture[key] = feed;
+            return feed;
+        }
+        finally
+        {
+            Gate.Release();
+        }
+    }
+
     /// Like EnsureBuilt, but returns the CLI result without throwing on failure. Use this in
     /// tests that expect the pack to fail (e.g. SC104 on bad metadata) and want to inspect the
     /// build output. Always uses a fresh feed dir — never cached.

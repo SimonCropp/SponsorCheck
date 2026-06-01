@@ -17,9 +17,12 @@ public static class DecisionApplier
         {
             case LicenseDecision.MissingConfig missingConfig:
             {
-                var (code, opener) = context.IsCpm
-                    ? ("SC002", $"Package '{missingConfig.PackageId}' requires license metadata on the <PackageVersion> for '{missingConfig.PackageId}' in Directory.Packages.props.")
-                    : ("SC001", $"Package '{missingConfig.PackageId}' requires license metadata on the <PackageReference> for '{missingConfig.PackageId}'.");
+                var (code, opener) = context.Mode switch
+                {
+                    ConsumerMode.Owner => ("SC021", $"Package '{missingConfig.PackageId}' requires a SponsorCheck license property. '{missingConfig.PackageId}' is published in owner mode, so sponsorship is configured once via an MSBuild property (in Directory.Build.props or the consuming project), not on the <PackageReference>."),
+                    ConsumerMode.Cpm => ("SC002", $"Package '{missingConfig.PackageId}' requires license metadata on the <PackageVersion> for '{missingConfig.PackageId}' in Directory.Packages.props."),
+                    _ => ("SC001", $"Package '{missingConfig.PackageId}' requires license metadata on the <PackageReference> for '{missingConfig.PackageId}'.")
+                };
                 return SponsorCheckLog.Emit(
                     log,
                     code,
@@ -35,17 +38,25 @@ public static class DecisionApplier
 
             case LicenseDecision.ConflictingModes conflictingModes:
             {
-                var (code, opener) = context.IsCpm
-                    ? ("SC004", $"Package '{conflictingModes.PackageId}': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props ({string.Join(", ", conflictingModes.Modes)}). Pick one.")
-                    : ("SC003", $"Package '{conflictingModes.PackageId}': mutually exclusive license modes are set on the <PackageReference> ({string.Join(", ", conflictingModes.Modes)}). Pick one.");
+                var (code, opener) = context.Mode switch
+                {
+                    ConsumerMode.Owner => ("SC022", $"Package '{conflictingModes.PackageId}': mutually exclusive license properties are set ({string.Join(", ", conflictingModes.Modes)}). Pick one."),
+                    ConsumerMode.Cpm => ("SC004", $"Package '{conflictingModes.PackageId}': mutually exclusive license modes are set on the <PackageVersion> in Directory.Packages.props ({string.Join(", ", conflictingModes.Modes)}). Pick one."),
+                    _ => ("SC003", $"Package '{conflictingModes.PackageId}': mutually exclusive license modes are set on the <PackageReference> ({string.Join(", ", conflictingModes.Modes)}). Pick one.")
+                };
+                var editLine = context.IsOwner
+                    ? $"Edit the SponsorCheck properties for '{conflictingModes.PackageId}' in Directory.Build.props or the consuming project."
+                    : $"""
+                       Edit the <{context.ElementName}> for '{conflictingModes.PackageId}' in:
+                         {context.TargetFilePath}
+                       """;
                 SponsorCheckLog.Error(
                     log,
                     code,
                     $"""
                      {opener}
 
-                     Edit the <{context.ElementName}> for '{conflictingModes.PackageId}' in:
-                       {context.TargetFilePath}
+                     {editLine}
 
                      Keep exactly one of: {string.Join(", ", ConsumerMetadataNames.All)}, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
                      """);
@@ -54,9 +65,12 @@ public static class DecisionApplier
 
             case LicenseDecision.Ignored ignored:
             {
-                var (code, opener) = context.IsCpm
-                    ? ("SC006", $"Package '{ignored.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license.")
-                    : ("SC005", $"Package '{ignored.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageReference>. Build is allowed but is in breach of the package license.");
+                var (code, opener) = context.Mode switch
+                {
+                    ConsumerMode.Owner => ("SC023", $"Package '{ignored.PackageId}': SponsorshipLicenseIgnored=\"true\" property is set. Build is allowed but is in breach of the package license."),
+                    ConsumerMode.Cpm => ("SC006", $"Package '{ignored.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageVersion> in Directory.Packages.props. Build is allowed but is in breach of the package license."),
+                    _ => ("SC005", $"Package '{ignored.PackageId}': SponsorshipLicenseIgnored=\"true\" on the <PackageReference>. Build is allowed but is in breach of the package license.")
+                };
                 return SponsorCheckLog.Emit(
                     log,
                     code,
@@ -98,9 +112,12 @@ public static class DecisionApplier
         {
             if (!TryParseDate(sponsor.SponsorshipStartRaw!, out var startDate))
             {
-                var (startFormatCode, startFormatOpener) = context.IsCpm
-                    ? ("SC014", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM-dd' format.")
-                    : ("SC013", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageReference> is not in 'yyyy-MM-dd' format.");
+                var (startFormatCode, startFormatOpener) = context.Mode switch
+                {
+                    ConsumerMode.Owner => ("SC027", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' property is not in 'yyyy-MM-dd' format."),
+                    ConsumerMode.Cpm => ("SC014", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM-dd' format."),
+                    _ => ("SC013", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageReference> is not in 'yyyy-MM-dd' format.")
+                };
                 SponsorCheckLog.Error(
                     log,
                     startFormatCode,
@@ -114,9 +131,12 @@ public static class DecisionApplier
 
             if (startDate > utcNow.Date)
             {
-                var (futureStartCode, futureStartOpener) = context.IsCpm
-                    ? ("SC016", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageVersion> in Directory.Packages.props is in the future.")
-                    : ("SC015", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageReference> is in the future.");
+                var (futureStartCode, futureStartOpener) = context.Mode switch
+                {
+                    ConsumerMode.Owner => ("SC028", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' property is in the future."),
+                    ConsumerMode.Cpm => ("SC016", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageVersion> in Directory.Packages.props is in the future."),
+                    _ => ("SC015", $"Package '{sponsor.PackageId}': SponsorshipStart='{sponsor.SponsorshipStartRaw}' on the <PackageReference> is in the future.")
+                };
                 SponsorCheckLog.Error(
                     log,
                     futureStartCode,
@@ -165,9 +185,12 @@ public static class DecisionApplier
             checkAttempts.Add($"{pair.Key}={pair.Value}");
         }
 
-        var (code, opener) = context.IsCpm
-            ? ("SC008", $"Package '{sponsor.PackageId}': no sponsor account declared on the <PackageVersion> in Directory.Packages.props matches the bundled list.")
-            : ("SC007", $"Package '{sponsor.PackageId}': no sponsor account declared on the <PackageReference> matches the bundled list.");
+        var (code, opener) = context.Mode switch
+        {
+            ConsumerMode.Owner => ("SC024", $"Package '{sponsor.PackageId}': no sponsor account property matches the bundled list."),
+            ConsumerMode.Cpm => ("SC008", $"Package '{sponsor.PackageId}': no sponsor account declared on the <PackageVersion> in Directory.Packages.props matches the bundled list."),
+            _ => ("SC007", $"Package '{sponsor.PackageId}': no sponsor account declared on the <PackageReference> matches the bundled list.")
+        };
         var lines = new List<string>
         {
             opener,
@@ -207,9 +230,12 @@ public static class DecisionApplier
     {
         if (!TryParseYearMonth(l.LicensedUntilRaw, out var year, out var month))
         {
-            var (code, opener) = context.IsCpm
-                ? ("SC012", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.")
-                : ("SC011", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> is not in 'yyyy-MM' format.");
+            var (code, opener) = context.Mode switch
+            {
+                ConsumerMode.Owner => ("SC026", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' property is not in 'yyyy-MM' format."),
+                ConsumerMode.Cpm => ("SC012", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format."),
+                _ => ("SC011", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> is not in 'yyyy-MM' format.")
+            };
             SponsorCheckLog.Error(
                 log,
                 code,
@@ -228,9 +254,12 @@ public static class DecisionApplier
         if (utcNow >= startOfNextMonth)
         {
             var lastDay = startOfNextMonth.AddDays(-1);
-            var (code, opener) = context.IsCpm
-                ? ("SC010", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props has expired (end of month {lastDay:yyyy-MM-dd} UTC).")
-                : ("SC009", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> has expired (end of month {lastDay:yyyy-MM-dd} UTC).");
+            var (code, opener) = context.Mode switch
+            {
+                ConsumerMode.Owner => ("SC025", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' property has expired (end of month {lastDay:yyyy-MM-dd} UTC)."),
+                ConsumerMode.Cpm => ("SC010", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props has expired (end of month {lastDay:yyyy-MM-dd} UTC)."),
+                _ => ("SC009", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> has expired (end of month {lastDay:yyyy-MM-dd} UTC).")
+            };
             var expiredLines = new List<string>
             {
                 opener,
