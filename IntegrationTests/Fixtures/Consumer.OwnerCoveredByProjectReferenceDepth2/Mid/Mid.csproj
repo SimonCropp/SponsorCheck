@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- Mid sits between Top and Lib. No direct PackageReference; its own verifier (imported
+       transitively) finds coverage from Lib. -->
+  <ItemGroup>
+    <ProjectReference Include="Lib\Lib.csproj" />
+  </ItemGroup>
+</Project>

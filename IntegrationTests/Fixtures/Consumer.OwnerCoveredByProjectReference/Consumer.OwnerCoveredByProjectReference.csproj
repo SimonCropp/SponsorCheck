@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- Top-level: no direct PackageReference to ThePackageOwnerModeTransitive, no sponsor property
+       set. ThePackage flows in transitively via Lib's PackageReference, and CheckTransitiveReferences
+       means the verifier targets ARE imported here. Without ProjectReference coverage, this project
+       would fail with SC021. With coverage, the verifier sees that Lib (a sibling ProjectReference)
+       has the package directly and skips. -->
+  <ItemGroup>
+    <ProjectReference Include="Lib\Lib.csproj" />
+  </ItemGroup>
+</Project>
