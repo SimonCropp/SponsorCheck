@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <!-- Opt out via the global property: owner mode allows the build but emits the SC023 warning. -->
-    <SponsorshipLicenseIgnored>true</SponsorshipLicenseIgnored>
+    <acme_SponsorshipLicenseIgnored>true</acme_SponsorshipLicenseIgnored>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />

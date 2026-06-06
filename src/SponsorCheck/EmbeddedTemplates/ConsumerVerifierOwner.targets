@@ -79,11 +79,11 @@ __SC_INNER_IMPORT__
         MessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
         LandingUrlPath="$(_SponsorCheck_LandingUrlPath)"
         ConsumerProjectPath="$(MSBuildProjectFullPath)"
-        IgnoredFromRef="$(SponsorshipLicenseIgnored)"
-        LicensedUntilFromRef="$(SponsorshipLicensedUntil)"
-        SponsorshipStartFromRef="$(SponsorshipStart)"
-        GitHubFromRef="$(GitHubSponsorAccount)"
-        OpenCollectiveFromRef="$(OpenCollectiveSponsorAccount)"
-        PolarFromRef="$(PolarSponsorAccount)" />
+        IgnoredFromRef="$(__SC_OWNER_PREFIX__SponsorshipLicenseIgnored)"
+        LicensedUntilFromRef="$(__SC_OWNER_PREFIX__SponsorshipLicensedUntil)"
+        SponsorshipStartFromRef="$(__SC_OWNER_PREFIX__SponsorshipStart)"
+        GitHubFromRef="$(__SC_OWNER_PREFIX__GitHubSponsorAccount)"
+        OpenCollectiveFromRef="$(__SC_OWNER_PREFIX__OpenCollectiveSponsorAccount)"
+        PolarFromRef="$(__SC_OWNER_PREFIX__PolarSponsorAccount)" />
   </Target>
 </Project>

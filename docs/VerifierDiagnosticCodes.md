@@ -482,19 +482,19 @@ flowchart TD
   Set ONE of the following properties (in a <PropertyGroup> in Directory.Build.props or the consuming project):
 
   Option — Sponsor on {PlatformName} ({sponsorUrl}):
-    <{PlatformMetadataName}><your-{platform}-account></{PlatformMetadataName}>
+    <{OwnerId}_{PlatformMetadataName}><your-{platform}-account></{OwnerId}_{PlatformMetadataName}>
 
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
-    <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+    <{OwnerId}_SponsorshipLicensedUntil>yyyy-MM</{OwnerId}_SponsorshipLicensedUntil>
 
   Option — Mark as ignored (you accept that the build is in breach of the package license):
-    <SponsorshipLicenseIgnored>true</SponsorshipLicenseIgnored>
+    <{OwnerId}_SponsorshipLicenseIgnored>true</{OwnerId}_SponsorshipLicenseIgnored>
 
   Sponsor at:
     {sponsorUrls}
   ```
 
-  One "Sponsor on..." option is rendered per platform the author has enabled. The property names match the per-package metadata names, used here as MSBuild properties. The "Sponsor at:" block collapses to a single inline line when only one platform is configured.
+  One "Sponsor on..." option is rendered per platform the author has enabled. The property names are the per-package metadata names prefixed with the package's owner id (e.g. `<acme_GitHubSponsorAccount>` when `SponsorOwner="acme"`) — this keeps two owner-mode packages from different authors independently configurable in the same consumer project. The "Sponsor at:" block collapses to a single inline line when only one platform is configured.
 - **Example:**
 
   ```
@@ -503,13 +503,13 @@ flowchart TD
   Set ONE of the following properties (in a <PropertyGroup> in Directory.Build.props or the consuming project):
 
   Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
-    <GitHubSponsorAccount><your-github-account></GitHubSponsorAccount>
+    <acme_GitHubSponsorAccount><your-github-account></acme_GitHubSponsorAccount>
 
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
-    <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+    <acme_SponsorshipLicensedUntil>yyyy-MM</acme_SponsorshipLicensedUntil>
 
   Option — Mark as ignored (you accept that the build is in breach of the package license):
-    <SponsorshipLicenseIgnored>true</SponsorshipLicenseIgnored>
+    <acme_SponsorshipLicenseIgnored>true</acme_SponsorshipLicenseIgnored>
 
   Sponsor at https://github.com/sponsors/acmecorp
   ```
@@ -527,7 +527,7 @@ flowchart TD
 
   Edit the SponsorCheck properties for '{PackageId}' in Directory.Build.props or the consuming project.
 
-  Keep exactly one of: GitHubSponsorAccount, OpenCollectiveSponsorAccount, PolarSponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
+  Keep exactly one of: {OwnerId}_GitHubSponsorAccount, {OwnerId}_OpenCollectiveSponsorAccount, {OwnerId}_PolarSponsorAccount, {OwnerId}_SponsorshipLicensedUntil, or {OwnerId}_SponsorshipLicenseIgnored.
   ```
 - **Example opener:** `Package 'MyOssLib': mutually exclusive license properties are set (Sponsor, SponsorshipLicenseIgnored). Pick one.`
 
@@ -540,11 +540,11 @@ flowchart TD
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipLicenseIgnored="true" property is set. Build is allowed but is in breach of the package license.
+  Package '{PackageId}': {OwnerId}_SponsorshipLicenseIgnored="true" property is set. Build is allowed but is in breach of the package license.
 
   <SC021-style remediation block — see SC021 for the full format>
   ```
-- **Example opener:** `Package 'MyOssLib': SponsorshipLicenseIgnored="true" property is set. Build is allowed but is in breach of the package license.`
+- **Example opener:** `Package 'MyOssLib': acme_SponsorshipLicenseIgnored="true" property is set. Build is allowed but is in breach of the package license.`
 
 
 ### SC024
@@ -563,15 +563,15 @@ flowchart TD
     {sponsorUrl1}
     {sponsorUrl2}
 
-  If sponsorship started after this package was released, attest to the start date by setting the SponsorshipStart property in Directory.Build.props or the consuming project.
+  If sponsorship started after this package was released, attest to the start date by setting the {OwnerId}_SponsorshipStart property in Directory.Build.props or the consuming project.
 
   Example format:
 
-    <{PlatformMetadataName}>{accountValue}</{PlatformMetadataName}>
-    <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+    <{OwnerId}_{PlatformMetadataName}>{accountValue}</{OwnerId}_{PlatformMetadataName}>
+    <{OwnerId}_SponsorshipStart>yyyy-MM-dd</{OwnerId}_SponsorshipStart>
   ```
 
-  The "If sponsorship started after this package was released..." block is omitted when `SponsorshipStart` is already set.
+  The "If sponsorship started after this package was released..." block is omitted when `{OwnerId}_SponsorshipStart` is already set.
 - **Example:**
 
   ```
@@ -581,12 +581,12 @@ flowchart TD
 
   Sponsor at https://github.com/sponsors/acmecorp
 
-  If sponsorship started after this package was released, attest to the start date by setting the SponsorshipStart property in Directory.Build.props or the consuming project.
+  If sponsorship started after this package was released, attest to the start date by setting the acme_SponsorshipStart property in Directory.Build.props or the consuming project.
 
   Example format:
 
-    <GitHubSponsorAccount>mallory</GitHubSponsorAccount>
-    <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+    <acme_GitHubSponsorAccount>mallory</acme_GitHubSponsorAccount>
+    <acme_SponsorshipStart>yyyy-MM-dd</acme_SponsorshipStart>
   ```
 
 
@@ -598,17 +598,17 @@ flowchart TD
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipLicensedUntil='{value}' property has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).
+  Package '{PackageId}': {OwnerId}_SponsorshipLicensedUntil='{value}' property has expired (end of month {endOfMonth:yyyy-MM-dd} UTC).
 
-  Renew the license by updating the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+  Renew the license by updating the {OwnerId}_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
   Example format:
 
-    <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+    <{OwnerId}_SponsorshipLicensedUntil>yyyy-MM</{OwnerId}_SponsorshipLicensedUntil>
 
   Sponsor at {sponsorUrl}
   ```
-- **Example opener:** `Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' property has expired (end of month 2000-01-31 UTC).`
+- **Example opener:** `Package 'MyOssLib': acme_SponsorshipLicensedUntil='2000-01' property has expired (end of month 2000-01-31 UTC).`
 
 
 ### SC026
@@ -619,15 +619,15 @@ flowchart TD
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipLicensedUntil='{value}' property is not in 'yyyy-MM' format.
+  Package '{PackageId}': {OwnerId}_SponsorshipLicensedUntil='{value}' property is not in 'yyyy-MM' format.
 
-  Fix the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+  Fix the {OwnerId}_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
   Example format:
 
-    <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+    <{OwnerId}_SponsorshipLicensedUntil>yyyy-MM</{OwnerId}_SponsorshipLicensedUntil>
   ```
-- **Example opener:** `Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' property is not in 'yyyy-MM' format.`
+- **Example opener:** `Package 'MyOssLib': acme_SponsorshipLicensedUntil='not-a-date' property is not in 'yyyy-MM' format.`
 
 
 ### SC027
@@ -638,15 +638,15 @@ flowchart TD
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipStart='{value}' property is not in 'yyyy-MM-dd' format.
+  Package '{PackageId}': {OwnerId}_SponsorshipStart='{value}' property is not in 'yyyy-MM-dd' format.
 
-  Fix the SponsorshipStart property in Directory.Build.props or the consuming project.
+  Fix the {OwnerId}_SponsorshipStart property in Directory.Build.props or the consuming project.
 
   Example format:
 
-    <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+    <{OwnerId}_SponsorshipStart>yyyy-MM-dd</{OwnerId}_SponsorshipStart>
   ```
-- **Example opener:** `Package 'MyOssLib': SponsorshipStart='yesterday' property is not in 'yyyy-MM-dd' format.`
+- **Example opener:** `Package 'MyOssLib': acme_SponsorshipStart='yesterday' property is not in 'yyyy-MM-dd' format.`
 
 
 ### SC028
@@ -657,12 +657,12 @@ flowchart TD
 - **Syntax:**
 
   ```
-  Package '{PackageId}': SponsorshipStart='{value}' property is in the future.
+  Package '{PackageId}': {OwnerId}_SponsorshipStart='{value}' property is in the future.
 
-  Fix the SponsorshipStart property in Directory.Build.props or the consuming project.
+  Fix the {OwnerId}_SponsorshipStart property in Directory.Build.props or the consuming project.
 
   Example format:
 
-    <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+    <{OwnerId}_SponsorshipStart>yyyy-MM-dd</{OwnerId}_SponsorshipStart>
   ```
-- **Example opener:** `Package 'MyOssLib': SponsorshipStart='2099-01-01' property is in the future.`
+- **Example opener:** `Package 'MyOssLib': acme_SponsorshipStart='2099-01-01' property is in the future.`

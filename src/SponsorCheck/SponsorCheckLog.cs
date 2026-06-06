@@ -111,6 +111,7 @@ public static class SponsorCheckLog
         "SC102" => "Missing platform credential",
         "SC103" => "User-secrets read failed",
         "SC104" => "Invalid severity override",
+        "SC105" => "Invalid SponsorOwner",
         _ => code
     };
 }

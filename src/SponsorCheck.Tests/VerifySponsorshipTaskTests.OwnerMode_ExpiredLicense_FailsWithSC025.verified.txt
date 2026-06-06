@@ -3,13 +3,13 @@
     {
       Code: SC025,
       Message:
-License expired. Package 'MyOssLib': SponsorshipLicensedUntil='2000-01' property has expired (end of month 2000-01-31 UTC).
+License expired. Package 'MyOssLib': acme_SponsorshipLicensedUntil='2000-01' property has expired (end of month 2000-01-31 UTC).
 
-Renew the license by updating the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+Renew the license by updating the acme_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
 Example format:
 
-  <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+  <acme_SponsorshipLicensedUntil>yyyy-MM</acme_SponsorshipLicensedUntil>
 
 Sponsor at https://github.com/sponsors/acmecorp
 

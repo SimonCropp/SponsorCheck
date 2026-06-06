@@ -3,13 +3,13 @@
     {
       Code: SC026,
       Message:
-Invalid license date format. Package 'MyOssLib': SponsorshipLicensedUntil='not-a-date' property is not in 'yyyy-MM' format.
+Invalid license date format. Package 'MyOssLib': acme_SponsorshipLicensedUntil='not-a-date' property is not in 'yyyy-MM' format.
 
-Fix the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+Fix the acme_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
 Example format:
 
-  <SponsorshipLicensedUntil>yyyy-MM</SponsorshipLicensedUntil>
+  <acme_SponsorshipLicensedUntil>yyyy-MM</acme_SponsorshipLicensedUntil>
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026
     }

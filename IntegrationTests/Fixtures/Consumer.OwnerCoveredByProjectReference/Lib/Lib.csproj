@@ -3,7 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <!-- Owner-mode sponsorship set in the project that DIRECTLY references the package. The
          parent project (no direct ref, no property) relies on this Lib's verifier covering it. -->
-    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+    <acme_GitHubSponsorAccount>alice</acme_GitHubSponsorAccount>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackageOwnerModeTransitive" Version="1.0.0" />
