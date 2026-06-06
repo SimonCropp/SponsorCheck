@@ -139,9 +139,9 @@ flowchart TD
   ```
   Package '{PackageId}': SponsorshipLicenseIgnored="true" on the <PackageReference>. Build is allowed but is in breach of the package license.
 
-  <SC001-style remediation block — see SC001 for the full format>
+  <SC001-style remediation block — see SC001 for the full format, minus the "Mark as ignored" option>
   ```
-- **Example:** Same body shape as SC001, prefixed with `Package 'MyOssLib': SponsorshipLicenseIgnored="true" on the <PackageReference>. Build is allowed but is in breach of the package license.`
+- **Example:** Same body shape as SC001 (but without the "Mark as ignored" option, since that mode is what already triggered this warning), prefixed with `Package 'MyOssLib': SponsorshipLicenseIgnored="true" on the <PackageReference>. Build is allowed but is in breach of the package license.`
 
 
 ### SC006
@@ -542,7 +542,7 @@ flowchart TD
   ```
   Package '{PackageId}': {OwnerId}_SponsorshipLicenseIgnored="true" property is set. Build is allowed but is in breach of the package license.
 
-  <SC021-style remediation block — see SC021 for the full format>
+  <SC021-style remediation block — see SC021 for the full format, minus the "Mark as ignored" option>
   ```
 - **Example opener:** `Package 'MyOssLib': acme_SponsorshipLicenseIgnored="true" property is set. Build is allowed but is in breach of the package license.`
 

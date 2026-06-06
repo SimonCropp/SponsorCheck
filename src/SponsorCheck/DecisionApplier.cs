@@ -82,7 +82,7 @@ public static class DecisionApplier
                     $"""
                      {opener}
 
-                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)}
+                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts, includeIgnoreOption: false)}
                      """);
             }
 

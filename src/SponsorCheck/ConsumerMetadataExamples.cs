@@ -11,7 +11,8 @@ public static class ConsumerMetadataExamples
 
     public static string RenderLicenseModeOptions(
         ConsumerContext context,
-        IReadOnlyList<AuthorAccount> authorAccounts)
+        IReadOnlyList<AuthorAccount> authorAccounts,
+        bool includeIgnoreOption = true)
     {
         // Sponsor options come first, then time-bounded license, then the ignore escape hatch
         // last — same ordering convention as the SC003/SC004 conflict message.
@@ -37,9 +38,14 @@ public static class ConsumerMetadataExamples
         lines.Add("Option — Time-bounded license (replace yyyy-MM with the last covered month):");
         lines.Add($"  {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}");
 
-        lines.Add("");
-        lines.Add("Option — Mark as ignored (you accept that the build is in breach of the package license):");
-        lines.Add($"  {RenderItem(context, ("SponsorshipLicenseIgnored", "true"))}");
+        // Omitted when the warning being rendered is itself the "license ignored" warning —
+        // re-offering the option that already fired the warning is noise.
+        if (includeIgnoreOption)
+        {
+            lines.Add("");
+            lines.Add("Option — Mark as ignored (you accept that the build is in breach of the package license):");
+            lines.Add($"  {RenderItem(context, ("SponsorshipLicenseIgnored", "true"))}");
+        }
 
         var sponsorAt = RenderSponsorAtBlock(authorAccounts);
         if (sponsorAt.Length > 0)
