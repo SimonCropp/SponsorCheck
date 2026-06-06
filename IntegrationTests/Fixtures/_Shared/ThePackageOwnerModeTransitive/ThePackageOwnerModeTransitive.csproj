@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Owner mode + CheckTransitiveReferences: the verifier ships under buildTransitive/ and reads
+         a single global MSBuild property. This combination is what triggers the original "N copies
+         of SC021 across a solution" UX — every transitive consumer's verifier fires. -->
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp"
+                      OpenCollectiveAccount="acme-org"
+                      PolarAccount="acme"
+                      SponsorOwner="acme"
+                      CheckTransitiveReferences="true" />
+  </ItemGroup>
+</Project>

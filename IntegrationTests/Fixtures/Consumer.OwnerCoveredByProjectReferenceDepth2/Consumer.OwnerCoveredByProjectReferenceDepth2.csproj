@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- Top-level. Reaches the package only via Mid → Lib (2-level ProjectReference chain).
+       Verifier coverage check is depth-2, so this still skips successfully. -->
+  <ItemGroup>
+    <ProjectReference Include="Mid\Mid.csproj" />
+  </ItemGroup>
+</Project>

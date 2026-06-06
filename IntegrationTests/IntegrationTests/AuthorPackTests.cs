@@ -139,7 +139,10 @@ public class AuthorPackTests
     {
         // ThePackageOwnerMode sets SponsorOwner="acme", so the bundler must emit the owner template
         // (reads global MSBuild properties + bakes in the owner id) rather than the per-package
-        // template (reads item metadata off @(PackageReference)).
+        // template. The owner-mode license check pulls from $(GitHubSponsorAccount) etc., not from
+        // per-PackageReference metadata. The template DOES still query @(PackageReference) for the
+        // project-reference coverage responders — that's a separate concern (skip transitive
+        // verification when a sibling ProjectReference covers the package directly).
         var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOwnerMode");
         var nupkg = Directory.GetFiles(feed, "ThePackageOwnerMode.*.nupkg").Single();
         using var zip = ZipFile.OpenRead(nupkg);
@@ -150,7 +153,9 @@ public class AuthorPackTests
         await Assert.That(content).Contains("VerifySponsorshipTask");
         await Assert.That(content).Contains("$(GitHubSponsorAccount)");
         await Assert.That(content).Contains("_SponsorCheck_OwnerId>acme<");
-        await Assert.That(content).DoesNotContain("@(PackageReference");
+        // The license-check task call must not pull from per-package metadata under owner mode.
+        await Assert.That(content).DoesNotContain("GitHubFromVer");
+        await Assert.That(content).DoesNotContain("IgnoredFromVer");
     }
 
     [Test]

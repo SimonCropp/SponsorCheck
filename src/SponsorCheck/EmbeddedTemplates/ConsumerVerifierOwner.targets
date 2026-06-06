@@ -17,6 +17,38 @@ __SC_INNER_IMPORT__
   <UsingTask TaskName="VerifySponsorshipTask"
              AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
 
+  <!-- Project-reference coverage responders. When a transitive consumer (this project's verifier
+       was imported via buildTransitive/) has a sibling ProjectReference that already covers
+       ThePackage directly, this project's verification is redundant — the direct consumer's
+       verifier will fire with the authoritative metadata. The verifier target below queries each
+       direct ProjectReference with the "deep" responder; the deep responder also walks ITS own
+       direct ProjectReferences via the "shallow" responder, giving depth-2 visibility (self,
+       refs, refs-of-refs). The responder names are package-id-scoped so multiple SponsorCheck
+       packages in the same project don't clash. -->
+  <Target Name="_SponsorCheck_CoversDeep___SC_PACKAGE_ID__"
+          Returns="@(_SponsorCheck_Covered___SC_PACKAGE_ID__)">
+    <ItemGroup>
+      <_SponsorCheck_Covered___SC_PACKAGE_ID__
+          Include="$(_SponsorCheck_ThePackageId)"
+          Condition="@(PackageReference->AnyHaveMetadataValue('Identity', '$(_SponsorCheck_ThePackageId)'))" />
+    </ItemGroup>
+    <MSBuild Projects="@(ProjectReference)"
+             Targets="_SponsorCheck_CoversShallow___SC_PACKAGE_ID__"
+             SkipNonexistentTargets="true"
+             Condition="'@(_SponsorCheck_Covered___SC_PACKAGE_ID__)' == '' and '@(ProjectReference)' != ''">
+      <Output TaskParameter="TargetOutputs" ItemName="_SponsorCheck_Covered___SC_PACKAGE_ID__" />
+    </MSBuild>
+  </Target>
+
+  <Target Name="_SponsorCheck_CoversShallow___SC_PACKAGE_ID__"
+          Returns="@(_SponsorCheck_CoveredShallow___SC_PACKAGE_ID__)">
+    <ItemGroup>
+      <_SponsorCheck_CoveredShallow___SC_PACKAGE_ID__
+          Include="$(_SponsorCheck_ThePackageId)"
+          Condition="@(PackageReference->AnyHaveMetadataValue('Identity', '$(_SponsorCheck_ThePackageId)'))" />
+    </ItemGroup>
+  </Target>
+
   <!-- Owner mode: sponsorship is configured once via global MSBuild properties (in
        Directory.Build.props or the consuming project), not per-package metadata. So this template
        reads $(GitHubSponsorAccount) etc. directly — no item flatten, no CPM/Ref-Ver split. The
@@ -25,11 +57,19 @@ __SC_INNER_IMPORT__
   <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__"
           BeforeTargets="BeforeBuild"
           Condition="'$(_SponsorCheck_OwnerVerified___SC_OWNER_ID__)' != 'true'">
+    <MSBuild Projects="@(ProjectReference)"
+             Targets="_SponsorCheck_CoversDeep___SC_PACKAGE_ID__"
+             SkipNonexistentTargets="true"
+             Condition="'@(ProjectReference)' != ''">
+      <Output TaskParameter="TargetOutputs" ItemName="_SponsorCheck_RefCovers___SC_PACKAGE_ID__" />
+    </MSBuild>
+
     <PropertyGroup>
       <_SponsorCheck_OwnerVerified___SC_OWNER_ID__>true</_SponsorCheck_OwnerVerified___SC_OWNER_ID__>
     </PropertyGroup>
 
     <VerifySponsorshipTask
+        Condition="'@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
         ThePackageId="$(_SponsorCheck_ThePackageId)"
         OwnerId="$(_SponsorCheck_OwnerId)"
         SponsorHashListPath="$(_SponsorCheck_HashListPath)"

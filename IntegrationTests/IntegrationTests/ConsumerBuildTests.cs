@@ -288,6 +288,39 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task OwnerMode_ProjectReferenceCoverage_SkipsRedundantVerification()
+    {
+        // Top-level project has no direct PackageReference and no sponsor property. ThePackage
+        // flows in transitively via Lib's PackageReference, and the package's CheckTransitiveReferences
+        // setting means the verifier targets ARE imported into the top-level project too. Without
+        // the project-reference coverage check this build would fail with SC021 in the top-level
+        // (no property set there). The coverage check sees that the Lib sibling — reachable via a
+        // <ProjectReference> — has the package directly and that Lib's verifier will do the
+        // authoritative check, so the top-level's verifier skips.
+        var result = await BuildFixture(
+            "Consumer.OwnerCoveredByProjectReference",
+            authorFixture: "ThePackageOwnerModeTransitive");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC021");
+        await Assert.That(result.Combined).DoesNotContain("SC024");
+    }
+
+    [Test]
+    public async Task OwnerMode_ProjectReferenceCoverage_Depth2_SkipsRedundantVerification()
+    {
+        // Top → Mid (ProjectReference) → Lib (ProjectReference) → ThePackage (PackageReference).
+        // The coverage check walks two levels of ProjectReferences from each consumer, so Top's
+        // verifier finds coverage through Mid (which recurses to Lib). Locks in the documented
+        // depth-2 contract.
+        var result = await BuildFixture(
+            "Consumer.OwnerCoveredByProjectReferenceDepth2",
+            authorFixture: "ThePackageOwnerModeTransitive");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC021");
+        await Assert.That(result.Combined).DoesNotContain("SC024");
+    }
+
+    [Test]
     public async Task OwnerMode_NoConfig_FailsWithSC021()
     {
         // Owner-mode counterpart of SC001/SC002: no sponsorship property set anywhere.
