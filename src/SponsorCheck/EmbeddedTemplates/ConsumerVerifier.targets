@@ -1,4 +1,5 @@
 <Project>
+__SC_INNER_IMPORT__
   <PropertyGroup>
     <_SponsorCheck_ThePackageId>__SC_PACKAGE_ID_RAW__</_SponsorCheck_ThePackageId>
     <_SponsorCheck_TasksDir>$(MSBuildThisFileDirectory)..\tasks\</_SponsorCheck_TasksDir>

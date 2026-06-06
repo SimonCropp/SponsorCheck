@@ -1,0 +1,8 @@
+<Project>
+  <!-- Author-owned build logic. A consumer that imports this should see the marker target, proving
+       SponsorCheck relocated (rather than dropped) the file. The same target name is used from build/
+       and the buildTransitive/ sidecar so a direct reference importing both is idempotent. -->
+  <Target Name="ThePackageOwnTargets_AuthorMarker" BeforeTargets="BeforeBuild">
+    <Message Importance="high" Text="ThePackageOwnTargets author target ran." />
+  </Target>
+</Project>

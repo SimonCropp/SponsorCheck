@@ -41,6 +41,48 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task OwnTargets_RelocatedToSidecar_NoCollision()
+    {
+        // ThePackageOwnTargets ships its own <PackageId>.targets into build/ AND buildTransitive/ while
+        // also setting CheckTransitiveReferences. Both the author file and the generated verifier claim
+        // the buildTransitive/<id>.targets auto-import slot. The bundler must relocate the author's file
+        // to <id>.SponsorCheckInner.targets and point the verifier's <Import> at it — so the verifier
+        // owns the slot and the author's logic still loads — instead of NU5118 / a dropped verifier.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOwnTargets");
+        var nupkg = Directory.GetFiles(feed, "ThePackageOwnTargets.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entries = zip.Entries.Select(e => e.FullName).ToList();
+
+        // Verifier owns the buildTransitive auto-import slot...
+        await Assert.That(entries).Contains("buildTransitive/ThePackageOwnTargets.targets");
+        // ...the author's own targets were relocated to the sidecar the verifier imports...
+        await Assert.That(entries).Contains("buildTransitive/ThePackageOwnTargets.SponsorCheckInner.targets");
+        // ...and the build/ copy (imported by NuGet for direct references) is left in place.
+        await Assert.That(entries).Contains("build/ThePackageOwnTargets.targets");
+
+        var verifier = await ReadEntry(zip, "buildTransitive/ThePackageOwnTargets.targets");
+        await Assert.That(verifier).Contains("VerifySponsorshipTask");
+        await Assert.That(verifier).Contains("ThePackageOwnTargets.SponsorCheckInner.targets");
+
+        var inner = await ReadEntry(zip, "buildTransitive/ThePackageOwnTargets.SponsorCheckInner.targets");
+        await Assert.That(inner).Contains("ThePackageOwnTargets_AuthorMarker");
+        await Assert.That(inner).DoesNotContain("VerifySponsorshipTask");
+
+        // The build/ copy must still be the author's content, not the verifier.
+        var buildCopy = await ReadEntry(zip, "build/ThePackageOwnTargets.targets");
+        await Assert.That(buildCopy).Contains("ThePackageOwnTargets_AuthorMarker");
+        await Assert.That(buildCopy).DoesNotContain("VerifySponsorshipTask");
+    }
+
+    static async Task<string> ReadEntry(ZipArchive zip, string entryName)
+    {
+        var entry = zip.GetEntry(entryName)!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        return await reader.ReadToEndAsync();
+    }
+
+    [Test]
     public async Task BundledHashesMatchOverrideListAndAreDeterministic()
     {
         var feed = await ThePackageBuilder.EnsureBuilt();

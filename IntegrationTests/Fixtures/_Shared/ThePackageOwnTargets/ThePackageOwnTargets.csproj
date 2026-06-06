@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- This package ships its OWN <PackageId>.targets into build/ AND buildTransitive/ (so its build
+         logic loads for both direct and transitive consumers) while also using SponsorCheck with
+         CheckTransitiveReferences. Both the author file and the verifier want the buildTransitive/
+         <PackageId>.targets auto-import slot. SponsorCheck must relocate the author's file to a sidecar
+         (<PackageId>.SponsorCheckInner.targets) and import it from the verifier, rather than collide
+         (NU5118) or silently drop the verifier. Identical target names across build/ + buildTransitive/
+         keep the double import idempotent for direct references. -->
+    <None Include="build\ThePackageOwnTargets.targets" Pack="true" PackagePath="build\ThePackageOwnTargets.targets" />
+    <None Include="build\ThePackageOwnTargets.targets" Pack="true" PackagePath="buildTransitive\ThePackageOwnTargets.targets" />
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp"
+                      OpenCollectiveAccount="acme-org"
+                      PolarAccount="acme"
+                      CheckTransitiveReferences="true" />
+  </ItemGroup>
+</Project>

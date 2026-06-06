@@ -77,6 +77,32 @@
       <_SponsorCheck_BuildFolder Condition="'$(_SponsorCheck_CheckTransitive)' == 'true'">buildTransitive</_SponsorCheck_BuildFolder>
     </PropertyGroup>
 
+    <!-- Coexist with packages that ship their own <PackageId>.targets. NuGet auto-imports exactly one
+         file named <PackageId>.targets, and SponsorCheck claims that slot for the generated verifier.
+         If the author already packs their own <PackageId>.targets into the folder we are about to write
+         to, packing the verifier there too collides — NU5118, or (when warnings aren't errors) a
+         silently dropped verifier. Detect the author's item now, while @(None) still holds only
+         author-authored items (our own <None> additions happen further below), so we can relocate it to
+         a sidecar and have the bundler <Import> that sidecar from the verifier. Both forward and back
+         slashes are matched since either is valid in a PackagePath. -->
+    <PropertyGroup>
+      <_SponsorCheck_OwnTargetsPackagePath>$(_SponsorCheck_BuildFolder)\$(PackageId).targets</_SponsorCheck_OwnTargetsPackagePath>
+      <_SponsorCheck_OwnTargetsPackagePathAlt>$(_SponsorCheck_BuildFolder)/$(PackageId).targets</_SponsorCheck_OwnTargetsPackagePathAlt>
+      <_SponsorCheck_InnerTargetsFileName>$(PackageId).SponsorCheckInner.targets</_SponsorCheck_InnerTargetsFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_SponsorCheck_AuthorOwnTargets Include="@(None)"
+          Condition="'%(None.Pack)' == 'true' and ('%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsPackagePath)' or '%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsPackagePathAlt)')" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_SponsorCheck_HasAuthorOwnTargets>false</_SponsorCheck_HasAuthorOwnTargets>
+      <_SponsorCheck_HasAuthorOwnTargets Condition="'@(_SponsorCheck_AuthorOwnTargets)' != ''">true</_SponsorCheck_HasAuthorOwnTargets>
+      <!-- Empty unless an author-owned targets was found, so the bundler emits no <Import> in the common case. -->
+      <_SponsorCheck_InnerImportArg Condition="'$(_SponsorCheck_HasAuthorOwnTargets)' == 'true'">$(_SponsorCheck_InnerTargetsFileName)</_SponsorCheck_InnerImportArg>
+    </PropertyGroup>
+
     <BundleSponsorListTask
         GitHubSponsorsAccountFromRef="$(_SponsorCheck_GitHubFromRef)"
         GitHubSponsorsAccountFromVer="$(_SponsorCheck_GitHubFromVer)"
@@ -111,6 +137,7 @@
         OverrideListPath="$(SponsorListOverride)"
         VerifierTargetsTemplatePath="$(_SponsorCheck_VerifierTemplate)"
         VerifierOwnerTargetsTemplatePath="$(_SponsorCheck_VerifierOwnerTemplate)"
+        InnerTargetsImportFileName="$(_SponsorCheck_InnerImportArg)"
         ThePackageId="$(PackageId)"
         OutputHashListPath="$(_SponsorCheck_HashListPath)"
         OutputVerifierTargetsPath="$(_SponsorCheck_GeneratedTargetsPath)"
@@ -120,6 +147,19 @@
         OutputMessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
         OutputLandingUrlPath="$(_SponsorCheck_LandingUrlPath)"
         OverridePackDate="$(SponsorCheck_PackDateOverride)" />
+
+    <!-- Move the author's own <PackageId>.targets aside to the sidecar the verifier imports, freeing
+         the <PackageId>.targets slot for the verifier <None> added below. MatchOnMetadata="PackagePath"
+         removes only the colliding item: an author who also ships the file to build\ (for direct refs,
+         when we pack into buildTransitive\) keeps that copy untouched — only the one in our pack folder
+         is relocated. The sidecar import in the verifier loads the author's logic for every consumer. -->
+    <ItemGroup Condition="'$(_SponsorCheck_HasAuthorOwnTargets)' == 'true'">
+      <None Remove="@(_SponsorCheck_AuthorOwnTargets)" MatchOnMetadata="PackagePath" />
+      <None Include="@(_SponsorCheck_AuthorOwnTargets)"
+            Pack="true"
+            PackagePath="$(_SponsorCheck_BuildFolder)\$(_SponsorCheck_InnerTargetsFileName)"
+            Visible="false" />
+    </ItemGroup>
 
     <ItemGroup>
       <None Include="$(_SponsorCheck_HashListPath)"
