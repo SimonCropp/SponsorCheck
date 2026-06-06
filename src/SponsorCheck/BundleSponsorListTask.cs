@@ -42,6 +42,13 @@ public sealed class BundleSponsorListTask :
 
     [Required] public string VerifierTargetsTemplatePath { get; set; } = "";
     public string VerifierOwnerTargetsTemplatePath { get; set; } = "";
+
+    // When the author package also ships its own build/<PackageId>.targets, SponsorCheck claims the
+    // <PackageId>.targets auto-import slot for the verifier and relocates the author's file to this
+    // sidecar name (set by SponsorCheck.targets). Non-empty means "emit an <Import> of that sidecar
+    // into the generated verifier so the author's own build logic still runs in consumers". Empty
+    // (the common case, no author-owned targets) emits no import.
+    public string InnerTargetsImportFileName { get; set; } = "";
     [Required] public string ThePackageId { get; set; } = "";
     [Required] public string OutputHashListPath { get; set; } = "";
     [Required] public string OutputVerifierTargetsPath { get; set; } = "";
@@ -141,6 +148,8 @@ public sealed class BundleSponsorListTask :
                     .Replace("__SC_OWNER_ID__", Sanitize(ownerId!))
                     .Replace(">__SC_OWNER_ID_RAW__<", $">{ownerId}<");
             }
+
+            rendered = rendered.Replace("__SC_INNER_IMPORT__", RenderInnerImport());
 
             File.WriteAllText(OutputVerifierTargetsPath, rendered);
 
@@ -362,6 +371,21 @@ public sealed class BundleSponsorListTask :
         }
 
         return builder.ToString();
+    }
+
+    // Renders the <Import> injected into the generated verifier (at the __SC_INNER_IMPORT__ placeholder)
+    // when the author package ships its own <PackageId>.targets. The author's file was relocated to a
+    // sidecar alongside the verifier, so importing it by MSBuildThisFileDirectory keeps the author's
+    // build logic running in consumers. Empty string when there is no author-owned targets to chain.
+    string RenderInnerImport()
+    {
+        if (string.IsNullOrWhiteSpace(InnerTargetsImportFileName))
+        {
+            return "";
+        }
+
+        var fileName = InnerTargetsImportFileName.Trim();
+        return $"  <Import Project=\"$(MSBuildThisFileDirectory){fileName}\" Condition=\"Exists('$(MSBuildThisFileDirectory){fileName}')\" />";
     }
 
     static void EnsureDirectory(string filePath)

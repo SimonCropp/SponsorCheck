@@ -383,6 +383,89 @@ public class BundleSponsorListTaskTests
     }
 
     [Test]
+    public async Task InnerTargetsImport_Set_EmitsImportOfSidecar()
+    {
+        // When the author package ships its own <PackageId>.targets, SponsorCheck.targets relocates it
+        // to a sidecar and passes the sidecar file name here. The bundler must replace the
+        // __SC_INNER_IMPORT__ placeholder with an <Import> of that sidecar (guarded by Exists), so the
+        // author's own build logic still runs in consumers alongside the verifier.
+        using var dir = new TempDirectory();
+        var templatePath = Path.Combine(dir, "ConsumerVerifier.targets");
+        await File.WriteAllTextAsync(
+            templatePath,
+            """
+            <Project>
+            __SC_INNER_IMPORT__
+              <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__" />
+            </Project>
+            """);
+
+        var override_ = WriteOverride(dir, "[]");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = templatePath,
+            ThePackageId = "MyOssLib",
+            InnerTargetsImportFileName = "MyOssLib.SponsorCheckInner.targets",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var rendered = await File.ReadAllTextAsync(task.OutputVerifierTargetsPath);
+        await Assert.That(rendered).Contains("<Import Project=\"$(MSBuildThisFileDirectory)MyOssLib.SponsorCheckInner.targets\"");
+        await Assert.That(rendered).Contains("Condition=\"Exists('$(MSBuildThisFileDirectory)MyOssLib.SponsorCheckInner.targets')\"");
+        await Assert.That(rendered).DoesNotContain("__SC_INNER_IMPORT__");
+    }
+
+    [Test]
+    public async Task InnerTargetsImport_Unset_EmitsNoImport()
+    {
+        // The common case: no author-owned <PackageId>.targets, so InnerTargetsImportFileName is empty
+        // and the placeholder collapses to nothing — no stray <Import> in the verifier.
+        using var dir = new TempDirectory();
+        var templatePath = Path.Combine(dir, "ConsumerVerifier.targets");
+        await File.WriteAllTextAsync(
+            templatePath,
+            """
+            <Project>
+            __SC_INNER_IMPORT__
+              <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__" />
+            </Project>
+            """);
+
+        var override_ = WriteOverride(dir, "[]");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = templatePath,
+            ThePackageId = "MyOssLib",
+            // InnerTargetsImportFileName left at its default ("").
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var rendered = await File.ReadAllTextAsync(task.OutputVerifierTargetsPath);
+        await Assert.That(rendered).DoesNotContain("<Import");
+        await Assert.That(rendered).DoesNotContain("__SC_INNER_IMPORT__");
+    }
+
+    [Test]
     public async Task OwnerMode_SelectsOwnerTemplateAndSubstitutesOwnerId()
     {
         // When SponsorOwner is set the bundler must render the OWNER template (reads global

@@ -445,6 +445,26 @@ By default the bundled verifier ships in the package's `build/` folder, which Nu
 A transitively-referenced consumer has no `<PackageReference>` of its own to carry a sponsor account, so an unconfigured one fails with the same [SC001](docs/VerifierDiagnosticCodes.md#sc001) family as a direct consumer — the resolution is to add a direct reference declaring a license mode. Leaving the metadatum unset (or `false`) keeps the default: direct references only. The choice is the author's, baked into the produced nupkg at pack time.
 
 
+### Packages that ship their own MSBuild targets
+
+NuGet auto-imports exactly one file named `<PackageId>.targets` into a consumer, and SponsorCheck claims that slot for the bundled verifier. A package that *also* ships its own `<PackageId>.targets` — for example to inject a source generator as an analyzer, register a build task, or set default properties — has both files wanting the same slot. SponsorCheck handles this automatically: at pack time it detects the author's own `<PackageId>.targets`, moves it aside to a `<PackageId>.SponsorCheckInner.targets` sidecar, and has the generated verifier `<Import>` that sidecar. The verifier owns the auto-import slot and the author's build logic still loads in consumers — no `NU5118` collision, no manual wiring:
+
+```xml
+<ItemGroup>
+  <!-- The author's own build logic — packed to the <PackageId>.targets slot as usual. -->
+  <None Include="build\MyOssLib.targets" Pack="true" PackagePath="build\MyOssLib.targets" />
+  <None Include="build\MyOssLib.targets" Pack="true" PackagePath="buildTransitive\MyOssLib.targets" />
+
+  <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                    PrivateAssets="all"
+                    GitHubSponsorsAccount="acmecorp"
+                    CheckTransitiveReferences="true" />
+</ItemGroup>
+```
+
+Only the copy in the folder SponsorCheck packs into is relocated (`build/` by default, or `buildTransitive/` under [`CheckTransitiveReferences`](#checking-transitive-references)). When the file is shipped to both folders — so it loads for direct *and* transitive references — the other copy is left in place; using identical MSBuild target names across the two keeps a direct consumer that imports both idempotent. This applies to `<PackageId>.targets` only; a shipped `<PackageId>.props` is untouched, since SponsorCheck never claims the props slot.
+
+
 ### Tuning verifier severity and message text
 
 By default the verifier emits [`SC001`](docs/VerifierDiagnosticCodes.md#sc001) (no license mode set), [`SC007`](docs/VerifierDiagnosticCodes.md#sc007) (sponsor account not in list), and [`SC009`](docs/VerifierDiagnosticCodes.md#sc009) (license expired) as **errors** that fail the consumer build, and [`SC005`](docs/VerifierDiagnosticCodes.md#sc005) (license ignored) as a **warning**. An author who wants a softer nudge — or stricter enforcement, or a custom-worded message — can override the severity and/or the message text at pack time:
