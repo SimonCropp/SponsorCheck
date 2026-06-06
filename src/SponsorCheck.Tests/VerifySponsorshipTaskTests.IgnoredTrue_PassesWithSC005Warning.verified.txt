@@ -14,9 +14,6 @@ Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
 Option — Time-bounded license (replace yyyy-MM with the last covered month):
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 
-Option — Mark as ignored (you accept that the build is in breach of the package license):
-  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
-
 Sponsor at https://github.com/sponsors/acmecorp
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005

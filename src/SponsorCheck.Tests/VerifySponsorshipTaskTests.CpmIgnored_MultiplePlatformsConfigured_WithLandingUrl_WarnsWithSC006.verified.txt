@@ -20,9 +20,6 @@ Option — Sponsor on Polar (https://acme.example.com/sponsor):
 Option — Time-bounded license (replace yyyy-MM with the last covered month):
   <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 
-Option — Mark as ignored (you accept that the build is in breach of the package license):
-  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicenseIgnored="true" />
-
 Sponsor at https://acme.example.com/sponsor
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006
