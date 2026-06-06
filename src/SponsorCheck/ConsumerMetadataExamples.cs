@@ -66,7 +66,7 @@ public static class ConsumerMetadataExamples
         if (context.IsOwner)
         {
             return $"""
-                    If sponsorship started after this package was released, attest to the start date by setting the SponsorshipStart property in Directory.Build.props or the consuming project.
+                    If sponsorship started after this package was released, attest to the start date by setting the {context.OwnerId}_SponsorshipStart property in Directory.Build.props or the consuming project.
 
                     Example format:
 
@@ -124,7 +124,7 @@ public static class ConsumerMetadataExamples
     public static string RenderLicensedUntilRenewal(ConsumerContext context) =>
         context.IsOwner
             ? $"""
-               Renew the license by updating the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+               Renew the license by updating the {context.OwnerId}_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
                Example format:
 
@@ -143,7 +143,7 @@ public static class ConsumerMetadataExamples
     public static string RenderLicensedUntilFormatFix(ConsumerContext context) =>
         context.IsOwner
             ? $"""
-               Fix the SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+               Fix the {context.OwnerId}_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
                Example format:
 
@@ -162,7 +162,7 @@ public static class ConsumerMetadataExamples
     public static string RenderSponsorshipStartFix(ConsumerContext context) =>
         context.IsOwner
             ? $"""
-               Fix the SponsorshipStart property in Directory.Build.props or the consuming project.
+               Fix the {context.OwnerId}_SponsorshipStart property in Directory.Build.props or the consuming project.
 
                Example format:
 
@@ -224,11 +224,16 @@ public static class ConsumerMetadataExamples
     static string RenderItem(ConsumerContext context, params (string Attribute, string Value)[] extraAttributes)
     {
         // Owner mode is property-based: render each license mode as its own MSBuild property element
-        // rather than item metadata on a <PackageReference>/<PackageVersion>. Continuation lines are
-        // indented two spaces so multi-property examples stay aligned under the caller's leading indent.
+        // rather than item metadata on a <PackageReference>/<PackageVersion>. The property names are
+        // owner-scoped (e.g. <acme_GitHubSponsorAccount> rather than bare <GitHubSponsorAccount>)
+        // so a consumer of multiple owner-mode packages can configure each one independently — the
+        // verifier targets file built for each owner reads $({owner}_GitHubSponsorAccount). The
+        // owner id was validated at pack time (BundleSponsorListTask.IsValidOwnerId) to be a
+        // safe MSBuild property name prefix. Continuation lines are indented two spaces so
+        // multi-property examples stay aligned under the caller's leading indent.
         if (context.IsOwner)
         {
-            return string.Join($"{newline}  ", extraAttributes.Select(_ => $"<{_.Attribute}>{_.Value}</{_.Attribute}>"));
+            return string.Join($"{newline}  ", extraAttributes.Select(_ => $"<{context.OwnerId}_{_.Attribute}>{_.Value}</{context.OwnerId}_{_.Attribute}>"));
         }
 
         // Both <PackageReference> (no-CPM) and <PackageVersion> (CPM) carry a Version attribute,

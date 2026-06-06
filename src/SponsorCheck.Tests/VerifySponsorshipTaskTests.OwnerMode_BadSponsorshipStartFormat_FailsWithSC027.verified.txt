@@ -3,13 +3,13 @@
     {
       Code: SC027,
       Message:
-Invalid SponsorshipStart format. Package 'MyOssLib': SponsorshipStart='yesterday' property is not in 'yyyy-MM-dd' format.
+Invalid SponsorshipStart format. Package 'MyOssLib': acme_SponsorshipStart='yesterday' property is not in 'yyyy-MM-dd' format.
 
-Fix the SponsorshipStart property in Directory.Build.props or the consuming project.
+Fix the acme_SponsorshipStart property in Directory.Build.props or the consuming project.
 
 Example format:
 
-  <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+  <acme_SponsorshipStart>yyyy-MM-dd</acme_SponsorshipStart>
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc027
     }

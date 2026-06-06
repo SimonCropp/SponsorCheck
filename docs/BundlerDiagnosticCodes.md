@@ -48,3 +48,12 @@ Every emitted message is prefixed with the code's short **Name** (e.g. `Platform
 - **Meaning:** A `<Code>SeverityOverride` metadatum on the SponsorCheck reference has an unrecognized value. Overrideable metadata: `NoLicenseSpecifiedSeverityOverride` (SC001), `LicenseIgnoredSeverityOverride` (SC005), `InvalidAccountSeverityOverride` (SC007), `LicenseExpiredSeverityOverride` (SC009). Allowed values are `error`, `warning`, `message`.
 - **Syntax:** `{metadataName}='{value}' is not a recognized severity. Allowed: error, warning, message.`
 - **Example:** `NoLicenseSpecifiedSeverityOverride='critical' is not a recognized severity. Allowed: error, warning, message.`
+
+
+### SC105
+
+- **Name:** Invalid SponsorOwner
+- **Level**: Error
+- **Meaning:** `SponsorOwner` is baked into the consumer-side property names as a prefix (e.g. `<acme_GitHubSponsorAccount>`), so it must be a safe MSBuild property name prefix: starts with a letter, then letters, digits, or underscores. Hyphens, dots, spaces, and other characters are rejected.
+- **Syntax:** `SponsorCheck: SponsorOwner='{ownerId}' is not a valid MSBuild property prefix. SponsorOwner is baked into the consumer-side property names (e.g. <{ownerId}_GitHubSponsorAccount>) so it must start with a letter and contain only letters, digits, and underscores.`
+- **Example:** `SponsorCheck: SponsorOwner='acme-corp' is not a valid MSBuild property prefix. SponsorOwner is baked into the consumer-side property names (e.g. <acme-corp_GitHubSponsorAccount>) so it must start with a letter and contain only letters, digits, and underscores.`

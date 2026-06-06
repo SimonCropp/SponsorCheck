@@ -3,13 +3,13 @@
     {
       Code: SC028,
       Message:
-SponsorshipStart in the future. Package 'MyOssLib': SponsorshipStart='9999-12-31' property is in the future.
+SponsorshipStart in the future. Package 'MyOssLib': acme_SponsorshipStart='9999-12-31' property is in the future.
 
-Fix the SponsorshipStart property in Directory.Build.props or the consuming project.
+Fix the acme_SponsorshipStart property in Directory.Build.props or the consuming project.
 
 Example format:
 
-  <SponsorshipStart>yyyy-MM-dd</SponsorshipStart>
+  <acme_SponsorshipStart>yyyy-MM-dd</acme_SponsorshipStart>
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028
     }

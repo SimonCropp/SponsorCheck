@@ -606,6 +606,64 @@ public class BundleSponsorListTaskTests
     }
 
     [Test]
+    public async Task InvalidSponsorOwner_FailsWithSC105()
+    {
+        // SponsorOwner is baked into consumer-side property names like <acme_GitHubSponsorAccount>,
+        // so it must be a clean MSBuild property name prefix. Hyphens, dots, and other punctuation
+        // are rejected at pack time rather than producing a broken verifier targets file.
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var override_ = WriteOverride(dir, "[]");
+        var engine = new StubBuildEngine();
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = engine,
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            SponsorOwnerFromRef = "acme-corp",
+            VerifierTargetsTemplatePath = template,
+            VerifierOwnerTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC105");
+        await Assert.That(engine.Errors[0].Message).Contains("acme-corp");
+        await Assert.That(engine.Errors[0].Message).Contains("acme-corp_GitHubSponsorAccount");
+    }
+
+    [Test]
+    [Arguments("acme")]
+    [Arguments("Acme")]
+    [Arguments("acme_corp")]
+    [Arguments("acme1")]
+    [Arguments("a")]
+    public async Task IsValidOwnerId_Accepts(string ownerId) =>
+        await Assert.That(BundleSponsorListTask.IsValidOwnerId(ownerId)).IsTrue();
+
+    [Test]
+    [Arguments("")]
+    [Arguments("1acme")]        // starts with digit
+    [Arguments("_acme")]        // starts with underscore
+    [Arguments("acme-corp")]    // hyphen
+    [Arguments("acme.corp")]    // dot
+    [Arguments("acme corp")]    // space
+    [Arguments("acme$")]        // punctuation
+    [Arguments("асме")]         // Cyrillic homograph — looks like "acme" but isn't
+    [Arguments("café")]         // Latin-1 accented letter
+    [Arguments("日本")]          // CJK letters (valid in XML, not allowed here)
+    public async Task IsValidOwnerId_Rejects(string ownerId) =>
+        await Assert.That(BundleSponsorListTask.IsValidOwnerId(ownerId)).IsFalse();
+
+    [Test]
     public async Task SeverityOverrides_UnknownSeverity_FailsWithSC104()
     {
         using var dir = new TempDirectory();

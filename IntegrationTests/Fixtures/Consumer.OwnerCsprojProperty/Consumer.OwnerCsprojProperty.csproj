@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <!-- Owner mode: sponsorship configured as a global MSBuild property, here directly in the csproj. -->
-    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+    <acme_GitHubSponsorAccount>alice</acme_GitHubSponsorAccount>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />

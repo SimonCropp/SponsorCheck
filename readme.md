@@ -121,7 +121,7 @@ If `SponsorshipStart` is **after** the package's pack date, the verifier trusts 
 
 #### Sponsor account match (owner mode)
 
-When the author opted the package into [owner mode](#owner-mode), the same sponsor-account match is declared once as a global MSBuild property rather than `<PackageReference>` metadata. The property names mirror the per-package metadata — `GitHubSponsorAccount`, `OpenCollectiveSponsorAccount`, `PolarSponsorAccount`:
+When the author opted the package into [owner mode](#owner-mode), the same sponsor-account match is declared once as a global MSBuild property rather than `<PackageReference>` metadata. The property names are **scoped by the package's owner id** — `{owner}_GitHubSponsorAccount`, `{owner}_OpenCollectiveSponsorAccount`, `{owner}_PolarSponsorAccount` — so a consumer of packages from two different owners can configure each one independently (e.g. sponsor `acme` from a personal handle and `papyrine-corp` from an org). The owner id is baked into the package at pack time and is part of the SC021 error message, so there is no guessing about what to type:
 
 <!-- snippet: Consumer.OwnerCsprojProperty.csproj -->
 <a id='snippet-Consumer.OwnerCsprojProperty.csproj'></a>
@@ -130,7 +130,7 @@ When the author opted the package into [owner mode](#owner-mode), the same spons
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <!-- Owner mode: sponsorship configured as a global MSBuild property, here directly in the csproj. -->
-    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+    <acme_GitHubSponsorAccount>alice</acme_GitHubSponsorAccount>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
@@ -174,7 +174,7 @@ The bundled hash list is frozen per package version. The verifier has no notion 
 
 For private B2B licensing arrangements outside of the platforms. Format is `yyyy-MM`; the license is valid through the end of that month UTC.
 
-In [owner mode](#owner-mode) the same license is declared once as a global `SponsorshipLicensedUntil` property — in the consuming csproj or in `Directory.Build.props` — rather than `<PackageReference>` metadata:
+In [owner mode](#owner-mode) the same license is declared once as a global `{owner}_SponsorshipLicensedUntil` property — in the consuming csproj or in `Directory.Build.props` — rather than `<PackageReference>` metadata:
 
 <!-- snippet: Consumer.OwnerFutureLicense.csproj -->
 <a id='snippet-Consumer.OwnerFutureLicense.csproj'></a>
@@ -183,7 +183,7 @@ In [owner mode](#owner-mode) the same license is declared once as a global `Spon
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <!-- Owner mode: a time-bounded private license configured as a global MSBuild property. Valid through end of 2099-12 UTC. -->
-    <SponsorshipLicensedUntil>2099-12</SponsorshipLicensedUntil>
+    <acme_SponsorshipLicensedUntil>2099-12</acme_SponsorshipLicensedUntil>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
@@ -234,7 +234,7 @@ The same license modes apply (sponsor account, time-bounded license, ignore) but
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <!-- Owner mode: sponsorship configured as a global MSBuild property, here directly in the csproj. -->
-    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+    <acme_GitHubSponsorAccount>alice</acme_GitHubSponsorAccount>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
@@ -249,12 +249,12 @@ The same license modes apply (sponsor account, time-bounded license, ignore) but
 ```xml
 <Project>
   <PropertyGroup>
-    <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+    <acme_GitHubSponsorAccount>alice</acme_GitHubSponsorAccount>
   </PropertyGroup>
 </Project>
 ```
 
-The property names match the per-package metadata names: `GitHubSponsorAccount`, `OpenCollectiveSponsorAccount`, `PolarSponsorAccount`, `SponsorshipLicensedUntil`, `SponsorshipLicenseIgnored`, and `SponsorshipStart`. Owner-mode builds emit the [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021) family — the single-source equivalents of the per-package [SC001–SC016](docs/VerifierDiagnosticCodes.md#sc001) codes (e.g. [SC021](docs/VerifierDiagnosticCodes.md#sc021) is the owner-mode "no license specified", [SC024](docs/VerifierDiagnosticCodes.md#sc024) the "account not in list"). Whether a package uses owner mode is decided by the author at pack time; a consumer can't switch a per-package package into owner mode or vice versa.
+Property names are the per-package metadata names prefixed with `{owner}_`: `{owner}_GitHubSponsorAccount`, `{owner}_OpenCollectiveSponsorAccount`, `{owner}_PolarSponsorAccount`, `{owner}_SponsorshipLicensedUntil`, `{owner}_SponsorshipLicenseIgnored`, and `{owner}_SponsorshipStart`. The prefix keeps each owner's settings separate when a consumer references owner-mode packages from multiple authors. Owner-mode builds emit the [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021) family — the single-source equivalents of the per-package [SC001–SC016](docs/VerifierDiagnosticCodes.md#sc001) codes (e.g. [SC021](docs/VerifierDiagnosticCodes.md#sc021) is the owner-mode "no license specified", [SC024](docs/VerifierDiagnosticCodes.md#sc024) the "account not in list"). Whether a package uses owner mode is decided by the author at pack time; a consumer can't switch a per-package package into owner mode or vice versa.
 
 
 #### Migrating to or from owner mode
@@ -266,9 +266,9 @@ A flip never mis-verifies silently: if sponsorship is declared in the place the 
 Because the two sources don't interfere, a consumer can ride out the transition with **zero failed builds** by declaring sponsorship in *both* places at once:
 
 ```xml
-<!-- Directory.Build.props — read by owner-mode packages -->
+<!-- Directory.Build.props — read by owner-mode packages whose SponsorOwner is "acme" -->
 <PropertyGroup>
-  <GitHubSponsorAccount>alice</GitHubSponsorAccount>
+  <acme_GitHubSponsorAccount>alice</acme_GitHubSponsorAccount>
 </PropertyGroup>
 ```
 

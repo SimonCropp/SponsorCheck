@@ -18,7 +18,8 @@ public class SponsorCheckLogTests
         "SC101",
         "SC102",
         "SC103",
-        "SC104"
+        "SC104",
+        "SC105"
     ];
 
     [Test]

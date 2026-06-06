@@ -131,6 +131,15 @@ public sealed class BundleSponsorListTask :
             File.WriteAllText(OutputPackDatePath, packDate);
             var ownerId = PackageMetadataMerger.Merge("SponsorOwner", SponsorOwnerFromRef, SponsorOwnerFromVer);
             var isOwnerMode = !string.IsNullOrWhiteSpace(ownerId);
+            if (isOwnerMode && !IsValidOwnerId(ownerId!))
+            {
+                SponsorCheckLog.Error(
+                    Log,
+                    "SC105",
+                    $"SponsorCheck: SponsorOwner='{ownerId}' is not a valid MSBuild property prefix. SponsorOwner is baked into the consumer-side property names (e.g. <{ownerId}_GitHubSponsorAccount>) so it must start with a letter and contain only letters, digits, and underscores.");
+                return false;
+            }
+
             var templatePath = isOwnerMode ? VerifierOwnerTargetsTemplatePath : VerifierTargetsTemplatePath;
             var template = File.ReadAllText(templatePath);
             // Substitute package id into target/item names. Package IDs are restricted to
@@ -143,10 +152,14 @@ public sealed class BundleSponsorListTask :
             if (isOwnerMode)
             {
                 // __SC_OWNER_ID__ keys the per-owner run-once guard property (must be an MSBuild-safe
-                // identifier); __SC_OWNER_ID_RAW__ is the literal owner id used in diagnostics.
+                // identifier — hash-suffixed so two owners with the same sanitization don't collide);
+                // __SC_OWNER_ID_RAW__ is the literal owner id used in diagnostics. __SC_OWNER_PREFIX__
+                // is the owner-scoped property prefix the consumer types (no hash — already validated
+                // above to be a clean MSBuild identifier).
                 rendered = rendered
                     .Replace("__SC_OWNER_ID__", Sanitize(ownerId!))
-                    .Replace(">__SC_OWNER_ID_RAW__<", $">{ownerId}<");
+                    .Replace(">__SC_OWNER_ID_RAW__<", $">{ownerId}<")
+                    .Replace("__SC_OWNER_PREFIX__", $"{ownerId}_");
             }
 
             rendered = rendered.Replace("__SC_INNER_IMPORT__", RenderInnerImport());
@@ -354,6 +367,39 @@ public sealed class BundleSponsorListTask :
     // "Acme_Lib" (all -> "Acme_Lib"); a consumer that PackageReferences two such
     // packages would get duplicate target/item names at MSBuild import time. Append a
     // 32-bit SHA256 prefix of the raw id so each id maps to a unique sanitized name.
+    // SponsorOwner is baked into consumer-side property names like <{owner}_GitHubSponsorAccount>,
+    // so it must be a valid MSBuild property name prefix AND a valid XML element name part: starts
+    // with an ASCII letter, then ASCII letters, digits, or underscores. ASCII-only is deliberately
+    // stricter than what XML or MSBuild technically allow (both accept many Unicode characters):
+    // Unicode property names are untested in MSBuild, and confusables (Latin 'a' vs Cyrillic 'а')
+    // would let an author spoof another owner's property namespace. Hyphens are valid MSBuild
+    // property name chars but easy to mis-type, so they're excluded too.
+    public static bool IsValidOwnerId(string ownerId)
+    {
+        if (string.IsNullOrEmpty(ownerId) || !IsAsciiLetter(ownerId[0]))
+        {
+            return false;
+        }
+
+        for (var i = 1; i < ownerId.Length; i++)
+        {
+            var character = ownerId[i];
+            if (!IsAsciiLetter(character) && !IsAsciiDigit(character) && character != '_')
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static bool IsAsciiLetter(char character) =>
+        (character >= 'A' && character <= 'Z') ||
+        (character >= 'a' && character <= 'z');
+
+    static bool IsAsciiDigit(char character) =>
+        character >= '0' && character <= '9';
+
     public static string Sanitize(string packageId)
     {
         var builder = new StringBuilder(packageId.Length + 9);

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <!-- Owner mode: a time-bounded private license configured as a global MSBuild property, here expired. -->
-    <SponsorshipLicensedUntil>2000-01</SponsorshipLicensedUntil>
+    <acme_SponsorshipLicensedUntil>2000-01</acme_SponsorshipLicensedUntil>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />

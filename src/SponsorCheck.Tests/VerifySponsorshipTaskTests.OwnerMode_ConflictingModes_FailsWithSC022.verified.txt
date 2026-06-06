@@ -7,7 +7,7 @@ Conflicting license modes. Package 'MyOssLib': mutually exclusive license proper
 
 Edit the SponsorCheck properties for 'MyOssLib' in Directory.Build.props or the consuming project.
 
-Keep exactly one of: GitHubSponsorAccount, OpenCollectiveSponsorAccount, PolarSponsorAccount, SponsorshipLicensedUntil, or SponsorshipLicenseIgnored.
+Keep exactly one of: acme_GitHubSponsorAccount, acme_OpenCollectiveSponsorAccount, acme_PolarSponsorAccount, acme_SponsorshipLicensedUntil, or acme_SponsorshipLicenseIgnored.
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc022
     }
