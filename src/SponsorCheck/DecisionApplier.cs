@@ -19,7 +19,7 @@ public static class DecisionApplier
             {
                 var (code, opener) = context.Mode switch
                 {
-                    ConsumerMode.Owner => ("SC021", $"Package '{missingConfig.PackageId}' requires a SponsorCheck license property. '{missingConfig.PackageId}' is published in owner mode, so sponsorship is configured once via an MSBuild property (in Directory.Build.props or the consuming project), not on the <PackageReference>."),
+                    ConsumerMode.Owner => ("SC021", $"Package '{missingConfig.PackageId}' requires a SponsorCheck license property. '{missingConfig.PackageId}' is published in owner mode, so sponsorship is configured once via an MSBuild property (in Directory.Build.props or the consuming project)."),
                     ConsumerMode.Cpm => ("SC002", $"Package '{missingConfig.PackageId}' requires license metadata on the <PackageVersion> for '{missingConfig.PackageId}' in Directory.Packages.props."),
                     _ => ("SC001", $"Package '{missingConfig.PackageId}' requires license metadata on the <PackageReference> for '{missingConfig.PackageId}'.")
                 };

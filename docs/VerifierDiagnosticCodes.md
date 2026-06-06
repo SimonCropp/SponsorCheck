@@ -477,7 +477,7 @@ flowchart TD
 - **Syntax:**
 
   ```
-  Package '{PackageId}' requires a SponsorCheck license property. '{PackageId}' is published in owner mode, so sponsorship is configured once via an MSBuild property (in Directory.Build.props or the consuming project), not on the <PackageReference>.
+  Package '{PackageId}' requires a SponsorCheck license property. '{PackageId}' is published in owner mode, so sponsorship is configured once via an MSBuild property (in Directory.Build.props or the consuming project).
 
   Set ONE of the following properties (in a <PropertyGroup> in Directory.Build.props or the consuming project):
 
@@ -498,7 +498,7 @@ flowchart TD
 - **Example:**
 
   ```
-  Package 'MyOssLib' requires a SponsorCheck license property. 'MyOssLib' is published in owner mode, so sponsorship is configured once via an MSBuild property (in Directory.Build.props or the consuming project), not on the <PackageReference>.
+  Package 'MyOssLib' requires a SponsorCheck license property. 'MyOssLib' is published in owner mode, so sponsorship is configured once via an MSBuild property (in Directory.Build.props or the consuming project).
 
   Set ONE of the following properties (in a <PropertyGroup> in Directory.Build.props or the consuming project):
 
