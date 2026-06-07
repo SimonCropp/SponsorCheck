@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- IconifyBundle shape: CheckTransitiveReferences (and all SponsorCheck metadata) lives on
+         PackageVersion under CPM, while the csproj's PackageReference has only PrivateAssets. -->
+    <PackageVersion Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                    GitHubSponsorsAccount="acmecorp"
+                    OpenCollectiveAccount="acme-org"
+                    PolarAccount="acme"
+                    CheckTransitiveReferences="true" />
+  </ItemGroup>
+</Project>

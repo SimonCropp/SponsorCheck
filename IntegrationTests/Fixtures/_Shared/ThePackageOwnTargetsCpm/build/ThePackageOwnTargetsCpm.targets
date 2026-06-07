@@ -1,0 +1,5 @@
+<Project>
+  <Target Name="ThePackageOwnTargetsCpm_AuthorMarker" BeforeTargets="BeforeBuild">
+    <Message Importance="high" Text="ThePackageOwnTargetsCpm author target ran." />
+  </Target>
+</Project>

@@ -85,8 +85,14 @@
          author-authored items (our own <None> additions happen further below), so we can relocate it to
          a sidecar and have the bundler <Import> that sidecar from the verifier. Both forward and back
          slashes are matched since either is valid in a PackagePath. -->
+    <!-- %5C is the MSBuild escape for a literal backslash. A raw '\' between two $(..) refs (e.g.
+         '$(BuildFolder)\$(PackageId).targets') is normalized to '/' by MSBuild's expression evaluator
+         on Linux, collapsing the back- and forward-slash variants to the same value and breaking the
+         comparison against the author's '\'-bearing PackagePath metadata (item metadata is preserved
+         verbatim, even on Linux). %5C is decoded to literal '\' on every platform and survives the
+         normalization. Regression coverage: ThePackageOwnTargetsCpm fixture + OwnTargets_RelocatedToSidecar_Cpm test. -->
     <PropertyGroup>
-      <_SponsorCheck_OwnTargetsPackagePath>$(_SponsorCheck_BuildFolder)\$(PackageId).targets</_SponsorCheck_OwnTargetsPackagePath>
+      <_SponsorCheck_OwnTargetsPackagePath>$(_SponsorCheck_BuildFolder)%5C$(PackageId).targets</_SponsorCheck_OwnTargetsPackagePath>
       <_SponsorCheck_OwnTargetsPackagePathAlt>$(_SponsorCheck_BuildFolder)/$(PackageId).targets</_SponsorCheck_OwnTargetsPackagePathAlt>
       <_SponsorCheck_InnerTargetsFileName>$(PackageId).SponsorCheckInner.targets</_SponsorCheck_InnerTargetsFileName>
     </PropertyGroup>
@@ -190,13 +196,15 @@
             Pack="true"
             PackagePath="$(_SponsorCheck_BuildFolder)\$(PackageId).targets"
             Visible="false" />
+      <!-- Forward slash in PackagePath — see SponsorCheck.csproj for the rationale (Linux MSBuild
+           + NuGet pack produces 'tasks/netstandard2.0//<dll>' double-slashes with '\' here). -->
       <None Include="$(_SponsorCheck_TasksDir)netstandard2.0\*.dll"
             Pack="true"
-            PackagePath="tasks\netstandard2.0\"
+            PackagePath="tasks/netstandard2.0/"
             Visible="false" />
       <None Include="$(_SponsorCheck_TasksDir)net472\*.dll"
             Pack="true"
-            PackagePath="tasks\net472\"
+            PackagePath="tasks/net472/"
             Visible="false" />
     </ItemGroup>
   </Target>

@@ -83,6 +83,37 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task OwnTargets_RelocatedToSidecar_Cpm()
+    {
+        // Regression for an MSBuild Linux quirk: the previous detection property used
+        // '$(BuildFolder)\$(PackageId).targets' to build the colliding-PackagePath comparison string.
+        // MSBuild on Linux normalises raw '\' between two $(..) references to '/' inside expression
+        // results, so the comparison string collapsed to forward-slash and never matched the author's
+        // backslash-bearing PackagePath metadata (item metadata IS preserved verbatim on Linux). The
+        // relocation silently skipped, the verifier and author's file both claimed the buildTransitive
+        // slot, and pack failed with NU5118. The fix is %5C in the property definition, which decodes
+        // to literal '\' on every platform and survives normalisation. This fixture exercises that exact
+        // shape: CPM with CheckTransitiveReferences on PackageVersion, multi-targeting, and the author
+        // packing their own <PackageId>.targets to both build/ and buildTransitive/.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOwnTargetsCpm");
+        var nupkg = Directory.GetFiles(feed, "ThePackageOwnTargetsCpm.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entries = zip.Entries.Select(_ => _.FullName).ToList();
+
+        await Assert.That(entries).Contains("buildTransitive/ThePackageOwnTargetsCpm.targets");
+        await Assert.That(entries).Contains("buildTransitive/ThePackageOwnTargetsCpm.SponsorCheckInner.targets");
+        await Assert.That(entries).Contains("build/ThePackageOwnTargetsCpm.targets");
+
+        var verifier = await ReadEntry(zip, "buildTransitive/ThePackageOwnTargetsCpm.targets");
+        await Assert.That(verifier).Contains("VerifySponsorshipTask");
+        await Assert.That(verifier).Contains("ThePackageOwnTargetsCpm.SponsorCheckInner.targets");
+
+        var inner = await ReadEntry(zip, "buildTransitive/ThePackageOwnTargetsCpm.SponsorCheckInner.targets");
+        await Assert.That(inner).Contains("ThePackageOwnTargetsCpm_AuthorMarker");
+        await Assert.That(inner).DoesNotContain("VerifySponsorshipTask");
+    }
+
+    [Test]
     public async Task BundledHashesMatchOverrideListAndAreDeterministic()
     {
         var feed = await ThePackageBuilder.EnsureBuilt();
