@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="build\ThePackageOwnTargetsCpm.targets" Pack="true" PackagePath="build\ThePackageOwnTargetsCpm.targets" />
+    <None Include="build\ThePackageOwnTargetsCpm.targets" Pack="true" PackagePath="buildTransitive\ThePackageOwnTargetsCpm.targets" />
+    <PackageReference Include="SponsorCheck" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
