@@ -33,8 +33,12 @@
 
   <Target Name="_SponsorCheck_PackTaskDlls" BeforeTargets="_GetPackageFiles">
     <ItemGroup>
-      <None Include="bin\$(Configuration)\netstandard2.0\*.dll" Pack="true" PackagePath="tasks\netstandard2.0\" Visible="false" />
-      <None Include="bin\$(Configuration)\net472\*.dll" Pack="true" PackagePath="tasks\net472\" Visible="false" />
+      <!-- Forward slash, not backslash, in PackagePath: MSBuild on Linux normalizes the trailing '\'
+           to '/', then NuGet pack's file-append logic adds another '/' before the filename, producing
+           'tasks/netstandard2.0//SponsorCheck.dll' (double slash) in the nupkg. Forward slash sidesteps
+           the normalization step entirely and yields the same single-slash path on both platforms. -->
+      <None Include="bin\$(Configuration)\netstandard2.0\*.dll" Pack="true" PackagePath="tasks/netstandard2.0/" Visible="false" />
+      <None Include="bin\$(Configuration)\net472\*.dll" Pack="true" PackagePath="tasks/net472/" Visible="false" />
     </ItemGroup>
   </Target>
 </Project>

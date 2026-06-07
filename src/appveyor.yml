@@ -14,9 +14,9 @@ for:
       - appveyor DownloadFile https://dot.net/v1/dotnet-install.ps1
       - pwsh: ./dotnet-install.ps1 -JSonFile src/global.json -Architecture x64 -InstallDir 'C:\Program Files\dotnet'
       - dotnet build src --configuration Release
-      - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build
+      - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -- --no-ansi --no-progress
       - dotnet build IntegrationTests --configuration Release
-      - dotnet run --project IntegrationTests/IntegrationTests --configuration Release --no-build
+      - dotnet run --project IntegrationTests/IntegrationTests --configuration Release --no-build -- --no-ansi --no-progress
   -
     matrix:
       only:
@@ -27,9 +27,9 @@ for:
           chmod +x dotnet-install.sh
           sudo ./dotnet-install.sh --jsonfile src/global.json --architecture x64 --install-dir /usr/share/dotnet
       - dotnet build src --configuration Release
-      - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build
+      - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -- --no-ansi --no-progress
       - dotnet build IntegrationTests --configuration Release
-      - dotnet run --project IntegrationTests/IntegrationTests --configuration Release --no-build
+      - dotnet run --project IntegrationTests/IntegrationTests --configuration Release --no-build -- --no-ansi --no-progress
 on_failure:
   - pwsh: |
       $root = (Get-Location).Path

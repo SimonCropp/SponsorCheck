@@ -196,13 +196,15 @@
             Pack="true"
             PackagePath="$(_SponsorCheck_BuildFolder)\$(PackageId).targets"
             Visible="false" />
+      <!-- Forward slash in PackagePath — see SponsorCheck.csproj for the rationale (Linux MSBuild
+           + NuGet pack produces 'tasks/netstandard2.0//<dll>' double-slashes with '\' here). -->
       <None Include="$(_SponsorCheck_TasksDir)netstandard2.0\*.dll"
             Pack="true"
-            PackagePath="tasks\netstandard2.0\"
+            PackagePath="tasks/netstandard2.0/"
             Visible="false" />
       <None Include="$(_SponsorCheck_TasksDir)net472\*.dll"
             Pack="true"
-            PackagePath="tasks\net472\"
+            PackagePath="tasks/net472/"
             Visible="false" />
     </ItemGroup>
   </Target>
