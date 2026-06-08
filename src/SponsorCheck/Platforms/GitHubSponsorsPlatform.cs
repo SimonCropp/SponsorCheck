@@ -3,23 +3,48 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
 {
     const string endpoint = "https://api.github.com/graphql";
 
+    // sponsorshipsAsMaintainer (not the simpler `sponsors` connection) so each sponsorship exposes
+    // isOneTimePayment / isActive / createdAt. activeOnly:false includes lapsed recurring sponsors
+    // and one-time payments past their window; IsValidAt filters them explicitly so the one-time
+    // inclusion window is driven by SponsorCheck (one month from createdAt) rather than GitHub's
+    // own "active" definition for one-time payments.
     const string query =
         """
         query($login: String!, $cursor: String) {
           user(login: $login) {
-            sponsors(first: 100, after: $cursor) {
+            sponsorshipsAsMaintainer(first: 100, after: $cursor, activeOnly: false, includePrivate: true) {
               pageInfo { hasNextPage endCursor }
-              nodes { __typename ... on User { login } ... on Organization { login } }
+              nodes {
+                isActive
+                isOneTimePayment
+                createdAt
+                sponsorEntity {
+                  __typename
+                  ... on User { login }
+                  ... on Organization { login }
+                }
+              }
             }
           }
           organization(login: $login) {
-            sponsors(first: 100, after: $cursor) {
+            sponsorshipsAsMaintainer(first: 100, after: $cursor, activeOnly: false, includePrivate: true) {
               pageInfo { hasNextPage endCursor }
-              nodes { __typename ... on User { login } ... on Organization { login } }
+              nodes {
+                isActive
+                isOneTimePayment
+                createdAt
+                sponsorEntity {
+                  __typename
+                  ... on User { login }
+                  ... on Organization { login }
+                }
+              }
             }
           }
         }
         """;
+
+    public static readonly TimeSpan OneTimeWindow = TimeSpan.FromDays(30);
 
     public GitHubSponsorsPlatform() :
         this(HttpClientFactory.Get())
@@ -53,6 +78,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
         var userDone = false;
         var orgDone = false;
         var resolved = false;
+        var now = DateTime.UtcNow;
 
         while (!(userDone && orgDone))
         {
@@ -68,14 +94,20 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
                 resolved = true;
             }
 
-            foreach (var login in page.UserLogins)
+            foreach (var entry in page.UserSponsorships)
             {
-                logins.Add(login);
+                if (IsValidAt(entry, now))
+                {
+                    logins.Add(entry.Login);
+                }
             }
 
-            foreach (var login in page.OrgLogins)
+            foreach (var entry in page.OrgSponsorships)
             {
-                logins.Add(login);
+                if (IsValidAt(entry, now))
+                {
+                    logins.Add(entry.Login);
+                }
             }
 
             if (page.UserHasNextPage)
@@ -117,6 +149,20 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
         return [.. logins];
     }
 
+    // Recurring sponsors count while their sponsorship is active. One-time sponsors count for one
+    // month from the payment date — pairs with the OSS author setting GitHub's "Set minimum amount"
+    // to match their min monthly tier, so a single one-time payment of at least the tier value
+    // effectively earns one month of sponsor status.
+    public static bool IsValidAt(SponsorshipEntry entry, DateTime now)
+    {
+        if (entry.IsOneTimePayment)
+        {
+            return entry.CreatedAt + OneTimeWindow >= now;
+        }
+
+        return entry.IsActive;
+    }
+
     async Task<string> Post(string login, string? userCursor, string? orgCursor, string? token, Cancel cancel)
     {
         var variables = new Dictionary<string, object?>
@@ -149,11 +195,17 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
         throw new MaintenanceFeeException($"GitHub GraphQL HTTP {(int) response.StatusCode}: {body}");
     }
 
+    public readonly record struct SponsorshipEntry(
+        string Login,
+        bool IsOneTimePayment,
+        bool IsActive,
+        DateTime CreatedAt);
+
     public readonly record struct PageResult(
         bool UserExists,
         bool OrgExists,
-        IReadOnlyList<string> UserLogins,
-        IReadOnlyList<string> OrgLogins,
+        IReadOnlyList<SponsorshipEntry> UserSponsorships,
+        IReadOnlyList<SponsorshipEntry> OrgSponsorships,
         bool UserHasNextPage,
         bool OrgHasNextPage,
         string? UserEndCursor,
@@ -183,6 +235,17 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
                         "(or the GitHubToken MSBuild property / env var).");
                 }
 
+                if (IsInsufficientScopes(error))
+                {
+                    throw new MaintenanceFeeException(
+                        "GitHub Sponsors: the configured token is missing the 'read:user' scope. " +
+                        "SponsorCheck reads per-sponsorship metadata (isOneTimePayment, createdAt, isActive) " +
+                        "from sponsorshipsAsMaintainer, which GitHub gates on 'read:user' even for organization " +
+                        "maintainers. Edit the classic PAT at https://github.com/settings/tokens to add 'read:user' " +
+                        "(keep 'read:org' alongside it if sponsored as an organization), then refresh " +
+                        "SponsorCheck:GitHubToken (or the GitHubToken MSBuild property / env var).");
+                }
+
                 fatal.Add(error);
             }
 
@@ -197,9 +260,9 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
             throw new MaintenanceFeeException("GitHub GraphQL: missing 'data' in response.");
         }
 
-        var (userExists, userLogins, userNext, userCursor) = ParseConnection(data, "user");
-        var (orgExists, orgLogins, orgNext, orgCursor) = ParseConnection(data, "organization");
-        return new(userExists, orgExists, userLogins, orgLogins, userNext, orgNext, userCursor, orgCursor);
+        var (userExists, userEntries, userNext, userCursor) = ParseConnection(data, "user");
+        var (orgExists, orgEntries, orgNext, orgCursor) = ParseConnection(data, "organization");
+        return new(userExists, orgExists, userEntries, orgEntries, userNext, orgNext, userCursor, orgCursor);
     }
 
     static bool IsClassicPatForbidden(JsonElement error, out string? orgName)
@@ -239,6 +302,17 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
         return true;
     }
 
+    static bool IsInsufficientScopes(JsonElement error)
+    {
+        if (!error.TryGetProperty("type", out var type) ||
+            type.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        return string.Equals(type.GetString(), "INSUFFICIENT_SCOPES", StringComparison.Ordinal);
+    }
+
     static bool IsExpectedNotFound(JsonElement error)
     {
         if (!error.TryGetProperty("type", out var type) ||
@@ -265,7 +339,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
         return name is "user" or "organization";
     }
 
-    static (bool exists, IReadOnlyList<string> logins, bool hasNext, string? cursor) ParseConnection(JsonElement data, string key)
+    static (bool exists, IReadOnlyList<SponsorshipEntry> entries, bool hasNext, string? cursor) ParseConnection(JsonElement data, string key)
     {
         if (!data.TryGetProperty(key, out var node) ||
             node.ValueKind == JsonValueKind.Null)
@@ -273,29 +347,24 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
             return (false, [], false, null);
         }
 
-        var logins = new List<string>();
+        var entries = new List<SponsorshipEntry>();
         var hasNext = false;
         string? cursor = null;
-        if (node.TryGetProperty("sponsors", out var sponsors))
+        if (node.TryGetProperty("sponsorshipsAsMaintainer", out var sponsorships))
         {
-            if (sponsors.TryGetProperty("nodes", out var nodes) &&
+            if (sponsorships.TryGetProperty("nodes", out var nodes) &&
                 nodes.ValueKind == JsonValueKind.Array)
             {
                 foreach (var entry in nodes.EnumerateArray())
                 {
-                    if (entry.TryGetProperty("login", out var login) &&
-                        login.ValueKind == JsonValueKind.String)
+                    if (TryParseEntry(entry, out var parsed))
                     {
-                        var value = login.GetString();
-                        if (!string.IsNullOrWhiteSpace(value))
-                        {
-                            logins.Add(value!);
-                        }
+                        entries.Add(parsed);
                     }
                 }
             }
 
-            if (sponsors.TryGetProperty("pageInfo", out var pageInfo))
+            if (sponsorships.TryGetProperty("pageInfo", out var pageInfo))
             {
                 if (pageInfo.TryGetProperty("hasNextPage", out var next) &&
                     next.ValueKind == JsonValueKind.True)
@@ -303,14 +372,51 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
                     hasNext = true;
                 }
 
-                if (pageInfo.TryGetProperty("endCursor", out var cur) &&
-                    cur.ValueKind == JsonValueKind.String)
+                if (pageInfo.TryGetProperty("endCursor", out var endCursor) &&
+                    endCursor.ValueKind == JsonValueKind.String)
                 {
-                    cursor = cur.GetString();
+                    cursor = endCursor.GetString();
                 }
             }
         }
 
-        return (true, logins, hasNext, cursor);
+        return (true, entries, hasNext, cursor);
+    }
+
+    static bool TryParseEntry(JsonElement node, out SponsorshipEntry entry)
+    {
+        entry = default;
+        if (!node.TryGetProperty("sponsorEntity", out var sponsorEntity) ||
+            sponsorEntity.ValueKind != JsonValueKind.Object ||
+            !sponsorEntity.TryGetProperty("login", out var login) ||
+            login.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        var loginValue = login.GetString();
+        if (string.IsNullOrWhiteSpace(loginValue))
+        {
+            return false;
+        }
+
+        if (!node.TryGetProperty("createdAt", out var createdAt) ||
+            createdAt.ValueKind != JsonValueKind.String ||
+            !DateTime.TryParse(
+                createdAt.GetString(),
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var when))
+        {
+            return false;
+        }
+
+        var isActive = node.TryGetProperty("isActive", out var active) &&
+                       active.ValueKind == JsonValueKind.True;
+        var isOneTime = node.TryGetProperty("isOneTimePayment", out var oneTime) &&
+                        oneTime.ValueKind == JsonValueKind.True;
+
+        entry = new(loginValue!, isOneTime, isActive, when);
+        return true;
     }
 }

@@ -5,14 +5,14 @@ public class OpenCollectivePlatformTests
     [Test]
     public async Task LiveLookup()
     {
-        var token = LiveTokenResolver.ResolveOrSkip(
+        var tokens = LiveTokenResolver.ResolveAllOrSkip(
             "OpenCollectiveToken",
             "SponsorCheck:OpenCollectiveToken",
             "OpenCollective",
             "Anonymous calls hit rate limits on collectives with many backers; create a Personal Token at https://opencollective.com/applications.");
         var log = new TaskLoggingHelperFor(new StubBuildEngine());
         var platform = new OpenCollectivePlatform();
-        var sponsors = await platform.FetchSponsorAccounts("webpack", token, log, Cancel.None);
+        var sponsors = await LivePlatformFetcher.FetchWithCandidateTokens(platform, "webpack", tokens, log);
         await Assert.That(sponsors).IsNotNull();
     }
 
