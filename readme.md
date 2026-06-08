@@ -85,6 +85,7 @@ Verifier diagnostics that prompt changes to consumer-side configuration ([SC001]
 
 When the package author accepts multiple platforms and the consumer sponsors on one of them, supply the matching `<Platform>SponsorAccount` metadata. Multiple values are allowed — the verifier passes if **any** account matches the bundled list.
 
+
 ##### Why multiple accounts are useful
 
 A consumer organisation may sponsor different OSS authors across different platforms. Say `acmecorp` sponsors one library author on **GitHub Sponsors** and a different author on **Open Collective**. When packages from both authors land in the same consumer project, both `GitHubSponsorAccount="acmecorp"` and `OpenCollectiveSponsorAccount="acme-org"` need to be present so each package's bundled hash list finds its match. The verifier short-circuits on the first hit, so the cost is one cheap hash lookup per declared platform per package.
@@ -498,6 +499,7 @@ Available metadata (severity + message pair per overrideable code). Each overrid
 | [SC009](docs/VerifierDiagnosticCodes.md#sc009) / [SC010](docs/VerifierDiagnosticCodes.md#sc010) / [SC025](docs/VerifierDiagnosticCodes.md#sc025) | `LicenseExpiredSeverityOverride` | `LicenseExpiredMessageOverride` | error |
 
 Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name still prefixes and the docs link still suffixes). Other codes are consumer-side configuration bugs and aren't overrideable. Unrecognized severity values fail the pack with [SC104](docs/BundlerDiagnosticCodes.md#sc104). The chosen severities and messages are baked into the produced nupkg — consumers can't tamper with them.
+
 
 ### Custom sponsor landing URL
 
