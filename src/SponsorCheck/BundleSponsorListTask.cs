@@ -283,8 +283,8 @@ public sealed class BundleSponsorListTask :
         foreach (var pair in enabled)
         {
             var platform = PlatformRegistry.Get(pair.Key);
-            var token = TokenFor(pair.Key);
-            var accounts = await platform.FetchSponsorAccounts(pair.Value, token, Log, Cancel.None)
+            var tokens = TokensFor(pair.Key);
+            var accounts = await FetchWithCandidateTokens(platform, pair.Value, tokens)
                 .ConfigureAwait(false);
             foreach (var account in accounts)
             {
@@ -296,6 +296,45 @@ public sealed class BundleSponsorListTask :
         }
 
         return results;
+    }
+
+    // Tries each candidate token in turn (explicit MSBuild property first, then user-secret) so
+    // that a stale env-var-promoted property doesn't shadow a working user-secret token — the
+    // common shape when the env var was set up before a scope was added and the user has since
+    // refreshed only the user-secret. With zero candidates, falls through with null so the
+    // platform throws the typed MissingCredentialException (SC102).
+    async Task<IReadOnlyList<string>> FetchWithCandidateTokens(
+        ISponsorshipPlatform platform,
+        string ownerAccount,
+        IReadOnlyList<string> tokens)
+    {
+        if (tokens.Count == 0)
+        {
+            return await platform.FetchSponsorAccounts(ownerAccount, null, Log, Cancel.None)
+                .ConfigureAwait(false);
+        }
+
+        MaintenanceFeeException? lastError = null;
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            try
+            {
+                return await platform.FetchSponsorAccounts(ownerAccount, tokens[i], Log, Cancel.None)
+                    .ConfigureAwait(false);
+            }
+            catch (MaintenanceFeeException exception)
+            {
+                lastError = exception;
+                if (i < tokens.Count - 1)
+                {
+                    Log.LogMessage(
+                        MessageImportance.Normal,
+                        $"SponsorCheck: {platform.Id} candidate token #{i + 1} failed ({exception.Message.Split('\n')[0]}); trying next candidate.");
+                }
+            }
+        }
+
+        throw lastError!;
     }
 
     IReadOnlyDictionary<string, string> UserSecrets => field ??= LoadUserSecrets();
@@ -327,7 +366,7 @@ public sealed class BundleSponsorListTask :
         }
     }
 
-    string? TokenFor(string platformId)
+    IReadOnlyList<string> TokensFor(string platformId)
     {
         var explicitToken = platformId switch
         {
@@ -336,30 +375,42 @@ public sealed class BundleSponsorListTask :
             "Polar" => PolarToken,
             _ => null
         };
-        return ResolveToken(platformId, explicitToken, UserSecrets);
+        return ResolveTokens(platformId, explicitToken, UserSecrets);
     }
 
-    // Token resolution: explicit MSBuild property (or env-var-promoted property) wins; otherwise
-    // fall back to user-secrets convention. GitHub uses the standard "GitHubToken" name (matching
-    // the GITHUB_TOKEN env var convention); other platforms use "SponsorCheck:{PlatformId}Token".
-    // Static + injected secrets dict so this is unit-testable without writing to the real user-secrets directory.
-    public static string? ResolveToken(string platformId, string? explicitToken, IReadOnlyDictionary<string, string> userSecrets)
+    // Token resolution candidates: explicit MSBuild property (or env-var-promoted property) first,
+    // then user-secret. The caller tries them in order — a stale env-var token (e.g. set up before
+    // a new required scope landed) shouldn't shadow a working user-secret token. GitHub uses the
+    // standard "GitHubToken" name (matching the GITHUB_TOKEN env var convention); other platforms
+    // use "SponsorCheck:{PlatformId}Token". Static + injected secrets dict so this is unit-testable
+    // without writing to the real user-secrets directory.
+    public static IReadOnlyList<string> ResolveTokens(string platformId, string? explicitToken, IReadOnlyDictionary<string, string> userSecrets)
     {
+        var tokens = new List<string>();
         if (!string.IsNullOrWhiteSpace(explicitToken))
         {
-            return explicitToken;
+            tokens.Add(explicitToken!);
         }
 
         var key = platformId == "GitHubSponsors"
             ? "SponsorCheck:GitHubToken"
             : $"SponsorCheck:{platformId}Token";
         if (userSecrets.TryGetValue(key, out var value) &&
-            !string.IsNullOrWhiteSpace(value))
+            !string.IsNullOrWhiteSpace(value) &&
+            !tokens.Contains(value, StringComparer.Ordinal))
         {
-            return value;
+            tokens.Add(value);
         }
 
-        return null;
+        return tokens;
+    }
+
+    // Back-compat wrapper for callers/tests asserting the precedence-winner. The bundler itself
+    // uses ResolveTokens so it can fall through to a later candidate when an earlier one fails.
+    public static string? ResolveToken(string platformId, string? explicitToken, IReadOnlyDictionary<string, string> userSecrets)
+    {
+        var tokens = ResolveTokens(platformId, explicitToken, userSecrets);
+        return tokens.Count == 0 ? null : tokens[0];
     }
 
     // MSBuild target/item names reject dots and dashes, so non-alphanumeric chars are

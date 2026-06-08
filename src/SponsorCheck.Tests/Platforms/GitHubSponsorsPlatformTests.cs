@@ -5,10 +5,10 @@ public class GitHubSponsorsPlatformTests
     [Test]
     public async Task LiveLookup()
     {
-        var token = LiveTokenResolver.ResolveOrSkip("GitHubToken", "SponsorCheck:GitHubToken", "GitHub Sponsors");
+        var tokens = LiveTokenResolver.ResolveAllOrSkip("GitHubToken", "SponsorCheck:GitHubToken", "GitHub Sponsors");
         var log = new TaskLoggingHelperFor(new StubBuildEngine());
         var platform = new GitHubSponsorsPlatform();
-        var sponsors = await platform.FetchSponsorAccounts("SimonCropp", token, log, Cancel.None);
+        var sponsors = await LivePlatformFetcher.FetchWithCandidateTokens(platform, "SimonCropp", tokens, log);
         await Assert.That(sponsors).IsNotNull();
     }
 
@@ -20,11 +20,21 @@ public class GitHubSponsorsPlatformTests
         {
           "data": {
             "user": {
-              "sponsors": {
+              "sponsorshipsAsMaintainer": {
                 "pageInfo": { "hasNextPage": false, "endCursor": null },
                 "nodes": [
-                  { "__typename": "User", "login": "alice" },
-                  { "__typename": "Organization", "login": "acmecorp" }
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "2024-01-15T10:00:00Z",
+                    "sponsorEntity": { "__typename": "User", "login": "alice" }
+                  },
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "2024-02-15T10:00:00Z",
+                    "sponsorEntity": { "__typename": "Organization", "login": "acmecorp" }
+                  }
                 ]
               }
             },
@@ -35,8 +45,8 @@ public class GitHubSponsorsPlatformTests
         var page = GitHubSponsorsPlatform.ParseResponse(json);
         await Assert.That(page.UserExists).IsTrue();
         await Assert.That(page.OrgExists).IsFalse();
-        await Assert.That(page.UserLogins).Contains("alice");
-        await Assert.That(page.UserLogins).Contains("acmecorp");
+        await Assert.That(page.UserSponsorships.Select(_ => _.Login)).Contains("alice");
+        await Assert.That(page.UserSponsorships.Select(_ => _.Login)).Contains("acmecorp");
         await Assert.That(page.UserHasNextPage).IsFalse();
     }
 
@@ -48,9 +58,16 @@ public class GitHubSponsorsPlatformTests
           "data": {
             "user": null,
             "organization": {
-              "sponsors": {
+              "sponsorshipsAsMaintainer": {
                 "pageInfo": { "hasNextPage": true, "endCursor": "abc" },
-                "nodes": [ { "__typename": "User", "login": "bob" } ]
+                "nodes": [
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "2024-03-01T00:00:00Z",
+                    "sponsorEntity": { "__typename": "User", "login": "bob" }
+                  }
+                ]
               }
             }
           }
@@ -59,7 +76,7 @@ public class GitHubSponsorsPlatformTests
         var page = GitHubSponsorsPlatform.ParseResponse(json);
         await Assert.That(page.OrgExists).IsTrue();
         await Assert.That(page.UserExists).IsFalse();
-        await Assert.That(page.OrgLogins).Contains("bob");
+        await Assert.That(page.OrgSponsorships.Select(_ => _.Login)).Contains("bob");
         await Assert.That(page.OrgHasNextPage).IsTrue();
         await Assert.That(page.OrgEndCursor).IsEqualTo("abc");
     }
@@ -100,9 +117,16 @@ public class GitHubSponsorsPlatformTests
         {
           "data": {
             "user": {
-              "sponsors": {
+              "sponsorshipsAsMaintainer": {
                 "pageInfo": { "hasNextPage": false, "endCursor": null },
-                "nodes": [ { "__typename": "User", "login": "alice" } ]
+                "nodes": [
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "2024-01-15T10:00:00Z",
+                    "sponsorEntity": { "__typename": "User", "login": "alice" }
+                  }
+                ]
               }
             },
             "organization": null
@@ -120,7 +144,7 @@ public class GitHubSponsorsPlatformTests
         var page = GitHubSponsorsPlatform.ParseResponse(json);
         await Assert.That(page.UserExists).IsTrue();
         await Assert.That(page.OrgExists).IsFalse();
-        await Assert.That(page.UserLogins).Contains("alice");
+        await Assert.That(page.UserSponsorships.Select(_ => _.Login)).Contains("alice");
     }
 
     [Test]
@@ -131,9 +155,16 @@ public class GitHubSponsorsPlatformTests
           "data": {
             "user": null,
             "organization": {
-              "sponsors": {
+              "sponsorshipsAsMaintainer": {
                 "pageInfo": { "hasNextPage": false, "endCursor": null },
-                "nodes": [ { "__typename": "User", "login": "bob" } ]
+                "nodes": [
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "2024-01-15T10:00:00Z",
+                    "sponsorEntity": { "__typename": "User", "login": "bob" }
+                  }
+                ]
               }
             }
           },
@@ -149,7 +180,7 @@ public class GitHubSponsorsPlatformTests
         var page = GitHubSponsorsPlatform.ParseResponse(json);
         await Assert.That(page.OrgExists).IsTrue();
         await Assert.That(page.UserExists).IsFalse();
-        await Assert.That(page.OrgLogins).Contains("bob");
+        await Assert.That(page.OrgSponsorships.Select(_ => _.Login)).Contains("bob");
     }
 
     [Test]
@@ -186,6 +217,27 @@ public class GitHubSponsorsPlatformTests
         await Assert.That(ex.Message).Contains("VerifyTests");
         await Assert.That(ex.Message).Contains("classic PAT");
         await Assert.That(ex.Message).Contains("re-enable classic-PAT access");
+    }
+
+    [Test]
+    public async Task InsufficientScopesSurfacesActionableError()
+    {
+        // sponsorshipsAsMaintainer's per-sponsorship fields (isActive, isOneTimePayment, createdAt)
+        // require read:user even when the maintainer is an organization. A token with only read:org
+        // returns INSUFFICIENT_SCOPES and the bundler should explain how to fix it.
+        var json = """
+        {
+          "errors": [
+            {
+              "type": "INSUFFICIENT_SCOPES",
+              "message": "Your token has not been granted the required scopes to execute this query. The 'isActive' field requires one of the following scopes: ['read:user'], but your token has only been granted the: ['read:org'] scopes."
+            }
+          ]
+        }
+        """;
+        var ex = Assert.Throws<MaintenanceFeeException>(() => GitHubSponsorsPlatform.ParseResponse(json));
+        await Assert.That(ex.Message).Contains("read:user");
+        await Assert.That(ex.Message).Contains("sponsorshipsAsMaintainer");
     }
 
     [Test]
@@ -227,15 +279,25 @@ public class GitHubSponsorsPlatformTests
     [Test]
     public async Task FetchSponsorAccounts_ToleratesNotFoundOnOrganizationPath()
     {
-        var json = """
+        var json = $$"""
         {
           "data": {
             "user": {
-              "sponsors": {
+              "sponsorshipsAsMaintainer": {
                 "pageInfo": { "hasNextPage": false, "endCursor": null },
                 "nodes": [
-                  { "__typename": "User", "login": "alice" },
-                  { "__typename": "Organization", "login": "acmecorp" }
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}",
+                    "sponsorEntity": { "__typename": "User", "login": "alice" }
+                  },
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}",
+                    "sponsorEntity": { "__typename": "Organization", "login": "acmecorp" }
+                  }
                 ]
               }
             },
@@ -252,6 +314,70 @@ public class GitHubSponsorsPlatformTests
         var sponsors = await platform.FetchSponsorAccounts("alice-the-user", token: "fake", log, Cancel.None);
         await Assert.That(sponsors).Contains("alice");
         await Assert.That(sponsors).Contains("acmecorp");
+    }
+
+    [Test]
+    public async Task IsValidAt_RecurringActive_Included()
+    {
+        var entry = new GitHubSponsorsPlatform.SponsorshipEntry(
+            Login: "alice",
+            IsOneTimePayment: false,
+            IsActive: true,
+            CreatedAt: new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
+    }
+
+    [Test]
+    public async Task IsValidAt_RecurringInactive_Excluded()
+    {
+        // A cancelled recurring sponsor has isActive=false. activeOnly:false on the GraphQL side
+        // surfaces them; the verifier must explicitly drop them so a lapsed sponsor doesn't ship
+        // in the bundled hash list.
+        var entry = new GitHubSponsorsPlatform.SponsorshipEntry(
+            Login: "alice",
+            IsOneTimePayment: false,
+            IsActive: false,
+            CreatedAt: new(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
+    }
+
+    [Test]
+    public async Task IsValidAt_OneTime_WithinOneMonth_Included()
+    {
+        // One-time sponsors are honoured for one month from createdAt — pairs with the OSS author
+        // setting "Set minimum amount" on the GitHub Sponsors tier so a one-time payment of at least
+        // the min monthly tier value buys an effective month of sponsor status.
+        var entry = new GitHubSponsorsPlatform.SponsorshipEntry(
+            Login: "carol",
+            IsOneTimePayment: true,
+            IsActive: false,
+            CreatedAt: new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
+    }
+
+    [Test]
+    public async Task IsValidAt_OneTime_OlderThanOneMonth_Excluded()
+    {
+        var entry = new GitHubSponsorsPlatform.SponsorshipEntry(
+            Login: "carol",
+            IsOneTimePayment: true,
+            IsActive: false,
+            CreatedAt: new(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
+    }
+
+    [Test]
+    public async Task IsValidAt_OneTime_AtExactlyOneMonth_Included()
+    {
+        // Boundary: createdAt + 30 days == now → still in. Excluding the boundary would silently
+        // drop a sponsor on the very last day of their effective month.
+        var createdAt = new DateTime(2026, 5, 2, 0, 0, 0, DateTimeKind.Utc);
+        var entry = new GitHubSponsorsPlatform.SponsorshipEntry(
+            Login: "carol",
+            IsOneTimePayment: true,
+            IsActive: false,
+            CreatedAt: createdAt);
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, createdAt + GitHubSponsorsPlatform.OneTimeWindow)).IsTrue();
     }
 
     sealed class StubHandler(string body) : HttpMessageHandler
