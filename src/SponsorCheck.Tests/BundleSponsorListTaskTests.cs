@@ -336,6 +336,41 @@ public class BundleSponsorListTaskTests
     }
 
     [Test]
+    public async Task ResolveTokens_ReturnsBothWhenBothPresent()
+    {
+        // Multi-candidate fallback: the bundler tries each token in turn so a stale env-var-promoted
+        // explicit token doesn't shadow a working user-secret token (the case that prompted this:
+        // an env var GitHubToken left over from before read:user was added, with the user-secret
+        // already refreshed to include the new scope).
+        var tokens = BundleSponsorListTask.ResolveTokens(
+            "GitHubSponsors",
+            "ghp_explicit",
+            Secrets(("SponsorCheck:GitHubToken", "ghp_from_secrets")));
+        await Assert.That(tokens.Count).IsEqualTo(2);
+        await Assert.That(tokens[0]).IsEqualTo("ghp_explicit");
+        await Assert.That(tokens[1]).IsEqualTo("ghp_from_secrets");
+    }
+
+    [Test]
+    public async Task ResolveTokens_DedupesIdenticalValues()
+    {
+        // env var imported as the MSBuild property AND copied into the secret store: try once, not twice.
+        var tokens = BundleSponsorListTask.ResolveTokens(
+            "GitHubSponsors",
+            "ghp_same",
+            Secrets(("SponsorCheck:GitHubToken", "ghp_same")));
+        await Assert.That(tokens.Count).IsEqualTo(1);
+        await Assert.That(tokens[0]).IsEqualTo("ghp_same");
+    }
+
+    [Test]
+    public async Task ResolveTokens_EmptyWhenNothingSet()
+    {
+        var tokens = BundleSponsorListTask.ResolveTokens("GitHubSponsors", null, Secrets());
+        await Assert.That(tokens.Count).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task TemplateSubstitution_ReplacesBothPlaceholderForms()
     {
         // The bundler substitutes __SC_PACKAGE_ID__ (sanitized: dots/dashes -> underscores, used in

@@ -3,10 +3,10 @@ public class PolarPlatformTests
     [Test]
     public async Task LiveLookup()
     {
-        var token = LiveTokenResolver.ResolveOrSkip("PolarToken", "SponsorCheck:PolarToken", "Polar");
+        var tokens = LiveTokenResolver.ResolveAllOrSkip("PolarToken", "SponsorCheck:PolarToken", "Polar");
         var log = new TaskLoggingHelperFor(new StubBuildEngine());
         var platform = new PolarPlatform();
-        var sponsors = await platform.FetchSponsorAccounts("simoncropp", token, log, Cancel.None);
+        var sponsors = await LivePlatformFetcher.FetchWithCandidateTokens(platform, "simoncropp", tokens, log);
         await Assert.That(sponsors).IsNotNull();
     }
 
