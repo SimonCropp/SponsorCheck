@@ -12,7 +12,7 @@ for:
         - image: Visual Studio 2022
     build_script:
       - appveyor DownloadFile https://dot.net/v1/dotnet-install.ps1
-      - pwsh: ./dotnet-install.ps1 -JSonFile src/global.json -Architecture x64 -InstallDir 'C:\Program Files\dotnet'
+      - pwsh: ./dotnet-install.ps1 -JSonFile global.json -Architecture x64 -InstallDir 'C:\Program Files\dotnet'
       - dotnet build src --configuration Release
       - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -- --no-ansi --no-progress
       - dotnet build IntegrationTests --configuration Release
@@ -25,7 +25,7 @@ for:
       - sh: |
           curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
           chmod +x dotnet-install.sh
-          sudo ./dotnet-install.sh --jsonfile src/global.json --architecture x64 --install-dir /usr/share/dotnet
+          sudo ./dotnet-install.sh --jsonfile global.json --architecture x64 --install-dir /usr/share/dotnet
       - dotnet build src --configuration Release
       - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -- --no-ansi --no-progress
       - dotnet build IntegrationTests --configuration Release
