@@ -51,7 +51,7 @@ The willing-but-forgetful drop-off on the left is the most damning leak: a consu
 The argument is "a recurring touchpoint beats a one-time impression." It rests on three properties of the
 bundled verifier:
 
-1. **It runs on every build, in every configuration.** There is no Release-only gate on the verifier (only the author-side bundler is Release-gated). The prompt is unavoidable and recurring rather than a single impression that scrolls away.
+1. **It runs on every build.** The prompt is unavoidable and recurring rather than a single impression that scrolls away.
 2. **`SC001` (no mode declared) is a default error that fails the build.** A consumer cannot proceed without consciously picking a mode — sponsor, license, or the explicit ignore. This is what converts the inattentive majority.
 3. **The produced package carries no runtime dependency on SponsorCheck.** The verifier and its task DLL ship embedded in the nupkg; nothing reaches the consumer's runtime. The blast radius of being wrongly nagged is one build-time message, never a shipped dependency — which is why it is safe to err toward surfacing.
 
@@ -62,7 +62,7 @@ The author tunes severity per overrideable code (`error` / `warning` / `message`
 | `NoLicenseSpecifiedSeverityOverride` | Consumer experience | Still beats no-enforcement? |
 | --- | --- | --- |
 | `error` (default) | Build fails until a mode is declared — hard gate | Yes |
-| `warning` | Build passes; a warning recurs on every build (and is escalated by warnings-as-errors CI) | Yes |
+| `warning` | Build passes; warns on every build (and is escalated by warnings-as-errors CI) | Yes |
 | `message` | Build passes; a high-priority message recurs on every build | Yes — still a recurring touchpoint, unlike a readme |
 
 
@@ -112,21 +112,21 @@ The bundled hash list is frozen per package version at pack time. The verifier h
 
 ```mermaid
 flowchart TD
-    Lapse(["Bundled into vN while sponsoring,<br/>then sponsorship lapses"]) --> Which{"Which version<br/>does the build use?"}
+    Lapse(["Bundled into vN<br/>while sponsoring,<br/>then sponsorship lapses"]) --> Which{"Which version<br/>is used?"}
 
     Which -->|"Stay on vN (effort: zero)"| Stay(["vN builds PASS forever<br/>paid versions stay paid"])
 
     Which -->|"Upgrade to vN+1 packed after the lapse"| Up{"Hash in vN+1<br/>frozen list?"}
     Up -->|"Yes"| UpPass(["PASS - re-bundled"])
     Up -->|"No"| SC007b[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 ERROR<br/>lapse surfaces at the upgrade touchpoint</a>]
-    SC007b -->|"re-sponsor (lands in next pack)"| UpPass
+    SC007b -->|"re-sponsor<br/>(lands in next pack)"| UpPass
     SC007b -->|"switch to LicensedUntil / Ignored"| Modes([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/WhyBuildTimeVerification.md#3-once-forced-to-choose-every-escape-hatch-leaves-a-trace'>Chart 2 terminals</a>])
     SC007b -->|"revert downward"| Revert
 
     Which -->|"Revert to vN or a pre-adoption version"| Revert(["PASS, clean<br/>pre-adoption versions have no verifier at all<br/>cost: forfeits all future updates and security fixes"])
 ```
 
-Reverting is cheap in keystrokes — one `Version` string edited downward — but the real deterrent is not a build failure; it is the **compounding opportunity cost** of freezing out of all future updates and security fixes. Enforcement effectively scales with the value a consumer is actively extracting (new releases), not with mere continued use of what they already have. The author has no recall mechanism short of yanking the package.
+Reverting is cheap in keystrokes — one `Version` string edited downward — but the real deterrent is not a build failure; it is the **compounding opportunity cost** of freezing out of all future updates and security fixes. Enforcement effectively scales with the value a consumer is actively extracting (new releases), not with mere continued use of what they already have. The author has no recall mechanism short of unlisting the package version.
 
 ### 4b. The conceded bypasses
 
@@ -210,7 +210,7 @@ Every distinct terminal state across both worlds, with the consumer's effort and
 | SC015 ERROR — future `SponsorshipStart` (fails safe) | Use a real, non-future date | SC015 error — abuse attempt recorded, not honored | Win — fail-closed guard on the honor-system path |
 | Malformed / conflicting config (SC003 / SC011 / SC013) | Fix the config | Recorded error — never degrades to a silent pass | Neutral — reinforces fail-closed auditability |
 | SC018 ERROR — bundled hash file missing (corrupt install) | Restore/repair the package | SC018 error naming the missing path | Neutral — absence of audit substrate is itself surfaced |
-| vN builds PASS forever after lapse — paid versions stay paid | Zero — stay on the bundled version | Clean build (hash still in vN's frozen list) | Neutral — deliberate; no recall short of yanking |
+| vN builds PASS forever after lapse — paid versions stay paid | Zero — stay on the bundled version | Clean build (hash still in vN's frozen list) | Neutral — deliberate; no recall short of unlisting |
 | Revert to an already-bundled or pre-adoption version | Edit one `Version` down; forfeits all future updates and security fixes | No recurring SC0xx, but the pinned/stale version is visible to SCA tooling | Loss — the conceded escape; deterrent is compounding security debt |
 | Strip the verifier / forge a 48-bit hash | More work than sponsoring, and pointless | A suspicious anti-SponsorCheck override a reviewer can spot | Loss — strictly dominated; hashing is not a security boundary |
 | Stop using the package entirely | Rewrite/replace the dependency (highest effort) | None | Loss — nudged away rather than converted |
