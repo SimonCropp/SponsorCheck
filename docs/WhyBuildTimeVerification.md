@@ -30,7 +30,7 @@ flowchart TD
         A2 -->|"Yes"| ASponsor(["Sponsors - the only win<br/>one-time, no retry if missed"])
     end
 
-    subgraph WorldB["World B - SponsorCheck (verifier runs BeforeBuild, every build, every config incl. Debug)"]
+    subgraph WorldB["World B - SponsorCheck (runs on build)"]
         B1(["Each build"]) --> B2{"License mode<br/>declared?"}
         B2 -->|"No"| BSC001["SC001 ERROR - build fails by default<br/>recurs every build, never decays"]
         BSC001 -->|"forces a choice"| B2
