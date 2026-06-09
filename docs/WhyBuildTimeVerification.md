@@ -4,12 +4,12 @@ OSS sustainability mechanisms sit on a spectrum. At one end is **no enforcement*
 
 The charts below are **justification / contrast views**: they map what each world produces and what trace it leaves behind. They are a different altitude from the mechanism flowchart in [How it works](../readme.md#how-it-works), which shows the verifier's internal decision logic. That chart is not repeated here.
 
-> **Throughout, every effort annotation is paired with the durability of the artifact it leaves.** This matters because the central lever is *not* that the honest path is cheaper — it is not. The documented bypass (`SponsorshipLicenseIgnored="true"`) is a single free line, strictly cheaper than signing up to sponsor. The lever is **visibility**: the honest path and every bypass differ not in keystrokes but in what they leave in the build log, in CI, and in code review. Read the inversion as a *visibility* inversion, not a cost one.
+> **Throughout, every effort annotation is paired with the durability of the artifact it leaves.** This matters because the central lever is *not* that the honest path is cheaper — it is not. The documented bypass (`SponsorshipLicenseIgnored="true"`) is a single free line, strictly cheaper than signing up to sponsor. The lever is **visibility**: the honest path and every bypass differ not in keystrokes but in what they leave in the build log, in CI, and in code review. What matters is not what each choice costs but what it records — and that record is the consumer's own, never the maintainer's.
 
 
 ## 1. The premise: discovery is a single probabilistic event with no retry
 
-The fatal property of the no-enforcement world is not that consumers are hostile — most are not. It is that the ask must be **discovered** through an out-of-band channel, discovery happens at most once, and it produces **zero durable artifact**. A consumer who would gladly sponsor can fall out of the funnel at every gate, and nothing anywhere records that they did.
+The fatal property of the no-enforcement world is not that consumers are hostile — most are not. It is that the ask must be **discovered** through an out-of-band channel, discovery happens at most once, and it produces **zero durable artifact**. A consumer who would gladly sponsor can fall out of the funnel at every gate, and their own build, CI, and review hold no record of it — nothing the consumer's own process could later act on.
 
 SponsorCheck changes one thing: it moves the ask from a place read once (the readme) to a place read on every build (the build log). The verifier runs `BeforeTargets="BeforeBuild"` with **no configuration gate**, so it fires on *every* build in *every* configuration — including Debug, not at pack time or in Release alone. The prompt recurs and cannot decay.
 
@@ -27,9 +27,9 @@ flowchart TD
 
     subgraph WorldB["Build-time check"]
         B1(["Each build"]) --> B2{"License mode<br/>declared?"}
-        B2 -->|"No"| BSC001["SC001 ERROR - build fails by default<br/>recurs every build, never decays"]
+        B2 -->|"No"| BSC001[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001'>SC001 ERROR - build fails by default<br/>recurs every build, never decays</a>]
         BSC001 -->|"Forces a choice"| B2
-        B2 -->|"Yes"| BChoose(["Consumer picks a mode<br/>see Chart 2"])
+        B2 -->|"Yes"| BChoose([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/WhyBuildTimeVerification.md#3-once-forced-to-choose-every-escape-hatch-leaves-a-trace'>Consumer picks a mode<br/>see Chart 2</a>])
     end
 
     Dep --> A1
@@ -80,19 +80,19 @@ flowchart TD
 
     Sponsor["Declare a matching sponsor account<br/>cost: one attribute + platform signup"] --> SMatch{"Hash in the<br/>bundled list?"}
     SMatch -->|"Yes"| SPass(["PASS, silent<br/>the only zero-trace pass"])
-    SMatch -->|"No"| SC007["SC007 ERROR - account not in list<br/>lapsed / never / typo / wrong platform<br/>see Chart 3"]
+    SMatch -->|"No"| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 ERROR - account not in list<br/>lapsed / never / typo / wrong platform</a>]
 
     Start["Joined after pack date:<br/>add SponsorshipStart<br/>cost: one attribute, honor-system"] --> SFuture{"Start in<br/>the future?"}
-    SFuture -->|"Yes"| SC015["SC015 ERROR - fails safe"]
+    SFuture -->|"Yes"| SC015[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015'>SC015 ERROR - fails safe</a>]
     SFuture -->|"No"| SAfter{"Start &gt; PackDate?"}
-    SAfter -->|"Yes"| SC017(["PASS + SC017 audit message<br/>consumer-local log only; author never sees it"])
+    SAfter -->|"Yes"| SC017([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017'>PASS + SC017 audit message<br/>consumer-local log only, author never sees it</a>])
     SAfter -->|"No (on or before, strict)"| SMatch
 
     License["Time-bounded private license<br/>SponsorshipLicensedUntil=yyyy-MM<br/>cost: one string, no keys or servers"] --> LExp{"Expired?"}
     LExp -->|"No"| LPass(["PASS, silent<br/>through end of month UTC"])
-    LExp -->|"Yes"| SC009(["SC009 ERROR<br/>renewal forcing function"])
+    LExp -->|"Yes"| SC009([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>SC009 ERROR<br/>renewal forcing function</a>])
 
-    Ignore["SponsorshipLicenseIgnored=true<br/>cost: one free line, cheaper than sponsoring"] --> SC005(["PASS, but SC005 WARNING every build<br/>durable breach-of-license marker<br/>see Chart 4"])
+    Ignore["SponsorshipLicenseIgnored=true<br/>cost: one free line, cheaper than sponsoring"] --> SC005([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>PASS, but SC005 WARNING every build<br/>durable breach-of-license marker</a>])
 
     Bad["Malformed or conflicting config<br/>SC003 two modes, SC011 / SC013 bad date<br/>cost: fix the config"] --> BadEnd(["ERROR - fails safe<br/>never a silent pass"])
 ```
@@ -118,9 +118,9 @@ flowchart TD
 
     Which -->|"Upgrade to vN+1 packed after the lapse"| Up{"Hash in vN+1<br/>frozen list?"}
     Up -->|"Yes"| UpPass(["PASS - re-bundled"])
-    Up -->|"No"| SC007b["SC007 ERROR<br/>lapse surfaces at the upgrade touchpoint"]
+    Up -->|"No"| SC007b[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 ERROR<br/>lapse surfaces at the upgrade touchpoint</a>]
     SC007b -->|"re-sponsor (lands in next pack)"| UpPass
-    SC007b -->|"switch to LicensedUntil / Ignored"| Modes(["Chart 2 terminals"])
+    SC007b -->|"switch to LicensedUntil / Ignored"| Modes([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/WhyBuildTimeVerification.md#3-once-forced-to-choose-every-escape-hatch-leaves-a-trace'>Chart 2 terminals</a>])
     SC007b -->|"revert downward"| Revert
 
     Which -->|"Revert to vN or a pre-adoption version"| Revert(["PASS, clean<br/>pre-adoption versions have no verifier at all<br/>cost: forfeits all future updates and security fixes"])
