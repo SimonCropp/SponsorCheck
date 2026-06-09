@@ -7,13 +7,13 @@ The charts below are **justification / contrast views**: they map what each scen
 > **Throughout, every effort annotation is paired with the durability of the artifact it leaves.** This matters because the central lever is *not* that the honest path is cheaper — it is not. The documented bypass (`SponsorshipLicenseIgnored="true"`) is a single free line, strictly cheaper than signing up to sponsor. The lever is **visibility**: the honest path and every bypass differ not in keystrokes but in what they leave in the build log, in CI, and in code review. What matters is not what each choice costs but what it records — and that record is the consumer's own, never the maintainer's.
 
 
-## 1. The premise: discovery is a single probabilistic event with no retry
+## 1. The premise: discovery is a probabilistic event with no retry
 
 The problem with the no-enforcement scenario is not that consumers are hostile — most are not. It is that the ask must be **discovered** through an out-of-band channel, discovery happens at most once, and it produces **zero durable artifact**. A consumer who would gladly sponsor can fall out of the funnel at every gate, and their own build, CI, and review hold no record of it — nothing the consumer's own process could later act on.
 
 Automation makes this worse, not better. Adding or updating a dependency increasingly happens with no human in the loop — Dependabot and Renovate bumps, and AI coding agents that run `dotnet add package` and upgrade versions on a developer's behalf. None of them read a readme funding section, a changelog, or a social post, so the share of installs and upgrades where anyone even encounters the ask keeps shrinking.
 
-SponsorCheck changes one thing: it moves the ask from a place read once (the readme) to a place read on every build (the build log). The verifier runs on build with **no configuration gate**, so it fires on *every* build in *every* configuration — including Debug, not at pack time or in Release alone. The prompt recurs and cannot decay — and the build is the one channel automation cannot skip: an AI agent or a CI bump still has to compile, so the verifier surfaces in exactly the output they read back.
+SponsorCheck changes one thing: it moves the ask from a place read once (the readme) to a place read on every build (the build log). The verifier runs on build with **no configuration gate**, so it fires on *every* build in *every* configuration. The prompt recurs and cannot decay — and the build is the one channel automation cannot skip: an AI agent or a CI bump still has to compile, so the verifier surfaces in exactly the output they read back.
 
 ```mermaid
 flowchart TD
