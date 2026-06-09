@@ -57,6 +57,7 @@ bundled verifier:
 2. **By default, the build fails until sponsorship is addressed (SC001).** A consumer cannot proceed without consciously picking a mode — sponsor, license, or the explicit ignore. This is what converts the inattentive majority.
 3. **The produced package carries no runtime dependency on SponsorCheck.** The verifier and its task DLL ship embedded in the nupkg; nothing reaches the consumer's runtime. The blast radius of being wrongly nagged is one build-time message, never a shipped dependency — which is why it is safe to err toward surfacing.
 
+
 ### Severity is one knob that slides the same tree from hard gate to soft nudge
 
 The author tunes severity per overrideable code (`error` / `warning` / `message`) at pack time. The *same* decision tree runs in every case; only the forcefulness changes. Crucially, even the softest setting still beats no enforcement, because it still recurs in the build loop on every build.
@@ -66,6 +67,19 @@ The author tunes severity per overrideable code (`error` / `warning` / `message`
 | `error` (default) | Build fails until a mode is declared — hard gate | Yes |
 | `warning` | Build passes; warns on every build (and is escalated by warnings-as-errors CI) | Yes |
 | `message` | Build passes; a high-priority message recurs on every build | Yes — still a recurring touchpoint, unlike a readme |
+
+
+### Why not ask first, and enforce only if that fails?
+
+A fair objection, and a common one: going straight to technical enforcement can annoy even willing, paying users — better to try goodwill first and escalate only after voluntary compliance demonstrably fails. Enforcement earns acceptance when people can see the softer path was tried first.
+
+SponsorCheck is built for that phasing rather than against it. The dial is the per-code severity the author sets at pack time — `message`, `warning`, or `error` from the table above — and it can be raised over successive releases as the goodwill phase runs its course:
+
+- **Start at `message`** — a recurring, non-blocking build-loop nudge. This is the goodwill phase, but unlike a readme ask it reaches the one place automation and humans both see, so "the soft path was tried" is true rather than aspirational.
+- **Escalate to `warning`, then `error`** only if the soft nudge underperforms — a one-line change at pack time, not a re-architecture.
+- **The bypass stays open at every level.** `SponsorshipLicenseIgnored="true"` still passes the build under the hardest setting, so enforcement stays honor-system, not DRM: a willing user is reminded, never locked out.
+
+The difference from pure "ask only" is that its goodwill phase has a known, worsening failure mode — the discovery funnel above, now eroded by automation and AI. SponsorCheck lets the goodwill phase actually land, and turns escalation into a dial rather than a decision to re-tool.
 
 
 ## 3. Once forced to choose: every escape hatch leaves a trace
@@ -108,6 +122,7 @@ The terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM 
 
 Two facts must sit together so the document does not over-claim.
 
+
 ### 4a. Enforcement applies to new releases, not continued use
 
 The bundled hash list is frozen per package version at pack time. The verifier has no notion of "currently sponsoring" — only "was this account's hash in *this version's* list." That produces a deliberate asymmetry: a version a consumer was bundled into stays buildable **forever**, even after sponsorship lapses. The lapse only bites on **upgrade**, when a newer version's frozen list no longer contains them. And a consumer can always revert downward to escape entirely.
@@ -129,6 +144,7 @@ flowchart TD
 ```
 
 Reverting is cheap in keystrokes — one `Version` string edited downward — but the real deterrent is not a build failure; it is the **compounding opportunity cost** of freezing out of all future updates and security fixes. Enforcement effectively scales with the value a consumer is actively extracting (new releases), not with mere continued use of what they already have. The author has no recall mechanism short of unlisting the package version.
+
 
 ### 4b. The conceded bypasses
 
@@ -187,6 +203,7 @@ One limitation, stated plainly so the document does not over-claim: **the author
 
 Every distinct terminal state across both worlds, with the consumer's effort and what it leaves behind.
 
+
 ### Ask only
 
 | End state | Consumer effort | Build-log artifact | Maintainer outcome |
@@ -197,6 +214,7 @@ Every distinct terminal state across both worlds, with the consumer's effort and
 | Former sponsor lapses unnoticed (card expires, reorg) | Zero — lapse needs no action | None | Loss — no renewal touchpoint |
 | Org wants to fund but has nothing to act on | Prohibitive manual per-dependency audit | None to gate or budget on | Loss — corporate intent stalls |
 | Conscientious consumer sponsors proactively | ~3 clicks + payment, self-motivated, one-time | None (and none needed) | Win — conditioned on discover AND willing AND act-now firing at once |
+
 
 ### Build-time check
 
@@ -216,6 +234,7 @@ Every distinct terminal state across both worlds, with the consumer's effort and
 | Revert to an already-bundled or pre-adoption version | Edit one `Version` down; forfeits all future updates and security fixes | No recurring SC0xx, but the pinned/stale version is visible to SCA tooling | Loss — the conceded escape; deterrent is compounding security debt |
 | Strip the verifier / forge a 48-bit hash | More work than sponsoring, and pointless | A suspicious anti-SponsorCheck override a reviewer can spot | Loss — strictly dominated; hashing is not a security boundary |
 | Stop using the package entirely | Rewrite/replace the dependency (highest effort) | None | Loss — nudged away rather than converted |
+
 
 ### Shared limitation (both worlds)
 
