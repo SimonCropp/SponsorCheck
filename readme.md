@@ -46,6 +46,8 @@ The maintainer keeps using GitHub Sponsors / Open Collective / Polar and ships a
 
 The trade for staying frictionless is honesty: hashing is not a security boundary, `SponsorshipLicenseIgnored="true"` is the documented bypass, and anyone determined to free-ride can do so trivially. The intent is to convert the inattentive majority — teams that would happily sponsor if they knew the maintainer wanted them to — not to extract revenue from adversaries.
 
+For a scenario-by-scenario walk-through of why a recurring build-loop nudge converts consumers that a readme/social/release-notes ask does not — mapped as flowcharts across discovery, actor type, effort, version-reverting, and every end state — see [Why build-time verification](docs/WhyBuildTimeVerification.md).
+
 
 ## Consumer Usage
 
