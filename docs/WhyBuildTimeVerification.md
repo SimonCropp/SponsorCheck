@@ -29,7 +29,7 @@ flowchart TD
 
     subgraph WorldB["Build-time check"]
         B1(["Each build"]) --> B2{"License mode<br/>declared?"}
-        B2 -->|"No"| BSC001[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001'>No license declared - build fails by default &#40;SC001&#41;<br/>recurs every build, never decays</a>]
+        B2 -->|"No"| BSC001[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001'>No license declared - build fails by default #40;SC001#41;<br/>recurs every build, never decays</a>]
         BSC001 -->|"Forces a choice"| B2
         B2 -->|"Yes"| BChoose([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/WhyBuildTimeVerification.md#3-once-forced-to-choose-every-escape-hatch-leaves-a-trace'>Consumer picks a mode<br/>see Chart 2</a>])
     end
@@ -38,7 +38,7 @@ flowchart TD
     Dep --> B1
 ```
 
-The willing-but-forgetful drop-off on the left is the most damning leak: a consumer who *intended* to pay, saw the ask once, deferred it, and was never prompted again. On the right that leak is closed — not because the consumer is forced to pay, but because the reminder lives in the build loop instead of the readme, so the intention cannot quietly expire.
+The willing-but-forgetful drop-off under **Ask only** is the most damning leak: a consumer who *intended* to pay, saw the ask once, deferred it, and was never prompted again. Under **Build-time check** that leak is closed — not because the consumer is forced to pay, but because the reminder lives in the build loop instead of the readme, so the intention cannot quietly expire.
 
 | Discovery channel (Ask only) | Consumer effort | Probability the ask lands | Durable artifact |
 | --- | --- | --- | --- |
@@ -74,7 +74,7 @@ When an undeclared license (`SC001`) forces a decision, the consumer has several
 
 ```mermaid
 flowchart TD
-    Root([No license declared &#40;SC001&#41;<br/>consumer picks a mode]) --> Sponsor
+    Root([No license declared #40;SC001#41;<br/>consumer picks a mode]) --> Sponsor
     Root --> Start
     Root --> License
     Root --> Ignore
@@ -82,19 +82,19 @@ flowchart TD
 
     Sponsor["Declare a matching sponsor account<br/>cost: one attribute + platform signup"] --> SMatch{"Hash in the<br/>bundled list?"}
     SMatch -->|"Yes"| SPass(["PASS, silent<br/>the only zero-trace pass"])
-    SMatch -->|"No"| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>Account not licensed - no match in bundled list &#40;SC007&#41;<br/>lapsed / never / typo / wrong platform</a>]
+    SMatch -->|"No"| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>Account not licensed - no match in bundled list #40;SC007#41;<br/>lapsed / never / typo / wrong platform</a>]
 
     Start["Joined after pack date:<br/>add SponsorshipStart<br/>cost: one attribute, honor-system"] --> SFuture{"Start in<br/>the future?"}
-    SFuture -->|"Yes"| SC015[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015'>Sponsorship start in the future - fails safe &#40;SC015&#41;</a>]
+    SFuture -->|"Yes"| SC015[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015'>Sponsorship start in the future - fails safe #40;SC015#41;</a>]
     SFuture -->|"No"| SAfter{"Start &gt; PackDate?"}
-    SAfter -->|"Yes"| SC017([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017'>Passes on trusted attestation &#40;SC017&#41;<br/>consumer-local log only, author never sees it</a>])
+    SAfter -->|"Yes"| SC017([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017'>Passes on trusted attestation #40;SC017#41;<br/>consumer-local log only, author never sees it</a>])
     SAfter -->|"No (on or before, strict)"| SMatch
 
     License["Time-bounded private license<br/>SponsorshipLicensedUntil=yyyy-MM<br/>cost: one string, no keys or servers"] --> LExp{"Expired?"}
     LExp -->|"No"| LPass(["PASS, silent<br/>through end of month UTC"])
-    LExp -->|"Yes"| SC009([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>Time-bounded license expired &#40;SC009&#41;<br/>renewal forcing function</a>])
+    LExp -->|"Yes"| SC009([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>Time-bounded license expired #40;SC009#41;<br/>renewal forcing function</a>])
 
-    Ignore["SponsorshipLicenseIgnored=true<br/>cost: one free line, cheaper than sponsoring"] --> SC005([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>Passes, but warns on every build &#40;SC005&#41;<br/>durable breach-of-license marker</a>])
+    Ignore["SponsorshipLicenseIgnored=true<br/>cost: one free line, cheaper than sponsoring"] --> SC005([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>Passes, but warns on every build #40;SC005#41;<br/>durable breach-of-license marker</a>])
 
     Bad["Malformed or conflicting config<br/>SC003 two modes, SC011 / SC013 bad date<br/>cost: fix the config"] --> BadEnd(["ERROR - fails safe<br/>never a silent pass"])
 ```
@@ -120,7 +120,7 @@ flowchart TD
 
     Which -->|"Upgrade to vN+1 packed after the lapse"| Up{"Hash in vN+1<br/>frozen list?"}
     Up -->|"Yes"| UpPass(["PASS - re-bundled"])
-    Up -->|"No"| SC007b[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>Account not licensed - no match in vN+1 list &#40;SC007&#41;<br/>lapse surfaces at the upgrade touchpoint</a>]
+    Up -->|"No"| SC007b[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>Account not licensed - no match in vN+1 list #40;SC007#41;<br/>lapse surfaces at the upgrade touchpoint</a>]
     SC007b -->|"re-sponsor<br/>(lands in next pack)"| UpPass
     SC007b -->|"switch to LicensedUntil / Ignored"| Modes([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/WhyBuildTimeVerification.md#3-once-forced-to-choose-every-escape-hatch-leaves-a-trace'>Chart 2 terminals</a>])
     SC007b -->|"revert downward"| Revert
