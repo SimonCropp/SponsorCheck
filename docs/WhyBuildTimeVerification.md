@@ -22,15 +22,15 @@ SponsorCheck changes one thing: it moves the ask from a place read once (the rea
 flowchart TD
     Dep(["Consumer takes or updates a dependency"])
 
-    subgraph WorldA["World A - no enforcement (ask via readme / social / release notes)"]
+    subgraph WorldA["Ask only (readme / social / release notes)"]
         A1{"Discovers the<br/>sponsorship ask?"}
-        A1 -->|"Yes - via readme, release notes or social (each low-probability, no retry)"| A2{"Willing AND<br/>acts right now?"}
+        A1 -->|"Yes - via the above (each low-probability, no retry)"| A2{"Willing AND<br/>acts right now?"}
         A1 -->|"No - the common case; transitive-only deps almost never"| ASilent(["Silent free use forever<br/>zero awareness, no artifact"])
         A2 -->|"No - defers, intent decays, never re-prompted"| AForget(["Willing-but-forgetful drop-off<br/>the core leak: would have paid"])
         A2 -->|"Yes"| ASponsor(["Sponsors - the only win<br/>one-time, no retry if missed"])
     end
 
-    subgraph WorldB["World B - SponsorCheck (runs on build)"]
+    subgraph WorldB["Build-time check"]
         B1(["Each build"]) --> B2{"License mode<br/>declared?"}
         B2 -->|"No"| BSC001["SC001 ERROR - build fails by default<br/>recurs every build, never decays"]
         BSC001 -->|"forces a choice"| B2
@@ -43,7 +43,7 @@ flowchart TD
 
 The willing-but-forgetful drop-off on the left is the most damning leak: a consumer who *intended* to pay, saw the ask once, deferred it, and was never prompted again. On the right that leak is closed — not because the consumer is forced to pay, but because the reminder lives in the build loop instead of the readme, so the intention cannot quietly expire.
 
-| Discovery channel (World A) | Consumer effort | Probability the ask lands | Durable artifact |
+| Discovery channel (Ask only) | Consumer effort | Probability the ask lands | Durable artifact |
 | --- | --- | --- | --- |
 | Readme | Zero (incidental to reading docs they wanted) | Low — read once at evaluation, funding section below usage, often skipped via IDE/CLI install | None |
 | Release notes | Zero | Low — only on upgrade, and bot-driven bumps (Dependabot/Renovate) read no prose | None |
@@ -150,26 +150,26 @@ The good actor converts in both worlds, so they are not the differentiator. Spon
 flowchart LR
     subgraph Good["Good actor - converts in both worlds (not the differentiator)"]
         G0(["Wants to do the right thing"])
-        G0 -->|"World A: reads readme, sponsors"| GW(["WIN"])
-        G0 -->|"World B: prompted by SC001, sponsors"| GW
+        G0 -->|"Ask only: reads readme, sponsors"| GW(["WIN"])
+        G0 -->|"Build-time check: prompted by SC001, sponsors"| GW
     end
 
     subgraph Inatt["Inattentive majority - PRIMARY TARGET"]
         I0(["Would sponsor if they clearly knew"])
-        I0 -->|"World A: never learns the author wants it"| ILoss(["LOSS - silent free use"])
-        I0 -->|"World B: red SC001 build cannot be ignored"| IWin(["WIN - converts"])
+        I0 -->|"Ask only: never learns the author wants it"| ILoss(["LOSS - silent free use"])
+        I0 -->|"Build-time check: red SC001 build cannot be ignored"| IWin(["WIN - converts"])
     end
 
     subgraph Org["Org-compliance actor - SECONDARY TARGET"]
         O0(["Funds what its process can operationalize"])
-        O0 -->|"World A: no machine-readable obligation to gate on"| OLoss(["LOSS - intent stalls"])
-        O0 -->|"World B: SC001 / SC005 is a CI-greppable, PR-reviewable artifact"| OWin(["WIN - gate escalates it"])
+        O0 -->|"Ask only: no machine-readable obligation to gate on"| OLoss(["LOSS - intent stalls"])
+        O0 -->|"Build-time check: SC001 / SC005 is a CI-greppable, PR-reviewable artifact"| OWin(["WIN - gate escalates it"])
     end
 
     subgraph Free["Determined free-rider - OPENLY CONCEDED"]
         F0(["Will not pay regardless"])
-        F0 -->|"World A: does not pay, invisibly"| FLoss(["LOSS - no marker"])
-        F0 -->|"World B: SponsorshipLicenseIgnored, one free line"| FIgn(["LOSS on revenue,<br/>but leaves a recurring SC005 breach marker"])
+        F0 -->|"Ask only: does not pay, invisibly"| FLoss(["LOSS - no marker"])
+        F0 -->|"Build-time check: SponsorshipLicenseIgnored, one free line"| FIgn(["LOSS on revenue,<br/>but leaves a recurring SC005 breach marker"])
         F0 -->|"strip targets / forge a 48-bit hash"| FStrip(["more work than sponsoring,<br/>and pointless - Ignored is free"])
     end
 
@@ -190,7 +190,7 @@ One limitation, stated plainly so the document does not over-claim: **the author
 
 Every distinct terminal state across both worlds, with the consumer's effort and what it leaves behind.
 
-### World A — no enforcement
+### Ask only
 
 | End state | Consumer effort | Build-log artifact | Maintainer outcome |
 | --- | --- | --- | --- |
@@ -201,7 +201,7 @@ Every distinct terminal state across both worlds, with the consumer's effort and
 | Org wants to fund but has nothing to act on | Prohibitive manual per-dependency audit | None to gate or budget on | Loss — corporate intent stalls |
 | Conscientious consumer sponsors proactively | ~3 clicks + payment, self-motivated, one-time | None (and none needed) | Win — conditioned on discover AND willing AND act-now firing at once |
 
-### World B — SponsorCheck
+### Build-time check
 
 | End state | Consumer effort | Build-log artifact | Maintainer outcome |
 | --- | --- | --- | --- |
@@ -226,7 +226,7 @@ Every distinct terminal state across both worlds, with the consumer's effort and
 | --- | --- | --- |
 | Author never learns whether they are under-funded | None — SC005/SC017 are consumer-local; the author never sees them | Shared limitation, not a SponsorCheck win |
 
-> One upstream precondition gates the entire World-B column: the author's pack must succeed. A missing
+> One upstream precondition gates the entire Build-time check column: the author's pack must succeed. A missing
 > platform credential (`SC102`), no configured platform account (`SC101`), or a platform fetch failure
 > (`SC100`) is surfaced in the author's *own* pack log (see
 > [Bundler diagnostic codes](BundlerDiagnosticCodes.md)) and determines whether a correct verifier ships at
