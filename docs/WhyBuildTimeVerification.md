@@ -2,18 +2,18 @@
 
 OSS sustainability mechanisms sit on a spectrum. At one end is **no enforcement** — ship the package and state, via the readme, social media, and release notes, that sponsorship is wanted. At the other is **full commercial licensing** — per-consumer license keys, a billing system, rotation, and support. The readme's [Why this approach](../readme.md#why-this-approach) section compares the three points at a high level. This document zooms in on the lower end: it justifies, scenario by scenario, why relocating the sponsorship ask into the build loop converts consumers that a readme/social/release-notes ask does not — and is honest about exactly where it stops working.
 
-The charts below are **justification / contrast views**: they map what each world produces and what trace it leaves behind. They are a different altitude from the mechanism flowchart in [How it works](../readme.md#how-it-works), which shows the verifier's internal decision logic. That chart is not repeated here.
+The charts below are **justification / contrast views**: they map what each scenario produces and what trace it leaves behind. They are a different altitude from the mechanism flowchart in [How it works](../readme.md#how-it-works), which shows the verifier's internal decision logic. That chart is not repeated here.
 
 > **Throughout, every effort annotation is paired with the durability of the artifact it leaves.** This matters because the central lever is *not* that the honest path is cheaper — it is not. The documented bypass (`SponsorshipLicenseIgnored="true"`) is a single free line, strictly cheaper than signing up to sponsor. The lever is **visibility**: the honest path and every bypass differ not in keystrokes but in what they leave in the build log, in CI, and in code review. What matters is not what each choice costs but what it records — and that record is the consumer's own, never the maintainer's.
 
 
 ## 1. The premise: discovery is a single probabilistic event with no retry
 
-The fatal property of the no-enforcement world is not that consumers are hostile — most are not. It is that the ask must be **discovered** through an out-of-band channel, discovery happens at most once, and it produces **zero durable artifact**. A consumer who would gladly sponsor can fall out of the funnel at every gate, and their own build, CI, and review hold no record of it — nothing the consumer's own process could later act on.
+The problem with the no-enforcement scenario is not that consumers are hostile — most are not. It is that the ask must be **discovered** through an out-of-band channel, discovery happens at most once, and it produces **zero durable artifact**. A consumer who would gladly sponsor can fall out of the funnel at every gate, and their own build, CI, and review hold no record of it — nothing the consumer's own process could later act on.
 
 Automation makes this worse, not better. Adding or updating a dependency increasingly happens with no human in the loop — Dependabot and Renovate bumps, and AI coding agents that run `dotnet add package` and upgrade versions on a developer's behalf. None of them read a readme funding section, a changelog, or a social post, so the share of installs and upgrades where anyone even encounters the ask keeps shrinking.
 
-SponsorCheck changes one thing: it moves the ask from a place read once (the readme) to a place read on every build (the build log). The verifier runs `BeforeTargets="BeforeBuild"` with **no configuration gate**, so it fires on *every* build in *every* configuration — including Debug, not at pack time or in Release alone. The prompt recurs and cannot decay — and the build is the one channel automation cannot skip: an AI agent or a CI bump still has to compile, so the verifier surfaces in exactly the output they read back.
+SponsorCheck changes one thing: it moves the ask from a place read once (the readme) to a place read on every build (the build log). The verifier runs on build with **no configuration gate**, so it fires on *every* build in *every* configuration — including Debug, not at pack time or in Release alone. The prompt recurs and cannot decay — and the build is the one channel automation cannot skip: an AI agent or a CI bump still has to compile, so the verifier surfaces in exactly the output they read back.
 
 ```mermaid
 flowchart TD
@@ -29,7 +29,7 @@ flowchart TD
 
     subgraph WorldB["Build-time check"]
         B1(["Each build"]) --> B2{"License mode<br/>declared?"}
-        B2 -->|"No"| BSC001[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001'>SC001 ERROR - build fails by default<br/>recurs every build, never decays</a>]
+        B2 -->|"No"| BSC001[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001'>No license declared - build fails by default &#40;SC001&#41;<br/>recurs every build, never decays</a>]
         BSC001 -->|"Forces a choice"| B2
         B2 -->|"Yes"| BChoose([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/WhyBuildTimeVerification.md#3-once-forced-to-choose-every-escape-hatch-leaves-a-trace'>Consumer picks a mode<br/>see Chart 2</a>])
     end
@@ -54,7 +54,7 @@ The argument is "a recurring touchpoint beats a one-time impression." It rests o
 bundled verifier:
 
 1. **It runs on every build.** The prompt is unavoidable and recurring rather than a single impression that scrolls away.
-2. **`SC001` (no mode declared) is a default error that fails the build.** A consumer cannot proceed without consciously picking a mode — sponsor, license, or the explicit ignore. This is what converts the inattentive majority.
+2. **By default, the build fails until sponsorship is addressed (SC001).** A consumer cannot proceed without consciously picking a mode — sponsor, license, or the explicit ignore. This is what converts the inattentive majority.
 3. **The produced package carries no runtime dependency on SponsorCheck.** The verifier and its task DLL ship embedded in the nupkg; nothing reaches the consumer's runtime. The blast radius of being wrongly nagged is one build-time message, never a shipped dependency — which is why it is safe to err toward surfacing.
 
 ### Severity is one knob that slides the same tree from hard gate to soft nudge
@@ -70,11 +70,11 @@ The author tunes severity per overrideable code (`error` / `warning` / `message`
 
 ## 3. Once forced to choose: every escape hatch leaves a trace
 
-When `SC001` forces a decision, the consumer has several ways to resolve it. Exactly **one** terminal is a silent, zero-trace pass — a real sponsor match. Every other resolution either passes the build while leaving a durable artifact, or fails safe. This is the transition from *discovery* to *legibility*.
+When an undeclared license (`SC001`) forces a decision, the consumer has several ways to resolve it. Exactly **one** terminal is a silent, zero-trace pass — a real sponsor match. Every other resolution either passes the build while leaving a durable artifact, or fails safe. This is the transition from *discovery* to *legibility*.
 
 ```mermaid
 flowchart TD
-    Root([SC001 forces a choice:<br/>consumer picks a mode]) --> Sponsor
+    Root([No license declared &#40;SC001&#41;<br/>consumer picks a mode]) --> Sponsor
     Root --> Start
     Root --> License
     Root --> Ignore
@@ -82,19 +82,19 @@ flowchart TD
 
     Sponsor["Declare a matching sponsor account<br/>cost: one attribute + platform signup"] --> SMatch{"Hash in the<br/>bundled list?"}
     SMatch -->|"Yes"| SPass(["PASS, silent<br/>the only zero-trace pass"])
-    SMatch -->|"No"| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 ERROR - account not in list<br/>lapsed / never / typo / wrong platform</a>]
+    SMatch -->|"No"| SC007[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>Account not licensed - no match in bundled list &#40;SC007&#41;<br/>lapsed / never / typo / wrong platform</a>]
 
     Start["Joined after pack date:<br/>add SponsorshipStart<br/>cost: one attribute, honor-system"] --> SFuture{"Start in<br/>the future?"}
-    SFuture -->|"Yes"| SC015[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015'>SC015 ERROR - fails safe</a>]
+    SFuture -->|"Yes"| SC015[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015'>Sponsorship start in the future - fails safe &#40;SC015&#41;</a>]
     SFuture -->|"No"| SAfter{"Start &gt; PackDate?"}
-    SAfter -->|"Yes"| SC017([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017'>PASS + SC017 audit message<br/>consumer-local log only, author never sees it</a>])
+    SAfter -->|"Yes"| SC017([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017'>Passes on trusted attestation &#40;SC017&#41;<br/>consumer-local log only, author never sees it</a>])
     SAfter -->|"No (on or before, strict)"| SMatch
 
     License["Time-bounded private license<br/>SponsorshipLicensedUntil=yyyy-MM<br/>cost: one string, no keys or servers"] --> LExp{"Expired?"}
     LExp -->|"No"| LPass(["PASS, silent<br/>through end of month UTC"])
-    LExp -->|"Yes"| SC009([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>SC009 ERROR<br/>renewal forcing function</a>])
+    LExp -->|"Yes"| SC009([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>Time-bounded license expired &#40;SC009&#41;<br/>renewal forcing function</a>])
 
-    Ignore["SponsorshipLicenseIgnored=true<br/>cost: one free line, cheaper than sponsoring"] --> SC005([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>PASS, but SC005 WARNING every build<br/>durable breach-of-license marker</a>])
+    Ignore["SponsorshipLicenseIgnored=true<br/>cost: one free line, cheaper than sponsoring"] --> SC005([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>Passes, but warns on every build &#40;SC005&#41;<br/>durable breach-of-license marker</a>])
 
     Bad["Malformed or conflicting config<br/>SC003 two modes, SC011 / SC013 bad date<br/>cost: fix the config"] --> BadEnd(["ERROR - fails safe<br/>never a silent pass"])
 ```
@@ -120,7 +120,7 @@ flowchart TD
 
     Which -->|"Upgrade to vN+1 packed after the lapse"| Up{"Hash in vN+1<br/>frozen list?"}
     Up -->|"Yes"| UpPass(["PASS - re-bundled"])
-    Up -->|"No"| SC007b[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>SC007 ERROR<br/>lapse surfaces at the upgrade touchpoint</a>]
+    Up -->|"No"| SC007b[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007'>Account not licensed - no match in vN+1 list &#40;SC007&#41;<br/>lapse surfaces at the upgrade touchpoint</a>]
     SC007b -->|"re-sponsor<br/>(lands in next pack)"| UpPass
     SC007b -->|"switch to LicensedUntil / Ignored"| Modes([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/WhyBuildTimeVerification.md#3-once-forced-to-choose-every-escape-hatch-leaves-a-trace'>Chart 2 terminals</a>])
     SC007b -->|"revert downward"| Revert
@@ -203,15 +203,15 @@ Every distinct terminal state across both worlds, with the consumer's effort and
 | End state | Consumer effort | Build-log artifact | Maintainer outcome |
 | --- | --- | --- | --- |
 | PASS, silent — real sponsor hash match | One attribute (copy-pasteable from SC001) + signup | None after the one-time SC001; a clean log is the reward | Win |
-| PASS + SC017 audit message — `SponsorshipStart` > pack date | One extra attribute; no proof; self-expires on upgrade | SC017 high-priority message, consumer-local only | Neutral — needed for honest recent joiners; also a stealthier free-ride |
+| Passes on trusted attestation (SC017) — `SponsorshipStart` > pack date | One extra attribute; no proof; self-expires on upgrade | SC017 high-priority message, consumer-local only | Neutral — needed for honest recent joiners; also a stealthier free-ride |
 | PASS, silent — valid time-bounded private license | One `yyyy-MM` string; no keys/servers/rotation | Clean while valid; the value is visible in the repo | Win — B2B path without license infrastructure |
-| PASS, but SC005 WARNING every build — explicit ignore | One free line — cheaper than sponsoring | Recurring SC005 breach marker in log/CI/PR + committed attribute | Neutral/loss on revenue, win on legibility — feeds the compliance gate |
-| SC001 ERROR — no mode declared (default) | Zero to reach; one attribute to resolve | SC001 error with full remediation block + sponsor URLs | Win — the recurring forced prompt |
-| SC007 ERROR — declared account not in the frozen list | Re-sponsor, switch mode, attest, or revert | SC007 error naming the tried accounts | Win — surfaces the lapse at the upgrade touchpoint |
-| SC009 ERROR — time-bounded license expired | Update one `yyyy-MM` or sponsor | SC009 error naming the end-of-month UTC date | Win — calendar-driven renewal forcing function |
-| SC015 ERROR — future `SponsorshipStart` (fails safe) | Use a real, non-future date | SC015 error — abuse attempt recorded, not honored | Win — fail-closed guard on the honor-system path |
+| Passes, but warns on every build (SC005) — explicit ignore | One free line — cheaper than sponsoring | Recurring SC005 breach marker in log/CI/PR + committed attribute | Neutral/loss on revenue, win on legibility — feeds the compliance gate |
+| No license declared — build fails by default (SC001) | Zero to reach; one attribute to resolve | SC001 error with full remediation block + sponsor URLs | Win — the recurring forced prompt |
+| Account not licensed — declared account not in the frozen list (SC007) | Re-sponsor, switch mode, attest, or revert | SC007 error naming the tried accounts | Win — surfaces the lapse at the upgrade touchpoint |
+| Time-bounded license expired (SC009) | Update one `yyyy-MM` or sponsor | SC009 error naming the end-of-month UTC date | Win — calendar-driven renewal forcing function |
+| Sponsorship start in the future — fails safe (SC015) | Use a real, non-future date | SC015 error — abuse attempt recorded, not honored | Win — fail-closed guard on the honor-system path |
 | Malformed / conflicting config (SC003 / SC011 / SC013) | Fix the config | Recorded error — never degrades to a silent pass | Neutral — reinforces fail-closed auditability |
-| SC018 ERROR — bundled hash file missing (corrupt install) | Restore/repair the package | SC018 error naming the missing path | Neutral — absence of audit substrate is itself surfaced |
+| Bundled hash file missing — corrupt install (SC018) | Restore/repair the package | SC018 error naming the missing path | Neutral — absence of audit substrate is itself surfaced |
 | vN builds PASS forever after lapse — paid versions stay paid | Zero — stay on the bundled version | Clean build (hash still in vN's frozen list) | Neutral — deliberate; no recall short of unlisting |
 | Revert to an already-bundled or pre-adoption version | Edit one `Version` down; forfeits all future updates and security fixes | No recurring SC0xx, but the pinned/stale version is visible to SCA tooling | Loss — the conceded escape; deterrent is compounding security debt |
 | Strip the verifier / forge a 48-bit hash | More work than sponsoring, and pointless | A suspicious anti-SponsorCheck override a reviewer can spot | Loss — strictly dominated; hashing is not a security boundary |
