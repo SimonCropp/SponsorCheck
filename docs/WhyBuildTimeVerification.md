@@ -4,12 +4,7 @@ OSS sustainability mechanisms sit on a spectrum. At one end is **no enforcement*
 
 The charts below are **justification / contrast views**: they map what each world produces and what trace it leaves behind. They are a different altitude from the mechanism flowchart in [How it works](../readme.md#how-it-works), which shows the verifier's internal decision logic. That chart is not repeated here.
 
-> **Throughout, every effort annotation is paired with the durability of the artifact it leaves.** This
-> matters because the central lever is *not* that the honest path is cheaper — it is not. The documented
-> bypass (`SponsorshipLicenseIgnored="true"`) is a single free line, strictly cheaper than signing up to
-> sponsor. The lever is **visibility**: the honest path and every bypass differ not in keystrokes but in what
-> they leave in the build log, in CI, and in code review. Read the inversion as a *visibility* inversion, not
-> a cost one.
+> **Throughout, every effort annotation is paired with the durability of the artifact it leaves.** This matters because the central lever is *not* that the honest path is cheaper — it is not. The documented bypass (`SponsorshipLicenseIgnored="true"`) is a single free line, strictly cheaper than signing up to sponsor. The lever is **visibility**: the honest path and every bypass differ not in keystrokes but in what they leave in the build log, in CI, and in code review. Read the inversion as a *visibility* inversion, not a cost one.
 
 
 ## 1. The premise: discovery is a single probabilistic event with no retry
@@ -226,8 +221,4 @@ Every distinct terminal state across both worlds, with the consumer's effort and
 | --- | --- | --- |
 | Author never learns whether they are under-funded | None — SC005/SC017 are consumer-local; the author never sees them | Shared limitation, not a SponsorCheck win |
 
-> One upstream precondition gates the entire Build-time check column: the author's pack must succeed. A missing
-> platform credential (`SC102`), no configured platform account (`SC101`), or a platform fetch failure
-> (`SC100`) is surfaced in the author's *own* pack log (see
-> [Bundler diagnostic codes](BundlerDiagnosticCodes.md)) and determines whether a correct verifier ships at
-> all.
+> One upstream precondition gates the entire Build-time check column: the author's pack must succeed. A missing platform credential (`SC102`), no configured platform account (`SC101`), or a platform fetch failure (`SC100`) is surfaced in the author's *own* pack log (see [Bundler diagnostic codes](BundlerDiagnosticCodes.md)) and determines whether a correct verifier ships at all.
