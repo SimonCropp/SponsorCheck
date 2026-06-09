@@ -20,7 +20,7 @@ SponsorCheck changes one thing: it moves the ask from a place read once (the rea
 
 ```mermaid
 flowchart TD
-    Dep(["Consumer takes a dependency"])
+    Dep(["Consumer takes or updates a dependency"])
 
     subgraph WorldA["World A - no enforcement (ask via readme / social / release notes)"]
         A1{"Discovers the<br/>sponsorship ask?"}
@@ -31,7 +31,7 @@ flowchart TD
     end
 
     subgraph WorldB["World B - SponsorCheck (verifier runs BeforeBuild, every build, every config incl. Debug)"]
-        B1(["First build"]) --> B2{"License mode<br/>declared?"}
+        B1(["Each build"]) --> B2{"License mode<br/>declared?"}
         B2 -->|"No"| BSC001["SC001 ERROR - build fails by default<br/>recurs every build, never decays"]
         BSC001 -->|"forces a choice"| B2
         B2 -->|"Yes"| BChoose(["Consumer must pick a mode<br/>see Chart 2"])
