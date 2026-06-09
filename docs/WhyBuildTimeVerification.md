@@ -11,7 +11,9 @@ The charts below are **justification / contrast views**: they map what each worl
 
 The fatal property of the no-enforcement world is not that consumers are hostile — most are not. It is that the ask must be **discovered** through an out-of-band channel, discovery happens at most once, and it produces **zero durable artifact**. A consumer who would gladly sponsor can fall out of the funnel at every gate, and their own build, CI, and review hold no record of it — nothing the consumer's own process could later act on.
 
-SponsorCheck changes one thing: it moves the ask from a place read once (the readme) to a place read on every build (the build log). The verifier runs `BeforeTargets="BeforeBuild"` with **no configuration gate**, so it fires on *every* build in *every* configuration — including Debug, not at pack time or in Release alone. The prompt recurs and cannot decay.
+Automation makes this worse, not better. Adding or updating a dependency increasingly happens with no human in the loop — Dependabot and Renovate bumps, and AI coding agents that run `dotnet add package` and upgrade versions on a developer's behalf. None of them read a readme funding section, a changelog, or a social post, so the share of installs and upgrades where anyone even encounters the ask keeps shrinking.
+
+SponsorCheck changes one thing: it moves the ask from a place read once (the readme) to a place read on every build (the build log). The verifier runs `BeforeTargets="BeforeBuild"` with **no configuration gate**, so it fires on *every* build in *every* configuration — including Debug, not at pack time or in Release alone. The prompt recurs and cannot decay — and the build is the one channel automation cannot skip: an AI agent or a CI bump still has to compile, so the verifier surfaces in exactly the output they read back.
 
 ```mermaid
 flowchart TD
@@ -40,8 +42,8 @@ The willing-but-forgetful drop-off on the left is the most damning leak: a consu
 
 | Discovery channel (Ask only) | Consumer effort | Probability the ask lands | Durable artifact |
 | --- | --- | --- | --- |
-| Readme | Zero (incidental to reading docs they wanted) | Low — read once at evaluation, funding section below usage, often skipped via IDE/CLI install | None |
-| Release notes | Zero | Low — only on upgrade, and bot-driven bumps (Dependabot/Renovate) read no prose | None |
+| Readme | Zero (incidental to reading docs they wanted) | Low — read once at evaluation, funding section below usage, skipped entirely by IDE/CLI or AI-agent installs | None |
+| Release notes | Zero | Low — only on upgrade, and automated bumps (Dependabot/Renovate, AI agents) read no prose | None |
 | Social media | Zero | Lowest — small overlap between followers and users; decays in hours | None |
 | Transitive-only dependency | Zero | Near zero — the consumer never visits the package at all | None |
 
