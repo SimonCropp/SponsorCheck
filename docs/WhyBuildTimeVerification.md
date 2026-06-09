@@ -24,17 +24,17 @@ flowchart TD
 
     subgraph WorldA["Ask only (readme / social / release notes)"]
         A1{"Discovers the<br/>sponsorship ask?"}
-        A1 -->|"Yes - via the above (each low-probability, no retry)"| A2{"Willing AND<br/>acts right now?"}
-        A1 -->|"No - the common case; transitive-only deps almost never"| ASilent(["Silent free use forever<br/>zero awareness, no artifact"])
-        A2 -->|"No - defers, intent decays, never re-prompted"| AForget(["Willing-but-forgetful drop-off<br/>the core leak: would have paid"])
+        A1 -->|"Yes - via the above (each low-probability, no retry)"| A2{"Willing AND<br/>acts now?"}
+        A1 -->|"No - common case; transitive deps almost never"| ASilent(["Silent free use forever<br/>zero awareness, no artifact"])
+        A2 -->|"No - defers, intent decays, never re-prompted"| AForget(["Willing-but-forget drop-off<br/>the core leak: would have paid"])
         A2 -->|"Yes"| ASponsor(["Sponsors - the only win<br/>one-time, no retry if missed"])
     end
 
     subgraph WorldB["Build-time check"]
         B1(["Each build"]) --> B2{"License mode<br/>declared?"}
         B2 -->|"No"| BSC001["SC001 ERROR - build fails by default<br/>recurs every build, never decays"]
-        BSC001 -->|"forces a choice"| B2
-        B2 -->|"Yes"| BChoose(["Consumer must pick a mode<br/>see Chart 2"])
+        BSC001 -->|"Forces a choice"| B2
+        B2 -->|"Yes"| BChoose(["Consumer picks a mode<br/>see Chart 2"])
     end
 
     Dep --> A1
