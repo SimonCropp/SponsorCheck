@@ -19,7 +19,7 @@ SponsorCheck changes one thing: it moves the ask from a place read once (the rea
 flowchart TD
     Dep(["Consumer takes or updates a dependency"])
 
-    subgraph WorldA["Ask only (readme / social / release notes)"]
+    subgraph AskOnly["Ask only (readme / social / release notes)"]
         A1{"Discovers the<br/>sponsorship ask?"}
         A1 -->|"Yes - via the above (each low-probability, no retry)"| A2{"Willing AND<br/>acts now?"}
         A1 -->|"No - common case; transitive deps almost never"| ASilent(["Silent free use forever<br/>zero awareness, no artifact"])
@@ -27,7 +27,7 @@ flowchart TD
         A2 -->|"Yes"| ASponsor(["Sponsors - the only win<br/>one-time, no retry if missed"])
     end
 
-    subgraph WorldB["Build-time check"]
+    subgraph BuildCheck["Build-time check"]
         B1(["Each build"]) --> B2{"License mode<br/>declared?"}
         B2 -->|"No"| BSC001[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001'>No license declared - build fails by default #40;SC001#41;<br/>recurs every build, never decays</a>]
         BSC001 -->|"Forces a choice"| B2
@@ -157,11 +157,11 @@ SponsorCheck explicitly concedes that a determined free-rider can opt out trivia
 
 ## 5. Who this actually converts
 
-The good actor converts in both worlds, so they are not the differentiator. SponsorCheck recovers the **inattentive majority** (who never found out) and the **org-compliance actor** (who had nothing to operationalize against). The **determined free-rider** is openly conceded — but their own bypass becomes the compliance actor's conversion trigger.
+The good actor converts in both scenarios, so they are not the differentiator. SponsorCheck recovers the **inattentive majority** (who never found out) and the **org-compliance actor** (who had nothing to operationalize against). The **determined free-rider** is openly conceded — but their own bypass becomes the compliance actor's conversion trigger.
 
 ```mermaid
 flowchart LR
-    subgraph Good["Good actor - converts in both worlds (not the differentiator)"]
+    subgraph Good["Good actor - converts in both scenarios (not the differentiator)"]
         G0(["Wants to do the right thing"])
         G0 -->|"Ask only: reads readme, sponsors"| GW(["WIN"])
         G0 -->|"Build-time check: prompted by SC001, sponsors"| GW
@@ -196,12 +196,12 @@ The strongest non-obvious argument is the dotted edge: in an organization, the f
 
 Why an author picks this middle point on the spectrum at all comes down to cost. Adoption is near-zero: one development `PackageReference` plus a CI token, with the platform (GitHub Sponsors / Open Collective / Polar) still doing all the signup, billing, and rotation. Onboarding a sponsor is "they click Sponsor"; offboarding is "they stop sponsoring" — the next pack picks up the change automatically. No license keys are ever issued, in contrast to the large, ongoing cost of a full commercial licensing system.
 
-One limitation, stated plainly so the document does not over-claim: **the author gets no per-consumer telemetry.** `SC005` and `SC017` are consumer-local — they live in the consumer's build log and never phone home. SponsorCheck cannot tell the author who ignored, who attested, or who reverted. It closes the *discovery* and *legibility* gaps; it does not give the author a dashboard of who is and is not paying. That is a shared limitation with the no-enforcement world, by design (no runtime callback, no tracking).
+One limitation, stated plainly so the document does not over-claim: **the author gets no per-consumer telemetry.** `SC005` and `SC017` are consumer-local — they live in the consumer's build log and never phone home. SponsorCheck cannot tell the author who ignored, who attested, or who reverted. It closes the *discovery* and *legibility* gaps; it does not give the author a dashboard of who is and is not paying. That is a shared limitation with the no-enforcement scenario, by design (no runtime callback, no tracking).
 
 
 ## End-state catalogue
 
-Every distinct terminal state across both worlds, with the consumer's effort and what it leaves behind.
+Every distinct terminal state across both scenarios, with the consumer's effort and what it leaves behind.
 
 
 ### Ask only
@@ -210,7 +210,7 @@ Every distinct terminal state across both worlds, with the consumer's effort and
 | --- | --- | --- | --- |
 | Silent free use forever (never discovered the ask; includes transitive-only deps) | Zero; no decision ever made | None | Loss — the exact inattentive majority SponsorCheck targets |
 | Willing-but-forgetful drop-off (deferred, intent decayed, never re-prompted) | Intended to pay; never got a second touchpoint | None | Loss — a consumer who would have paid |
-| Knowing free-ride (saw the ask, declined) | Zero ongoing; the decline is invisible | None — indistinguishable from an honest sponsor | Loss (conceded in both worlds) |
+| Knowing free-ride (saw the ask, declined) | Zero ongoing; the decline is invisible | None — indistinguishable from an honest sponsor | Loss (conceded in both scenarios) |
 | Former sponsor lapses unnoticed (card expires, reorg) | Zero — lapse needs no action | None | Loss — no renewal touchpoint |
 | Org wants to fund but has nothing to act on | Prohibitive manual per-dependency audit | None to gate or budget on | Loss — corporate intent stalls |
 | Conscientious consumer sponsors proactively | ~3 clicks + payment, self-motivated, one-time | None (and none needed) | Win — conditioned on discover AND willing AND act-now firing at once |
@@ -236,7 +236,7 @@ Every distinct terminal state across both worlds, with the consumer's effort and
 | Stop using the package entirely | Rewrite/replace the dependency (highest effort) | None | Loss — nudged away rather than converted |
 
 
-### Shared limitation (both worlds)
+### Shared limitation (both scenarios)
 
 | End state | Artifact | Outcome |
 | --- | --- | --- |
