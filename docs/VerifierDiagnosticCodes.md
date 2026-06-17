@@ -666,3 +666,87 @@ flowchart TD
     <{OwnerId}_SponsorshipStart>yyyy-MM-dd</{OwnerId}_SponsorshipStart>
   ```
 - **Example opener:** `Package 'MyOssLib': acme_SponsorshipStart='2099-01-01' property is in the future.`
+
+
+### SC029
+
+- **Name:** Exemption claimed
+- **Level**: Warning
+- **Meaning:** The consumer set `SponsorshipExemption="<name>"` on the `<PackageReference>` and `<name>` matches an exemption the publisher defined at pack time. The build passes; the warning body includes the publisher's verbatim exemption criteria so the audit trail in CI logs documents the exact carve-out being claimed (not a generic "in breach" message). The matched name appears with the consumer-typed casing — lookup is case-insensitive but what the consumer wrote is what's surfaced. Not overrideable: the publisher's `Message` is the override. CPM equivalent: [SC030](#sc030). Owner-mode equivalent: [SC031](#sc031).
+- **Syntax:** `Package '{PackageId}': SponsorshipExemption="{name}" claimed on the <PackageReference>. Publisher's exemption criteria: {publisherMessage}`
+- **Example:** `Package 'Papyrine': SponsorshipExemption="Consulting" claimed on the <PackageReference>. Publisher's exemption criteria: Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work.`
+
+
+### SC030
+
+- **Name:** Exemption claimed
+- **Level**: Warning
+- **Meaning:** CPM equivalent of [SC029](#sc029): the consumer set `SponsorshipExemption` on the `<PackageVersion>` in `Directory.Packages.props` and the name matches a publisher-defined exemption.
+- **Syntax:** `Package '{PackageId}': SponsorshipExemption="{name}" claimed on the <PackageVersion> in Directory.Packages.props. Publisher's exemption criteria: {publisherMessage}`
+- **Example:** `Package 'Papyrine': SponsorshipExemption="SmallRevenue" claimed on the <PackageVersion> in Directory.Packages.props. Publisher's exemption criteria: Consumers under US$10,000 annual gross revenue are exempt.`
+
+
+### SC031
+
+- **Name:** Exemption claimed
+- **Level**: Warning
+- **Meaning:** Owner-mode equivalent of [SC029](#sc029)/[SC030](#sc030): the owner-prefixed `{OwnerId}_SponsorshipExemption` global property is set and names a publisher-defined exemption.
+- **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemption="{name}" property is set. Publisher's exemption criteria: {publisherMessage}`
+- **Example:** `Package 'Papyrine': papyrine_SponsorshipExemption="Consulting" property is set. Publisher's exemption criteria: Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work.`
+
+
+### SC032
+
+- **Name:** Unknown exemption
+- **Level**: Error
+- **Meaning:** The consumer set `SponsorshipExemption="<name>"` on the `<PackageReference>` but `<name>` does not match any exemption the publisher defined at pack time. The body lists the publisher-defined exemptions with their criteria text so the consumer can choose, or reports that the publisher has not defined any exemptions (in which case the consumer needs to pick a different license mode — see [SC001](#sc001)). Lookup is case-insensitive — a typo or a removed exemption name is the typical cause. Not overrideable. CPM equivalent: [SC033](#sc033). Owner-mode equivalent: [SC034](#sc034).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipExemption="{name}" on the <PackageReference> does not name a known exemption.
+
+  Available exemptions:
+    - {name1}: {message1}
+    - {name2}: {message2}
+
+  Claim one in:
+    {csprojPath}
+
+  Example format:
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{name1}" />
+  ```
+
+  When the publisher has not defined any exemptions the "Available exemptions" block is replaced with `The publisher has not defined any exemptions for this package.`
+- **Example:**
+
+  ```
+  Package 'Papyrine': SponsorshipExemption="MadeUpName" on the <PackageReference> does not name a known exemption.
+
+  Available exemptions:
+    - Consulting: Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work.
+    - SmallRevenue: Consumers under US$10,000 annual gross revenue are exempt.
+
+  Claim one in:
+    /work/MyApp/MyApp.csproj
+
+  Example format:
+    <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="Consulting" />
+  ```
+
+
+### SC033
+
+- **Name:** Unknown exemption
+- **Level**: Error
+- **Meaning:** CPM equivalent of [SC032](#sc032).
+- **Syntax:** Same structure as SC032 with `<PackageVersion> in Directory.Packages.props` substituted for `<PackageReference>`.
+- **Example opener:** `Package 'Papyrine': SponsorshipExemption="MadeUpName" on the <PackageVersion> in Directory.Packages.props does not name a known exemption.`
+
+
+### SC034
+
+- **Name:** Unknown exemption
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC032](#sc032)/[SC033](#sc033): the `{OwnerId}_SponsorshipExemption` property names an exemption the publisher did not define.
+- **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemption="{name}" does not name a known exemption.` (body uses the owner-mode "Claim one by setting the property" remediation block.)
+- **Example opener:** `Package 'Papyrine': papyrine_SponsorshipExemption="MadeUpName" does not name a known exemption.`

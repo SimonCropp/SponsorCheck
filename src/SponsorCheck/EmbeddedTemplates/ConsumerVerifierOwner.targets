@@ -12,6 +12,7 @@ __SC_INNER_IMPORT__
     <_SponsorCheck_SeverityOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.SeverityOverrides.txt</_SponsorCheck_SeverityOverridesPath>
     <_SponsorCheck_MessageOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.MessageOverrides.json</_SponsorCheck_MessageOverridesPath>
     <_SponsorCheck_LandingUrlPath>$(MSBuildThisFileDirectory)SponsorCheck.LandingUrl.txt</_SponsorCheck_LandingUrlPath>
+    <_SponsorCheck_ExemptionsPath>$(MSBuildThisFileDirectory)SponsorCheck.Exemptions.json</_SponsorCheck_ExemptionsPath>
   </PropertyGroup>
 
   <UsingTask TaskName="VerifySponsorshipTask"
@@ -78,9 +79,11 @@ __SC_INNER_IMPORT__
         SeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
         MessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
         LandingUrlPath="$(_SponsorCheck_LandingUrlPath)"
+        ExemptionsPath="$(_SponsorCheck_ExemptionsPath)"
         ConsumerProjectPath="$(MSBuildProjectFullPath)"
         IgnoredFromRef="$(__SC_OWNER_PREFIX__SponsorshipLicenseIgnored)"
         LicensedUntilFromRef="$(__SC_OWNER_PREFIX__SponsorshipLicensedUntil)"
+        SponsorshipExemptionFromRef="$(__SC_OWNER_PREFIX__SponsorshipExemption)"
         SponsorshipStartFromRef="$(__SC_OWNER_PREFIX__SponsorshipStart)"
         GitHubFromRef="$(__SC_OWNER_PREFIX__GitHubSponsorAccount)"
         OpenCollectiveFromRef="$(__SC_OWNER_PREFIX__OpenCollectiveSponsorAccount)"

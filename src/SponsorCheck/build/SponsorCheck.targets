@@ -22,6 +22,7 @@
       <_SponsorCheck_SeverityOverridesPath>$(IntermediateOutputPath)SponsorCheck\SeverityOverrides.txt</_SponsorCheck_SeverityOverridesPath>
       <_SponsorCheck_MessageOverridesPath>$(IntermediateOutputPath)SponsorCheck\MessageOverrides.json</_SponsorCheck_MessageOverridesPath>
       <_SponsorCheck_LandingUrlPath>$(IntermediateOutputPath)SponsorCheck\LandingUrl.txt</_SponsorCheck_LandingUrlPath>
+      <_SponsorCheck_ExemptionsPath>$(IntermediateOutputPath)SponsorCheck\Exemptions.json</_SponsorCheck_ExemptionsPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -152,6 +153,8 @@
         OutputSeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
         OutputMessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
         OutputLandingUrlPath="$(_SponsorCheck_LandingUrlPath)"
+        OutputExemptionsPath="$(_SponsorCheck_ExemptionsPath)"
+        SponsorExemptions="@(SponsorExemption)"
         OverridePackDate="$(SponsorCheck_PackDateOverride)" />
 
     <!-- Move the author's own <PackageId>.targets aside to the sidecar the verifier imports, freeing
@@ -191,6 +194,10 @@
       <None Include="$(_SponsorCheck_LandingUrlPath)"
             Pack="true"
             PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.LandingUrl.txt"
+            Visible="false" />
+      <None Include="$(_SponsorCheck_ExemptionsPath)"
+            Pack="true"
+            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.Exemptions.json"
             Visible="false" />
       <None Include="$(_SponsorCheck_GeneratedTargetsPath)"
             Pack="true"

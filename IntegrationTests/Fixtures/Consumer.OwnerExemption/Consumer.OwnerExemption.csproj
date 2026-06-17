@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Owner-mode opt-in via the owner-prefixed global property. -->
+    <acme_SponsorshipExemption>Consulting</acme_SponsorshipExemption>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerModeWithExemptions" Version="1.0.0" />
+  </ItemGroup>
+</Project>

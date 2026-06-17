@@ -1,0 +1,11 @@
+﻿{
+  Warnings: [
+    {
+      Code: SC030,
+      Message:
+Exemption claimed. Package 'Papyrine': SponsorshipExemption="SmallRevenue" claimed on the <PackageVersion> in Directory.Packages.props. Publisher's exemption criteria: Small-revenue carve-out.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030
+    }
+  ]
+}

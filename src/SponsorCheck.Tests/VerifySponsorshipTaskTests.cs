@@ -18,6 +18,14 @@ public class VerifySponsorshipTaskTests
         return path;
     }
 
+    static string WriteExemptions(TempDirectory dir, params (string name, string message)[] entries)
+    {
+        var path = Path.Combine(dir, "Exemptions.json");
+        var dict = entries.ToDictionary(_ => _.name, _ => _.message, StringComparer.OrdinalIgnoreCase);
+        SponsorshipExemptionsFile.Write(path, dict);
+        return path;
+    }
+
     static ConsumerContext NonCpmContext(string packageId = "MyOssLib", string version = "1.2.3") =>
         new(ConsumerMode.NonCpm, consumerProject, "", packageId, version);
 
@@ -1026,6 +1034,7 @@ public class VerifySponsorshipTaskTests
         var decision = LicenseModeResolver.Resolve(
             null,
             "2026-05",
+            null,
             new Dictionary<string, string?>
             {
                 ["GitHubSponsors"] = null,
@@ -1034,7 +1043,7 @@ public class VerifySponsorshipTaskTests
             },
             null,
             "MyOssLib");
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsTrue();
     }
 
@@ -1050,6 +1059,7 @@ public class VerifySponsorshipTaskTests
         var decision = LicenseModeResolver.Resolve(
             null,
             "2026-05",
+            null,
             new Dictionary<string, string?>
             {
                 ["GitHubSponsors"] = null,
@@ -1060,7 +1070,7 @@ public class VerifySponsorshipTaskTests
             "MyOssLib");
         var lastTickOfMonth = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(-1);
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), lastTickOfMonth);
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), lastTickOfMonth);
         await Assert.That(ok).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
     }
@@ -1075,6 +1085,7 @@ public class VerifySponsorshipTaskTests
         var decision = LicenseModeResolver.Resolve(
             null,
             "2026-05",
+            null,
             new Dictionary<string, string?>
             {
                 ["GitHubSponsors"] = null,
@@ -1085,7 +1096,7 @@ public class VerifySponsorshipTaskTests
             "MyOssLib");
         var startOfNextMonth = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), startOfNextMonth);
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), startOfNextMonth);
         await Assert.That(ok).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
     }
@@ -1969,6 +1980,363 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC028");
         await Verify(engine);
+    }
+
+    [Test]
+    public async Task Exemption_KnownName_PassesWithSC029Warning()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir,
+                ("Consulting", "Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work."),
+                ("SmallRevenue", "Consumers under US$10,000 annual gross revenue are exempt.")),
+            SponsorshipExemptionFromRef = "Consulting"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC029");
+        await Assert.That(engine.Warnings[0].Message!).Contains("Organizations that have engaged");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task Exemption_UnknownName_FailsWithSC032()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir,
+                ("Consulting", "Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work."),
+                ("SmallRevenue", "Consumers under US$10,000 annual gross revenue are exempt.")),
+            SponsorshipExemptionFromRef = "MadeUpName"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC032");
+        var message = engine.Errors[0].Message!;
+        await Assert.That(message).Contains("Consulting");
+        await Assert.That(message).Contains("SmallRevenue");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task Exemption_NoExemptionsSidecar_FailsWithSC032()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            SponsorshipExemptionFromRef = "Consulting"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC032");
+        await Assert.That(engine.Errors[0].Message!).Contains("publisher has not defined any exemptions");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task Exemption_EmptyString_TreatedAsUnset()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir, ("Consulting", "Consulting carve-out.")),
+            SponsorshipExemptionFromRef = ""
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+    }
+
+    [Test]
+    public async Task Exemption_CaseInsensitiveLookup_SurfacesConsumerCasing()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir, ("Consulting", "Consulting carve-out.")),
+            SponsorshipExemptionFromRef = "consulting"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC029");
+        var message = engine.Warnings[0].Message!;
+        await Assert.That(message).Contains("\"consulting\"");
+        await Assert.That(message).Contains("Consulting carve-out.");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task Exemption_PlusSponsor_FailsWithSC003()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir, ("Consulting", "Consulting carve-out.")),
+            SponsorshipExemptionFromRef = "Consulting",
+            GitHubFromRef = "alice"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC003");
+        await Assert.That(engine.Errors[0].Message!).Contains("SponsorshipExemption");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task Exemption_MisplacedOnPackageVersion_NonCpm_FailsWithSC020()
+    {
+        // Non-CPM project but exemption lives on <PackageVersion> — placement check catches it.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir, ("Consulting", "Consulting carve-out.")),
+            SponsorshipExemptionFromVer = "Consulting"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC020");
+        await Assert.That(engine.Errors[0].Message!).Contains("SponsorshipExemption");
+    }
+
+    [Test]
+    public async Task CpmExemption_KnownName_PassesWithSC030Warning()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir,
+                ("Consulting", "Consulting carve-out."),
+                ("SmallRevenue", "Small-revenue carve-out.")),
+            SponsorshipExemptionFromVer = "SmallRevenue"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC030");
+        await Assert.That(engine.Warnings[0].Message!).Contains("Small-revenue carve-out.");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmExemption_UnknownName_FailsWithSC033()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            IsCpm = "true",
+            ConsumerProjectPath = consumerProject,
+            DirectoryPackagesPropsPath = directoryPackagesProps,
+            PackageVersionFromVer = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir, ("Consulting", "Consulting carve-out.")),
+            SponsorshipExemptionFromVer = "MadeUpName"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC033");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerModeExemption_KnownName_PassesWithSC031Warning()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            OwnerId = "papyrine",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir,
+                ("Consulting", "Consulting carve-out."),
+                ("SmallRevenue", "Small-revenue carve-out.")),
+            SponsorshipExemptionFromRef = "Consulting"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC031");
+        await Assert.That(engine.Warnings[0].Message!).Contains("papyrine_SponsorshipExemption");
+        await Assert.That(engine.Warnings[0].Message!).Contains("Consulting carve-out.");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerModeExemption_UnknownName_FailsWithSC034()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            OwnerId = "papyrine",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir, ("Consulting", "Consulting carve-out.")),
+            SponsorshipExemptionFromRef = "MadeUpName"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC034");
+        await Assert.That(engine.Errors[0].Message!).Contains("papyrine_SponsorshipExemption");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task SC001_WithExemptionsDefined_BodyIncludesExemptionOption()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir, ("Consulting", "Consulting carve-out."))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+        await Assert.That(engine.Errors[0].Message!).Contains("Claim a publisher-defined exemption");
+        await Assert.That(engine.Errors[0].Message!).Contains("SponsorshipExemption=\"Consulting\"");
+    }
+
+    [Test]
+    public async Task SC001_WithoutExemptionsDefined_BodyOmitsExemptionOption()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+        await Assert.That(engine.Errors[0].Message!).DoesNotContain("Claim a publisher-defined exemption");
+    }
+
+    [Test]
+    public async Task SC003_WithExemptionsDefined_KeepOneOfIncludesExemption()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir, ("Consulting", "Consulting carve-out.")),
+            IgnoredFromRef = "true",
+            GitHubFromRef = "alice"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC003");
+        await Assert.That(engine.Errors[0].Message!).Contains("SponsorshipExemption");
+    }
+
+    [Test]
+    public async Task SC003_WithoutExemptionsDefined_KeepOneOfOmitsExemption()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromRef = "true",
+            GitHubFromRef = "alice"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC003");
+        await Assert.That(engine.Errors[0].Message!).DoesNotContain("SponsorshipExemption");
     }
 }
 

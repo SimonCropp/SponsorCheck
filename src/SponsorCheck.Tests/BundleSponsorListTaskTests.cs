@@ -33,7 +33,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         var ok = task.Execute();
@@ -68,7 +69,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -99,7 +101,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         var ok = task.Execute();
@@ -130,7 +133,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         var ok = task.Execute();
@@ -163,7 +167,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -192,7 +197,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -231,7 +237,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         var ok = task.Execute();
@@ -405,7 +412,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -450,7 +458,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -491,7 +500,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -539,7 +549,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -600,7 +611,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -632,7 +644,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -665,7 +678,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsFalse();
@@ -719,7 +733,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsFalse();
@@ -750,7 +765,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -778,7 +794,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -809,7 +826,8 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -844,11 +862,177 @@ public class BundleSponsorListTaskTests
             OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
             OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
             OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
-            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt")
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
         };
 
         await Assert.That(task.Execute()).IsTrue();
         var lines = await File.ReadAllLinesAsync(task.OutputHashListPath);
         await Assert.That(lines.Length).IsEqualTo(2); // dedup
+    }
+
+    static ITaskItem MakeExemption(string name, string message)
+    {
+        var item = new Microsoft.Build.Utilities.TaskItem(name);
+        item.SetMetadata("Message", message);
+        return item;
+    }
+
+    [Test]
+    public async Task Exemptions_TwoDefined_WrittenToSidecarAsJson()
+    {
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var override_ = WriteOverride(dir, "[]");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = override_,
+            SponsorExemptions =
+            [
+                MakeExemption("Consulting", "Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work."),
+                MakeExemption("SmallRevenue", "Consumers under US$10,000 annual gross revenue are exempt.")
+            ],
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var parsed = SponsorshipExemptionsFile.Read(task.OutputExemptionsPath);
+        await Assert.That(parsed["Consulting"]).Contains("consulting work");
+        await Assert.That(parsed["SmallRevenue"]).Contains("US$10,000");
+    }
+
+    [Test]
+    public async Task Exemptions_None_WritesEmptyJsonObject()
+    {
+        // Sidecar is always written (deterministic packaging) — empty when no exemptions defined.
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var override_ = WriteOverride(dir, "[]");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(File.Exists(task.OutputExemptionsPath)).IsTrue();
+        var text = await File.ReadAllTextAsync(task.OutputExemptionsPath);
+        await Assert.That(text.Trim()).IsEqualTo("{}");
+    }
+
+    [Test]
+    public async Task Exemptions_EmptyName_FailsWithSC106()
+    {
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var engine = new StubBuildEngine();
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = engine,
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = WriteOverride(dir, "[]"),
+            SponsorExemptions = [MakeExemption("", "some text")],
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC106");
+        await Assert.That(engine.Errors[0].Message).Contains("empty Name");
+    }
+
+    [Test]
+    public async Task Exemptions_EmptyMessage_FailsWithSC106()
+    {
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var engine = new StubBuildEngine();
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = engine,
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = WriteOverride(dir, "[]"),
+            SponsorExemptions = [MakeExemption("Consulting", "   ")],
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC106");
+        await Assert.That(engine.Errors[0].Message).Contains("Consulting");
+        await Assert.That(engine.Errors[0].Message).Contains("Message metadata is empty");
+    }
+
+    [Test]
+    public async Task Exemptions_DuplicateName_FailsWithSC106()
+    {
+        // Case-insensitive duplicate detection: "Consulting" + "consulting" collide.
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var engine = new StubBuildEngine();
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = engine,
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = WriteOverride(dir, "[]"),
+            SponsorExemptions =
+            [
+                MakeExemption("Consulting", "first"),
+                MakeExemption("consulting", "second")
+            ],
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC106");
+        await Assert.That(engine.Errors[0].Message).Contains("duplicate definition");
     }
 }

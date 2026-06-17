@@ -12,10 +12,13 @@ public static class ConsumerMetadataExamples
     public static string RenderLicenseModeOptions(
         ConsumerContext context,
         IReadOnlyList<AuthorAccount> authorAccounts,
-        bool includeIgnoreOption = true)
+        IReadOnlyDictionary<string, string>? exemptionsDefined = null,
+        bool includeIgnoreOption = true,
+        bool includeExemptionOption = true)
     {
-        // Sponsor options come first, then time-bounded license, then the ignore escape hatch
-        // last — same ordering convention as the SC003/SC004 conflict message.
+        // Sponsor options come first, then time-bounded license, then publisher-defined exemptions
+        // (when any are defined), then the breach-of-license ignore hatch last — same ordering
+        // convention as the SC003/SC004 conflict message.
         var lines = context.IsOwner
             ? new List<string>
             {
@@ -38,6 +41,18 @@ public static class ConsumerMetadataExamples
         lines.Add("Option — Time-bounded license (replace yyyy-MM with the last covered month):");
         lines.Add($"  {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}");
 
+        // The exemption option only renders when the publisher actually defined at least one
+        // <SponsorExemption> at pack time. Same suppression rule as includeIgnoreOption — the
+        // SC029/SC030/SC031 warnings (exemption already claimed) skip this so they don't
+        // re-offer the option that fired the warning.
+        if (includeExemptionOption && exemptionsDefined is { Count: > 0 })
+        {
+            var firstName = exemptionsDefined.Keys.First();
+            lines.Add("");
+            lines.Add("Option — Claim a publisher-defined exemption (replace the name with one offered by the publisher):");
+            lines.Add($"  {RenderItem(context, ("SponsorshipExemption", firstName))}");
+        }
+
         // Omitted when the warning being rendered is itself the "license ignored" warning —
         // re-offering the option that already fired the warning is noise.
         if (includeIgnoreOption)
@@ -54,6 +69,45 @@ public static class ConsumerMetadataExamples
             lines.Add(sponsorAt);
         }
 
+        return string.Join(newline, lines);
+    }
+
+    // Renders the body of SC032/SC033/SC034 (unknown-exemption errors). When the publisher has
+    // defined exemptions, lists each name with its full criteria text and shows a copy-paste
+    // example. When no exemptions are defined, says so directly so the consumer knows they need
+    // to talk to the publisher instead of guessing names.
+    public static string RenderAvailableExemptions(
+        ConsumerContext context,
+        IReadOnlyDictionary<string, string> exemptionsDefined)
+    {
+        if (exemptionsDefined.Count == 0)
+        {
+            return "The publisher has not defined any exemptions for this package.";
+        }
+
+        var lines = new List<string> { "Available exemptions:" };
+        foreach (var pair in exemptionsDefined)
+        {
+            lines.Add($"  - {pair.Key}: {pair.Value}");
+        }
+
+        var firstName = exemptionsDefined.Keys.First();
+        if (context.IsOwner)
+        {
+            lines.Add("");
+            lines.Add($"Claim one by setting the {context.OwnerId}_SponsorshipExemption property in Directory.Build.props or the consuming project.");
+            lines.Add("");
+            lines.Add("Example format:");
+            lines.Add($"  {RenderItem(context, ("SponsorshipExemption", firstName))}");
+            return string.Join(newline, lines);
+        }
+
+        lines.Add("");
+        lines.Add($"Claim one in:");
+        lines.Add($"  {context.TargetFilePath}");
+        lines.Add("");
+        lines.Add("Example format:");
+        lines.Add($"  {RenderItem(context, ("SponsorshipExemption", firstName))}");
         return string.Join(newline, lines);
     }
 

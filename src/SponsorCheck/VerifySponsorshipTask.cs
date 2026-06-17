@@ -8,6 +8,7 @@ public sealed class VerifySponsorshipTask :
     public string SeverityOverridesPath { get; set; } = "";
     public string MessageOverridesPath { get; set; } = "";
     public string LandingUrlPath { get; set; } = "";
+    public string ExemptionsPath { get; set; } = "";
 
     public string IsCpm { get; set; } = "";
     // Non-empty signals owner mode: the consumer configures sponsorship via global MSBuild
@@ -23,6 +24,8 @@ public sealed class VerifySponsorshipTask :
     public string IgnoredFromVer { get; set; } = "";
     public string LicensedUntilFromRef { get; set; } = "";
     public string LicensedUntilFromVer { get; set; } = "";
+    public string SponsorshipExemptionFromRef { get; set; } = "";
+    public string SponsorshipExemptionFromVer { get; set; } = "";
     public string SponsorshipStartFromRef { get; set; } = "";
     public string SponsorshipStartFromVer { get; set; } = "";
     public string GitHubFromRef { get; set; } = "";
@@ -49,6 +52,7 @@ public sealed class VerifySponsorshipTask :
 
             var ignored = PackageMetadataMerger.Merge("SponsorshipLicenseIgnored", IgnoredFromRef, IgnoredFromVer);
             var licensedUntil = PackageMetadataMerger.Merge("SponsorshipLicensedUntil", LicensedUntilFromRef, LicensedUntilFromVer);
+            var exemption = PackageMetadataMerger.Merge("SponsorshipExemption", SponsorshipExemptionFromRef, SponsorshipExemptionFromVer);
             var sponsorshipStart = PackageMetadataMerger.Merge("SponsorshipStart", SponsorshipStartFromRef, SponsorshipStartFromVer);
             var sponsors = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
             {
@@ -57,12 +61,13 @@ public sealed class VerifySponsorshipTask :
                 ["Polar"] = PackageMetadataMerger.Merge("PolarSponsorAccount", PolarFromRef, PolarFromVer)
             };
 
-            var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, sponsors, sponsorshipStart, ThePackageId);
+            var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, exemption, sponsors, sponsorshipStart, ThePackageId);
             var landingUrl = ReadLandingUrl(LandingUrlPath);
             var authorAccounts = ResolveAuthorAccounts(AuthorAccountsPath, landingUrl);
+            var exemptionsDefined = SponsorshipExemptionsFile.Read(ExemptionsPath);
             var severityOverrides = SeverityOverrideFile.Read(SeverityOverridesPath);
             var messageOverrides = MessageOverrideFile.Read(MessageOverridesPath);
-            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, severityOverrides, messageOverrides, Log, DateTime.UtcNow);
+            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, exemptionsDefined, severityOverrides, messageOverrides, Log, DateTime.UtcNow);
         }
         catch (MaintenanceFeeException exception)
         {
@@ -105,6 +110,7 @@ public sealed class VerifySponsorshipTask :
         {
             ("SponsorshipLicenseIgnored", IgnoredFromRef, IgnoredFromVer),
             ("SponsorshipLicensedUntil", LicensedUntilFromRef, LicensedUntilFromVer),
+            ("SponsorshipExemption", SponsorshipExemptionFromRef, SponsorshipExemptionFromVer),
             ("SponsorshipStart", SponsorshipStartFromRef, SponsorshipStartFromVer),
             ("GitHubSponsorAccount", GitHubFromRef, GitHubFromVer),
             ("OpenCollectiveSponsorAccount", OpenCollectiveFromRef, OpenCollectiveFromVer),

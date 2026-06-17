@@ -1,0 +1,21 @@
+﻿{
+  Errors: [
+    {
+      Code: SC032,
+      Message:
+Unknown exemption. Package 'Papyrine': SponsorshipExemption="MadeUpName" on the <PackageReference> does not name a known exemption.
+
+Available exemptions:
+  - Consulting: Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work.
+  - SmallRevenue: Consumers under US$10,000 annual gross revenue are exempt.
+
+Claim one in:
+  C:/Consumer/MyApp.csproj
+
+Example format:
+  <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="Consulting" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032
+    }
+  ]
+}

@@ -3,12 +3,15 @@ public static class LicenseModeResolver
     public static LicenseDecision Resolve(
         string? ignored,
         string? licensedUntil,
+        string? exemption,
         IReadOnlyDictionary<string, string?> sponsorAccountsByPlatform,
         string? sponsorshipStart,
         string packageId)
     {
         // Order matters: messages list modes in this order so SponsorshipLicenseIgnored (the
-        // breach-of-license escape hatch) appears last, after the legitimate options.
+        // breach-of-license escape hatch) appears last, after the legitimate options. The
+        // exemption falls between a time-bounded license and the breach hatch — it's a
+        // legitimate publisher-sanctioned carve-out, not a breach.
         var modes = new List<string>();
         var nonEmptySponsors = sponsorAccountsByPlatform
             .Where(_ => !string.IsNullOrWhiteSpace(_.Value))
@@ -22,6 +25,12 @@ public static class LicenseModeResolver
         if (hasLicense)
         {
             modes.Add("SponsorshipLicensedUntil");
+        }
+
+        var hasExemption = !string.IsNullOrWhiteSpace(exemption);
+        if (hasExemption)
+        {
+            modes.Add("SponsorshipExemption");
         }
 
         var isIgnored = string.Equals(ignored, "true", StringComparison.OrdinalIgnoreCase);
@@ -43,6 +52,11 @@ public static class LicenseModeResolver
         if (isIgnored)
         {
             return new LicenseDecision.Ignored(packageId);
+        }
+
+        if (hasExemption)
+        {
+            return new LicenseDecision.Exempt(packageId, exemption!.Trim());
         }
 
         if (nonEmptySponsors.Count > 0)

@@ -450,4 +450,71 @@ public class ConsumerBuildTests
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
         await Assert.That(result.Combined).DoesNotContain("SC00");
     }
+
+    [Test]
+    public async Task NonCpmExemption_BuildsWithSC029Warning()
+    {
+        var result = await BuildFixture("Consumer.Exemption", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC029");
+        // Audit-trail guarantee: the publisher's verbatim criteria text appears in the build log.
+        await Assert.That(result.Combined).Contains("Organizations that have engaged");
+    }
+
+    [Test]
+    public async Task CpmExemption_BuildsWithSC030Warning()
+    {
+        var result = await BuildFixture("Consumer.CpmExemption", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC030");
+        await Assert.That(result.Combined).Contains("Consumers under US$10,000");
+    }
+
+    [Test]
+    public async Task OwnerModeExemption_BuildsWithSC031Warning()
+    {
+        var result = await BuildFixture("Consumer.OwnerExemption", authorFixture: "ThePackageOwnerModeWithExemptions");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC031");
+        await Assert.That(result.Combined).Contains("Organizations that have engaged");
+    }
+
+    [Test]
+    public async Task UnknownExemption_FailsWithSC032()
+    {
+        var result = await BuildFixture("Consumer.UnknownExemption", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC032");
+        // Body lists the available names so the consumer can correct.
+        await Assert.That(result.Combined).Contains("Consulting");
+        await Assert.That(result.Combined).Contains("SmallRevenue");
+    }
+
+    [Test]
+    public async Task OwnerModeUnknownExemption_FailsWithSC034()
+    {
+        var result = await BuildFixture("Consumer.OwnerUnknownExemption", authorFixture: "ThePackageOwnerModeWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC034");
+    }
+
+    [Test]
+    public async Task ExemptionPlusSponsor_FailsWithSC003()
+    {
+        var result = await BuildFixture("Consumer.ExemptionPlusSponsor", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC003");
+        await Assert.That(result.Combined).Contains("SponsorshipExemption");
+    }
+
+    [Test]
+    public async Task NoConfig_ExemptionsAvailable_SC001ListsExemptionOption()
+    {
+        var result = await BuildFixture("Consumer.NoConfigWithExemptionsAvailable", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC001");
+        // The fourth option block must appear in the remediation body when the publisher
+        // defined exemptions at pack time.
+        await Assert.That(result.Combined).Contains("Claim a publisher-defined exemption");
+    }
 }
