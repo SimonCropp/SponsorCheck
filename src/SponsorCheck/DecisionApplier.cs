@@ -8,6 +8,7 @@ public static class DecisionApplier
         string packDatePath,
         ConsumerContext context,
         IReadOnlyList<AuthorAccount> authorAccounts,
+        IReadOnlyDictionary<string, string> exemptionsDefined,
         IReadOnlyDictionary<string, Severity> severityOverrides,
         IReadOnlyDictionary<string, string> messageOverrides,
         TaskLoggingHelper log,
@@ -32,7 +33,7 @@ public static class DecisionApplier
                     $"""
                      {opener}
 
-                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts)}
+                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts, exemptionsDefined)}
                      """);
             }
 
@@ -52,6 +53,12 @@ public static class DecisionApplier
                        """;
                 var prefix = context.IsOwner ? $"{context.OwnerId}_" : "";
                 var keepOneOf = string.Join(", ", ConsumerMetadataNames.All.Select(_ => $"{prefix}{_}"));
+                // SponsorshipExemption only appears in the "keep one of" list when the publisher
+                // has defined at least one — listing it for a package that doesn't offer any
+                // would tease an option that has no valid value.
+                var exemptionInList = exemptionsDefined.Count > 0
+                    ? $"{prefix}SponsorshipExemption, "
+                    : "";
                 SponsorCheckLog.Error(
                     log,
                     code,
@@ -60,7 +67,7 @@ public static class DecisionApplier
 
                      {editLine}
 
-                     Keep exactly one of: {keepOneOf}, {prefix}SponsorshipLicensedUntil, or {prefix}SponsorshipLicenseIgnored.
+                     Keep exactly one of: {keepOneOf}, {prefix}SponsorshipLicensedUntil, {exemptionInList}or {prefix}SponsorshipLicenseIgnored.
                      """);
                 return false;
             }
@@ -82,9 +89,12 @@ public static class DecisionApplier
                     $"""
                      {opener}
 
-                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts, includeIgnoreOption: false)}
+                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts, exemptionsDefined, includeIgnoreOption: false)}
                      """);
             }
+
+            case LicenseDecision.Exempt exempt:
+                return ApplyExempt(exempt, context, exemptionsDefined, severityOverrides, messageOverrides, log);
 
             case LicenseDecision.Sponsor sponsor:
                 return ApplySponsor(sponsor, sponsorHashListPath, packDatePath, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
@@ -95,6 +105,52 @@ public static class DecisionApplier
             default:
                 throw new InvalidOperationException($"Unknown decision: {decision.GetType().Name}");
         }
+    }
+
+    static bool ApplyExempt(
+        LicenseDecision.Exempt exempt,
+        ConsumerContext context,
+        IReadOnlyDictionary<string, string> exemptionsDefined,
+        IReadOnlyDictionary<string, Severity> severityOverrides,
+        IReadOnlyDictionary<string, string> messageOverrides,
+        TaskLoggingHelper log)
+    {
+        // Lookup is case-insensitive (the loaded dict uses OrdinalIgnoreCase) but the warning
+        // body surfaces what the consumer actually typed — that's the audit signal in CI logs.
+        if (!exemptionsDefined.TryGetValue(exempt.ExemptionName, out var publisherMessage))
+        {
+            var (unknownCode, unknownOpener) = context.Mode switch
+            {
+                ConsumerMode.Owner => ("SC034", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemption=\"{exempt.ExemptionName}\" does not name a known exemption."),
+                ConsumerMode.Cpm => ("SC033", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageVersion> in Directory.Packages.props does not name a known exemption."),
+                _ => ("SC032", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageReference> does not name a known exemption.")
+            };
+            SponsorCheckLog.Error(
+                log,
+                unknownCode,
+                $"""
+                 {unknownOpener}
+
+                 {ConsumerMetadataExamples.RenderAvailableExemptions(context, exemptionsDefined)}
+                 """);
+            return false;
+        }
+
+        // Known name path: the message body IS the publisher's criteria text — no remediation
+        // block, no re-listing of license-mode options. Surfaces the audit trail directly.
+        var (code, opener) = context.Mode switch
+        {
+            ConsumerMode.Owner => ("SC031", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemption=\"{exempt.ExemptionName}\" property is set. Publisher's exemption criteria: {publisherMessage}"),
+            ConsumerMode.Cpm => ("SC030", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" claimed on the <PackageVersion> in Directory.Packages.props. Publisher's exemption criteria: {publisherMessage}"),
+            _ => ("SC029", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" claimed on the <PackageReference>. Publisher's exemption criteria: {publisherMessage}")
+        };
+        return SponsorCheckLog.Emit(
+            log,
+            code,
+            Severity.Warning,
+            severityOverrides,
+            messageOverrides,
+            opener);
     }
 
     static bool ApplySponsor(

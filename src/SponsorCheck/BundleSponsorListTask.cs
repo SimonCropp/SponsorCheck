@@ -57,6 +57,13 @@ public sealed class BundleSponsorListTask :
     [Required] public string OutputSeverityOverridesPath { get; set; } = "";
     [Required] public string OutputMessageOverridesPath { get; set; } = "";
     [Required] public string OutputLandingUrlPath { get; set; } = "";
+    [Required] public string OutputExemptionsPath { get; set; } = "";
+
+    // Publisher-defined exempt scenarios. Each item's ItemSpec is the exemption name (e.g.
+    // "Consulting") and the required Message metadata is the criteria text that becomes the
+    // body of the consumer-side warning (SC029/SC030/SC031) when claimed.
+    public ITaskItem[] SponsorExemptions { get; set; } = [];
+
     public string OverridePackDate { get; set; } = "";
 
     public override bool Execute()
@@ -68,6 +75,7 @@ public sealed class BundleSponsorListTask :
             EnsureDirectory(OutputSeverityOverridesPath);
             EnsureDirectory(OutputMessageOverridesPath);
             EnsureDirectory(OutputLandingUrlPath);
+            EnsureDirectory(OutputExemptionsPath);
 
             // Author-supplied SponsorLandingUrl replaces the per-platform sponsor URLs in
             // consumer-side diagnostic messages. Always write the sidecar (empty when unset)
@@ -88,6 +96,13 @@ public sealed class BundleSponsorListTask :
             }
 
             MessageOverrideFile.Write(OutputMessageOverridesPath, messageOverrides);
+
+            if (!TryResolveExemptions(out var exemptions))
+            {
+                return false;
+            }
+
+            SponsorshipExemptionsFile.Write(OutputExemptionsPath, exemptions);
 
             var enabled = ResolveEnabledPlatforms();
             if (enabled.Count == 0)
@@ -230,6 +245,41 @@ public sealed class BundleSponsorListTask :
                 overrides[entry.CpmCode] = raw!;
                 overrides[entry.OwnerCode] = raw!;
             }
+        }
+
+        return true;
+    }
+
+    // Validate @(SponsorExemption) items: non-empty Name (ItemSpec), non-empty Message, no
+    // duplicate names. Names are compared case-insensitively because the verifier's lookup is
+    // case-insensitive too. The result preserves the author's original casing — the publisher
+    // chose how their exemption name should appear in any documentation that references it.
+    bool TryResolveExemptions(out Dictionary<string, string> result)
+    {
+        result = new(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in SponsorExemptions)
+        {
+            var name = item.ItemSpec?.Trim() ?? "";
+            if (name.Length == 0)
+            {
+                SponsorCheckLog.Error(Log, "SC106", "SponsorExemption: an item has an empty Name (Include attribute).");
+                return false;
+            }
+
+            var message = (item.GetMetadata("Message") ?? "").Trim();
+            if (message.Length == 0)
+            {
+                SponsorCheckLog.Error(Log, "SC106", $"SponsorExemption '{name}': Message metadata is empty.");
+                return false;
+            }
+
+            if (result.ContainsKey(name))
+            {
+                SponsorCheckLog.Error(Log, "SC106", $"SponsorExemption '{name}': duplicate definition.");
+                return false;
+            }
+
+            result[name] = message;
         }
 
         return true;

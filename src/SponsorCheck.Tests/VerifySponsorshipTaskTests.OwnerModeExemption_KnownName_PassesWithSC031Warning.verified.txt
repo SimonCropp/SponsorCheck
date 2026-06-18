@@ -1,0 +1,11 @@
+﻿{
+  Warnings: [
+    {
+      Code: SC031,
+      Message:
+Exemption claimed. Package 'Papyrine': papyrine_SponsorshipExemption="Consulting" property is set. Publisher's exemption criteria: Consulting carve-out.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031
+    }
+  ]
+}

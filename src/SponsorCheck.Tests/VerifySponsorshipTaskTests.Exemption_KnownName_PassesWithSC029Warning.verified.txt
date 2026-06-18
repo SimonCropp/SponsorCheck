@@ -1,0 +1,11 @@
+﻿{
+  Warnings: [
+    {
+      Code: SC029,
+      Message:
+Exemption claimed. Package 'Papyrine': SponsorshipExemption="Consulting" claimed on the <PackageReference>. Publisher's exemption criteria: Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029
+    }
+  ]
+}

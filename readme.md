@@ -224,6 +224,70 @@ An escape hatch to disable licensing.
 Build passes but emits the [license ignored - SC005](docs/VerifierDiagnosticCodes.md#sc005) warning on every build, flagging that the build is in breach of the package's license.
 
 
+### Publisher-defined exemptions
+
+`SponsorshipLicenseIgnored` is the universal opt-out, but the warning frames the consumer as in breach. Many publishers carve out scenarios where consumption is *legitimately* free — pre-existing customers, consulting clients, small businesses below a revenue threshold, etc. Those consumers shouldn't ship a "breach of license" warning through CI for the lifetime of every build.
+
+Publishers can define named **exemptions** at pack time (see [Defining exemptions](#defining-exemptions) below). Consumers claim one by name; the build passes with a warning whose body is the publisher's own criteria text — so CI logs and code review show the exact exemption being claimed instead of a generic breach message.
+
+<!-- snippet: Consumer.Exemption.csproj -->
+<a id='snippet-Consumer.Exemption.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackageWithExemptions"
+      Version="1.0.0"
+      SponsorshipExemption="Consulting" />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.Exemption/Consumer.Exemption.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.Exemption.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Under CPM (Central Package Management), the metadata moves to `<PackageVersion>` in `Directory.Packages.props`:
+
+<!-- snippet: Consumer.CpmExemption.Directory.Packages.props -->
+<a id='snippet-Consumer.CpmExemption.Directory.Packages.props'></a>
+```props
+<PropertyGroup>
+  <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+</PropertyGroup>
+<ItemGroup>
+  <PackageVersion Include="ThePackageWithExemptions" Version="1.0.0"
+                  SponsorshipExemption="SmallRevenue" />
+</ItemGroup>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.CpmExemption/Directory.Packages.props#L2-L10' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.CpmExemption.Directory.Packages.props' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+In owner mode, the property uses the owner prefix:
+
+<!-- snippet: Consumer.OwnerExemption.csproj -->
+<a id='snippet-Consumer.OwnerExemption.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Owner-mode opt-in via the owner-prefixed global property. -->
+    <acme_SponsorshipExemption>Consulting</acme_SponsorshipExemption>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerModeWithExemptions" Version="1.0.0" />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.OwnerExemption/Consumer.OwnerExemption.csproj#L1-L10' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.OwnerExemption.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Build passes with a warning ([SC029](docs/VerifierDiagnosticCodes.md#sc029) / [SC030](docs/VerifierDiagnosticCodes.md#sc030) / [SC031](docs/VerifierDiagnosticCodes.md#sc031) for non-CPM / CPM / owner mode) whose body is the publisher's criteria text verbatim. Naming an exemption the publisher did not define fails the build with [SC032](docs/VerifierDiagnosticCodes.md#sc032) / [SC033](docs/VerifierDiagnosticCodes.md#sc033) / [SC034](docs/VerifierDiagnosticCodes.md#sc034); the error body lists the available exemptions so the consumer can correct.
+
+Lookup is case-insensitive but the warning text echoes the consumer-typed casing — what's in the audit trail is exactly what the consumer wrote.
+
+
 ### Owner mode
 
 By default each package is configured independently — the license mode lives on that package's `<PackageReference>` (or `<PackageVersion>`). When an author ships a family of packages covered by a single sponsor account (e.g. several libraries under one GitHub org), they can opt into **owner mode** so consumers configure sponsorship **once**, as a global MSBuild property that covers every package from that owner.
@@ -503,6 +567,40 @@ Available metadata (severity + message pair per overrideable code). Each overrid
 Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name still prefixes and the docs link still suffixes). Other codes are consumer-side configuration bugs and aren't overrideable. Unrecognized severity values fail the pack with [SC104](docs/BundlerDiagnosticCodes.md#sc104). The chosen severities and messages are baked into the produced nupkg — consumers can't tamper with them.
 
 
+### Defining exemptions
+
+Many publishers have legitimate scenarios where a consumer doesn't need to sponsor — consulting clients, pre-existing customers, small businesses below a revenue threshold, etc. Treating those consumers as in breach of the package license (via the [SC005](docs/VerifierDiagnosticCodes.md#sc005)-style warning that follows the build through CI) misrepresents the relationship.
+
+`<SponsorExemption>` items declared next to the SponsorCheck reference let publishers define **named exemptions**, each with the criteria text that describes who qualifies. Consumers claim one by name (see [Publisher-defined exemptions](#publisher-defined-exemptions) above); the build passes with a warning whose body is the publisher's verbatim criteria text — so the consumer's audit trail documents the specific carve-out being claimed instead of a generic breach.
+
+<!-- snippet: ThePackageWithExemptions.csproj -->
+<a id='snippet-ThePackageWithExemptions.csproj'></a>
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp"
+                      OpenCollectiveAccount="acme-org"
+                      PolarAccount="acme" />
+    <SponsorExemption Include="Consulting"
+                      Message="Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work." />
+    <SponsorExemption Include="SmallRevenue"
+                      Message="Consumers under US$10,000 annual gross revenue are exempt." />
+  </ItemGroup>
+</Project>
+```
+<sup><a href='/IntegrationTests/Fixtures/_Shared/ThePackageWithExemptions/ThePackageWithExemptions.csproj#L1-L16' title='Snippet source file'>snippet source</a> | <a href='#snippet-ThePackageWithExemptions.csproj' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+`Include=` is the exemption name consumers will claim; `Message=` is the criteria text that becomes the warning body. The bundler validates each item at pack time — empty name, empty message, or duplicate names (case-insensitive) fail with [SC106](docs/BundlerDiagnosticCodes.md#sc106). The exemption set is baked into the produced nupkg under `build/SponsorCheck.Exemptions.json`, so consumers can't add new names or change the criteria text.
+
+Exemption warnings ([SC029](docs/VerifierDiagnosticCodes.md#sc029) / [SC030](docs/VerifierDiagnosticCodes.md#sc030) / [SC031](docs/VerifierDiagnosticCodes.md#sc031)) are **not** overrideable via `*MessageOverride` — the publisher's `Message` *is* the override. To change the warning text, edit the `Message` and repack.
+
+
 ### Custom sponsor landing URL
 
 By default, the verifier surfaces each enabled platform's public sponsor page (e.g. `https://github.com/sponsors/acmecorp`, `https://opencollective.com/acme-org`, `https://polar.sh/acme`) wherever a sponsor URL appears in an `SC0xx` message — the per-platform `Option — Sponsor on ...` lines in [SC001](docs/VerifierDiagnosticCodes.md#sc001)/[SC002](docs/VerifierDiagnosticCodes.md#sc002)/[SC005](docs/VerifierDiagnosticCodes.md#sc005)/[SC006](docs/VerifierDiagnosticCodes.md#sc006) and the `Sponsor at ...` block in [SC007](docs/VerifierDiagnosticCodes.md#sc007)/[SC008](docs/VerifierDiagnosticCodes.md#sc008)/[SC009](docs/VerifierDiagnosticCodes.md#sc009)/[SC010](docs/VerifierDiagnosticCodes.md#sc010).
@@ -585,6 +683,10 @@ flowchart TD
 
     Which -->|Ignored| SC005[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>SC005 Warning<br/>In breach of license</a>]
 
+    Which -->|Publisher-defined exemption| KnownName{Name matches<br/>a publisher<br/>exemption?}
+    KnownName -->|Yes| SC029[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>SC029 Warning<br/>Publisher's criteria text</a>]
+    KnownName -->|No| SC032[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032'>SC032 Error<br/>Unknown exemption name</a>]
+
     Which -->|Supplied sponsor account| HasStart{Sponsorship<br/>Start set?}
     HasStart -->|Yes| Future{Start in<br/>future?}
     Future -->|Yes| SC015[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015'>SC015 Error<br/>Date in future</a>]
@@ -603,7 +705,7 @@ flowchart TD
     Expired -->|No| PassLicense([Build passes])
 ```
 
-> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028); [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared).
+> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), [SC029](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029)→[SC030](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030), [SC032](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032)→[SC033](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent for the original modes (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028)) plus [SC031](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031)/[SC034](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034) for the exemption branch; [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared. The exemption branch only fires when the publisher defined `<SponsorExemption>` items at pack time — packages without any exemptions never reach `KnownName`.
 <!-- endInclude -->
 
 

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- No license-mode metadata: SC001 fires. Because ThePackageWithExemptions defined
+         exemptions at pack time, the SC001 body must include the new fourth
+         "Option — Claim a publisher-defined exemption" block. -->
+    <PackageReference Include="ThePackageWithExemptions" Version="1.0.0" />
+  </ItemGroup>
+</Project>

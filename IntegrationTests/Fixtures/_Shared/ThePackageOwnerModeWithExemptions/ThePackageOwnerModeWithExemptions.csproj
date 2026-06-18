@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp"
+                      OpenCollectiveAccount="acme-org"
+                      PolarAccount="acme"
+                      SponsorOwner="acme" />
+    <SponsorExemption Include="Consulting"
+                      Message="Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work." />
+    <SponsorExemption Include="SmallRevenue"
+                      Message="Consumers under US$10,000 annual gross revenue are exempt." />
+  </ItemGroup>
+</Project>

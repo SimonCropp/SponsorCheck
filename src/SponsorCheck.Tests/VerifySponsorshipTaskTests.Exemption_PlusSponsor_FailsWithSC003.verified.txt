@@ -1,0 +1,16 @@
+﻿{
+  Errors: [
+    {
+      Code: SC003,
+      Message:
+Conflicting license modes. Package 'Papyrine': mutually exclusive license modes are set on the <PackageReference> (Sponsor, SponsorshipExemption). Pick one.
+
+Edit the <PackageReference> for 'Papyrine' in:
+  C:/Consumer/MyApp.csproj
+
+Keep exactly one of: GitHubSponsorAccount, OpenCollectiveSponsorAccount, PolarSponsorAccount, SponsorshipLicensedUntil, SponsorshipExemption, or SponsorshipLicenseIgnored.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc003
+    }
+  ]
+}

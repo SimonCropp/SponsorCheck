@@ -1,0 +1,10 @@
+<Project>
+  <!-- begin-snippet: Consumer.CpmExemption.Directory.Packages.props -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="ThePackageWithExemptions" Version="1.0.0"
+                    SponsorshipExemption="SmallRevenue" />
+  </ItemGroup>
+  <!-- end-snippet --></Project>

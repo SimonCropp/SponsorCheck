@@ -1,0 +1,19 @@
+﻿{
+  Errors: [
+    {
+      Code: SC034,
+      Message:
+Unknown exemption. Package 'Papyrine': papyrine_SponsorshipExemption="MadeUpName" does not name a known exemption.
+
+Available exemptions:
+  - Consulting: Consulting carve-out.
+
+Claim one by setting the papyrine_SponsorshipExemption property in Directory.Build.props or the consuming project.
+
+Example format:
+  <papyrine_SponsorshipExemption>Consulting</papyrine_SponsorshipExemption>
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+﻿{
+  Errors: [
+    {
+      Code: SC032,
+      Message:
+Unknown exemption. Package 'Papyrine': SponsorshipExemption="Consulting" on the <PackageReference> does not name a known exemption.
+
+The publisher has not defined any exemptions for this package.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032
+    }
+  ]
+}

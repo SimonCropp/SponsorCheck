@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp" />
+    <!-- Empty Message metadata: the bundler must surface this as SC106 at pack time. -->
+    <SponsorExemption Include="Consulting" Message="" />
+  </ItemGroup>
+</Project>

@@ -106,12 +106,19 @@ public static class SponsorCheckLog
         "SC026" => "Invalid license date format",
         "SC027" => "Invalid SponsorshipStart format",
         "SC028" => "SponsorshipStart in the future",
+        "SC029" => "Exemption claimed",
+        "SC030" => "Exemption claimed",
+        "SC031" => "Exemption claimed",
+        "SC032" => "Unknown exemption",
+        "SC033" => "Unknown exemption",
+        "SC034" => "Unknown exemption",
         "SC100" => "Platform fetch failed",
         "SC101" => "No platform account configured",
         "SC102" => "Missing platform credential",
         "SC103" => "User-secrets read failed",
         "SC104" => "Invalid severity override",
         "SC105" => "Invalid SponsorOwner",
+        "SC106" => "Invalid exemption definition",
         _ => code
     };
 }

@@ -308,4 +308,62 @@ public class AuthorPackTests
         await Assert.That(result.Combined).Contains("NoLicenseSpecifiedSeverityOverride");
         await Assert.That(result.Combined).Contains("critical");
     }
+
+    [Test]
+    public async Task Exemptions_BundledIntoNupkg()
+    {
+        // ThePackageWithExemptions declares two <SponsorExemption> items. The bundler must write
+        // them into build/SponsorCheck.Exemptions.json as JSON with the publisher's verbatim text.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageWithExemptions");
+        var nupkg = Directory.GetFiles(feed, "ThePackageWithExemptions.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/SponsorCheck.Exemptions.json")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+        await Assert.That(content).Contains("Consulting");
+        await Assert.That(content).Contains("Organizations that have engaged");
+        await Assert.That(content).Contains("SmallRevenue");
+        await Assert.That(content).Contains("US$10,000");
+    }
+
+    [Test]
+    public async Task Exemptions_OwnerMode_BundledIntoNupkg()
+    {
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOwnerModeWithExemptions");
+        var nupkg = Directory.GetFiles(feed, "ThePackageOwnerModeWithExemptions.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/SponsorCheck.Exemptions.json")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+        await Assert.That(content).Contains("Consulting");
+        await Assert.That(content).Contains("SmallRevenue");
+    }
+
+    [Test]
+    public async Task Exemptions_EmptyJsonOnPackageWithoutExemptions()
+    {
+        // The sidecar is always written (for deterministic packaging) — empty object when
+        // no <SponsorExemption> items were declared.
+        var feed = await ThePackageBuilder.EnsureBuilt();
+        var nupkg = Directory.GetFiles(feed, "ThePackage.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/SponsorCheck.Exemptions.json")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+        await Assert.That(content.Trim()).IsEqualTo("{}");
+    }
+
+    [Test]
+    public async Task Exemptions_InvalidDefinition_FailsPackWithSC106()
+    {
+        // ThePackageBadExemption declares <SponsorExemption Include="Consulting" Message="" />
+        // — empty Message must trip SC106 at pack time.
+        var result = await ThePackageBuilder.TryPack("ThePackageBadExemption");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC106");
+        await Assert.That(result.Combined).Contains("Consulting");
+    }
 }
