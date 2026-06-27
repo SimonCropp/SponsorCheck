@@ -121,7 +121,7 @@ public static class ConsumerMetadataExamples
         var existing = pair.Key is null
             ? Array.Empty<(string, string)>()
             : [(ConsumerMetadataNames.For(pair.Key), pair.Value)];
-        var attributes = existing.Concat([("SponsorshipStart", "yyyy-MM-dd")]).ToArray();
+        var attributes = existing.Append(("SponsorshipStart", "yyyy-MM-dd")).ToArray();
 
         if (context.IsOwner)
         {

@@ -477,7 +477,7 @@ public sealed class BundleSponsorListTask :
     // property name chars but easy to mis-type, so they're excluded too.
     public static bool IsValidOwnerId(string ownerId)
     {
-        if (string.IsNullOrEmpty(ownerId) || !IsAsciiLetter(ownerId[0]))
+        if (string.IsNullOrEmpty(ownerId) || !char.IsAsciiLetter(ownerId[0]))
         {
             return false;
         }
@@ -485,7 +485,7 @@ public sealed class BundleSponsorListTask :
         for (var i = 1; i < ownerId.Length; i++)
         {
             var character = ownerId[i];
-            if (!IsAsciiLetter(character) && !IsAsciiDigit(character) && character != '_')
+            if (!char.IsAsciiLetterOrDigit(character) && character != '_')
             {
                 return false;
             }
@@ -493,13 +493,6 @@ public sealed class BundleSponsorListTask :
 
         return true;
     }
-
-    static bool IsAsciiLetter(char character) =>
-        (character >= 'A' && character <= 'Z') ||
-        (character >= 'a' && character <= 'z');
-
-    static bool IsAsciiDigit(char character) =>
-        character >= '0' && character <= '9';
 
     public static string Sanitize(string packageId)
     {
