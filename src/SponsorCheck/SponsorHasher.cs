@@ -20,12 +20,6 @@ public static class SponsorHasher
         var bytes = Encoding.UTF8.GetBytes(input);
         using var sha = SHA256.Create();
         var digest = sha.ComputeHash(bytes);
-        var builder = new StringBuilder(hashByteLength * 2);
-        for (var i = 0; i < hashByteLength; i++)
-        {
-            builder.Append(digest[i].ToString("x2"));
-        }
-
-        return builder.ToString();
+        return Convert.ToHexStringLower(digest, 0, hashByteLength);
     }
 }

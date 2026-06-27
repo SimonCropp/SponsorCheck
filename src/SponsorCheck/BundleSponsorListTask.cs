@@ -512,10 +512,7 @@ public sealed class BundleSponsorListTask :
         builder.Append('_');
         using var sha = SHA256.Create();
         var digest = sha.ComputeHash(Encoding.UTF8.GetBytes(packageId));
-        for (var i = 0; i < 4; i++)
-        {
-            builder.Append(digest[i].ToString("x2"));
-        }
+        builder.Append(Convert.ToHexStringLower(digest, 0, 4));
 
         return builder.ToString();
     }
