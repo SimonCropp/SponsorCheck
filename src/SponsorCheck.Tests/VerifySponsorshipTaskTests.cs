@@ -29,6 +29,13 @@ public class VerifySponsorshipTaskTests
     static ConsumerContext NonCpmContext(string packageId = "MyOssLib", string version = "1.2.3") =>
         new(ConsumerMode.NonCpm, consumerProject, "", packageId, version);
 
+    // Empty lazy sidecars for direct DecisionApplier.Apply calls. They mirror the Lazy wrapping
+    // VerifySponsorshipTask does; forcing .Value just yields an empty collection (no file read).
+    static readonly Lazy<IReadOnlyList<AuthorAccount>> noAuthorAccounts = new(() => []);
+    static readonly Lazy<IReadOnlyDictionary<string, string>> noExemptions = new(() => new Dictionary<string, string>());
+    static readonly Lazy<IReadOnlyDictionary<string, Severity>> noSeverityOverrides = new(() => new Dictionary<string, Severity>());
+    static readonly Lazy<IReadOnlyDictionary<string, string>> noMessageOverrides = new(() => new Dictionary<string, string>());
+
     [Test]
     public async Task NoConfig_FailsWithSC001()
     {
@@ -1043,7 +1050,7 @@ public class VerifySponsorshipTaskTests
             },
             null,
             "MyOssLib");
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(new StubBuildEngine()), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsTrue();
     }
 
@@ -1070,7 +1077,7 @@ public class VerifySponsorshipTaskTests
             "MyOssLib");
         var lastTickOfMonth = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(-1);
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), lastTickOfMonth);
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), lastTickOfMonth);
         await Assert.That(ok).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
     }
@@ -1096,7 +1103,7 @@ public class VerifySponsorshipTaskTests
             "MyOssLib");
         var startOfNextMonth = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), startOfNextMonth);
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), startOfNextMonth);
         await Assert.That(ok).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
     }
@@ -1123,7 +1130,7 @@ public class VerifySponsorshipTaskTests
             null,
             "MyOssLib");
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), DateTime.MaxValue);
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), DateTime.MaxValue);
         await Assert.That(ok).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
     }
@@ -1172,10 +1179,65 @@ public class VerifySponsorshipTaskTests
             },
             null,
             "MyOssLib");
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), new(9999, 12, 15, 0, 0, 0, DateTimeKind.Utc));
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), new(9999, 12, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
         await Assert.That(engine.Errors[0].Message).Contains("9999-11-30");
+    }
+
+    // A lazy whose factory throws if forced — used to prove the happy paths never read the
+    // diagnostic-only sidecars (authorAccounts, exemptions, severity/message overrides).
+    static Lazy<T> Poison<T>() =>
+        new(() => throw new InvalidOperationException("sidecar forced on a passing build"));
+
+    [Test]
+    public async Task SponsorMatch_DoesNotForceSidecarReads()
+    {
+        // A matching sponsor is the common happy path: DecisionApplier must return true without
+        // touching any diagnostic-only sidecar. Poison lazies would throw if any were forced.
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var decision = LicenseModeResolver.Resolve(
+            null,
+            null,
+            null,
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = "alice",
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            null,
+            "MyOssLib");
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), Poison<IReadOnlyList<AuthorAccount>>(), Poison<IReadOnlyDictionary<string, string>>(), Poison<IReadOnlyDictionary<string, Severity>>(), Poison<IReadOnlyDictionary<string, string>>(), new TaskLoggingHelperFor(engine), DateTime.UtcNow);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task ValidLicense_DoesNotForceSidecarReads()
+    {
+        // The other happy path: a still-valid SponsorshipLicensedUntil returns without rendering a
+        // diagnostic, so no sidecar is forced. Uses a far-future month (not the 9999 sentinel).
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var decision = LicenseModeResolver.Resolve(
+            null,
+            "2999-12",
+            null,
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = null,
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            null,
+            "MyOssLib");
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), Poison<IReadOnlyList<AuthorAccount>>(), Poison<IReadOnlyDictionary<string, string>>(), Poison<IReadOnlyDictionary<string, Severity>>(), Poison<IReadOnlyDictionary<string, string>>(), new TaskLoggingHelperFor(engine), DateTime.UtcNow);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
     }
 
     static string WriteOverrides(TempDirectory dir, params (string code, Severity severity)[] entries)
