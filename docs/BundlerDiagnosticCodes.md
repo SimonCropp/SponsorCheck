@@ -9,7 +9,7 @@ Every emitted message is prefixed with the code's short **Name** (e.g. `Platform
 
 - **Name:** Platform fetch failed
 - **Level**: Error
-- **Meaning:** Bundler-side platform error (HTTP failure, GraphQL error, etc.) — message is the underlying `MaintenanceFeeException`.
+- **Meaning:** Bundler-side platform error (HTTP failure, GraphQL error, an override file naming an unknown platform, etc.) — message is the underlying `MaintenanceFeeException`.
 - **Syntax:** `{exception.Message}`
 - **Example:** `Polar HTTP 500: {"detail":"server error"}`
 

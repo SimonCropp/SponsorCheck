@@ -253,6 +253,73 @@ public class BundleSponsorListTaskTests
         }
     }
 
+    [Test]
+    public async Task OverrideList_NormalizesPlatformIdCasing()
+    {
+        // Override entries can carry arbitrary platform-id casing. SponsorHasher does NOT case-fold
+        // the platform id, and the verifier always hashes with the canonical literal ("GitHubSponsors"),
+        // so the bundler must canonicalize the id — otherwise the bundled hash could never match a
+        // consumer and every build would fail SC007 despite the override packing cleanly.
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var override_ = WriteOverride(dir, """[{"platform":"githubsponsors","account":"alice"}]""");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var lines = await File.ReadAllLinesAsync(task.OutputHashListPath);
+        await Assert.That(lines.Length).IsEqualTo(1);
+        // Hash matches the canonical-cased platform id the verifier computes, not the raw "githubsponsors".
+        await Assert.That(lines[0]).IsEqualTo(SponsorHasher.Hash("GitHubSponsors", "alice"));
+    }
+
+    [Test]
+    public async Task OverrideList_UnknownPlatform_FailsWithSC100()
+    {
+        // A platform id the registry doesn't recognize would otherwise bundle a hash no verifier can
+        // ever match (the verifier only hashes the three known platform literals). Fail at pack time
+        // rather than silently shipping dead hashes.
+        using var dir = new TempDirectory();
+        var template = BuildTemplate(dir);
+        var engine = new StubBuildEngine();
+        var override_ = WriteOverride(dir, """[{"platform":"GitHub","account":"alice"}]""");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = engine,
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = template,
+            ThePackageId = "MyOssLib",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC100");
+        await Assert.That(engine.Errors[0].Message).Contains("Unknown sponsorship platform 'GitHub'");
+    }
+
     static IReadOnlyDictionary<string, string> Secrets(params (string key, string value)[] entries)
     {
         var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
