@@ -334,7 +334,7 @@ public sealed class BundleSponsorListTask :
         foreach (var entry in entries)
         {
             var platform = PlatformRegistry.Get(entry.Platform);
-            normalized.Add(new(platform.Id, entry.Account));
+            normalized.Add(entry with {Platform = platform.Id});
         }
 
         return normalized;
@@ -473,7 +473,12 @@ public sealed class BundleSponsorListTask :
     public static string? ResolveToken(string platformId, string? explicitToken, IReadOnlyDictionary<string, string> userSecrets)
     {
         var tokens = ResolveTokens(platformId, explicitToken, userSecrets);
-        return tokens.Count == 0 ? null : tokens[0];
+        if (tokens.Count == 0)
+        {
+            return null;
+        }
+
+        return tokens[0];
     }
 
     // MSBuild target/item names reject dots and dashes, so non-alphanumeric chars are

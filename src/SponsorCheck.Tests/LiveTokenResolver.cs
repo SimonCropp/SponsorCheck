@@ -40,6 +40,7 @@ public static class LiveTokenResolver
         var tokens = new List<string>();
         if (!string.IsNullOrWhiteSpace(envValue))
         {
+            // ReSharper disable once RedundantSuppressNullableWarningExpression
             tokens.Add(envValue!);
         }
 

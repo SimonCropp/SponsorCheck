@@ -103,7 +103,7 @@ public static class ConsumerMetadataExamples
         }
 
         lines.Add("");
-        lines.Add($"Claim one in:");
+        lines.Add("Claim one in:");
         lines.Add($"  {context.TargetFilePath}");
         lines.Add("");
         lines.Add("Example format:");
@@ -125,24 +125,26 @@ public static class ConsumerMetadataExamples
 
         if (context.IsOwner)
         {
-            return $"""
-                    If sponsorship started after this package was released, attest to the start date by setting the {context.OwnerId}_SponsorshipStart property in Directory.Build.props or the consuming project.
+            return
+                $"""
+                 If sponsorship started after this package was released, attest to the start date by setting the {context.OwnerId}_SponsorshipStart property in Directory.Build.props or the consuming project.
 
-                    Example format:
+                 Example format:
 
-                      {RenderItem(context, attributes)}
-                    """;
+                   {RenderItem(context, attributes)}
+                 """;
         }
 
-        return $"""
-                If sponsorship started after this package was released, attest to the start date in:
+        return
+            $"""
+             If sponsorship started after this package was released, attest to the start date in:
 
-                  {context.TargetFilePath}
+               {context.TargetFilePath}
 
-                Example format:
+             Example format:
 
-                  {RenderItem(context, attributes)}
-                """;
+               {RenderItem(context, attributes)}
+             """;
     }
 
     // Renders the "Sponsor at..." block used in SC007-SC010 messages. Single-platform collapses
@@ -219,24 +221,31 @@ public static class ConsumerMetadataExamples
                  {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
                """;
 
-    public static string RenderSponsorshipStartFix(ConsumerContext context) =>
-        context.IsOwner
-            ? $"""
-               Fix the {context.OwnerId}_SponsorshipStart property in Directory.Build.props or the consuming project.
+    public static string RenderSponsorshipStartFix(ConsumerContext context)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Fix the {context.OwnerId}_SponsorshipStart property in Directory.Build.props or the consuming project.
 
-               Example format:
+                 Example format:
 
-                 {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}
-               """
-            : $"""
-               Fix the SponsorshipStart attribute in:
+                   {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}
+                 """;
+        }
 
-                 {context.TargetFilePath}
+        return
+            $"""
+             Fix the SponsorshipStart attribute in:
 
-               Example format:
+               {context.TargetFilePath}
 
-                 {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}
-               """;
+             Example format:
+
+               {RenderItem(context, ("SponsorshipStart", "yyyy-MM-dd"))}
+             """;
+    }
 
     public static string RenderPlacementError(
         ConsumerContext context,
@@ -298,16 +307,16 @@ public static class ConsumerMetadataExamples
 
         // Both <PackageReference> (no-CPM) and <PackageVersion> (CPM) carry a Version attribute,
         // so always render it.
-        var sb = new StringBuilder();
-        sb.Append($"<{context.ElementName} Include=\"{context.PackageId}\"");
-        sb.Append($" Version=\"{context.DisplayVersion}\"");
+        var builder = new StringBuilder();
+        builder.Append($"<{context.ElementName} Include=\"{context.PackageId}\"");
+        builder.Append($" Version=\"{context.DisplayVersion}\"");
         foreach (var (attribute, value) in extraAttributes)
         {
-            sb.Append($" {attribute}=\"{value}\"");
+            builder.Append($" {attribute}=\"{value}\"");
         }
 
-        sb.Append(" />");
-        return sb.ToString();
+        builder.Append(" />");
+        return builder.ToString();
     }
 
     static string FriendlyPlatformName(string platformId) => platformId switch
