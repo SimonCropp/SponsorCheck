@@ -1,4 +1,4 @@
-public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlatform
+public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsorshipPlatform
 {
     const string endpoint = "https://api.opencollective.com/graphql/v2";
     const int pageLimit = 100;
@@ -16,7 +16,9 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
         }
         """;
 
-    public OpenCollectivePlatform() : this(HttpClientFactory.Get()) { }
+    // Lazy client — see GitHubSponsorsPlatform.Client: registry construction on the verifier path
+    // must not allocate an HttpClient; only a real fetch touches the network. Tests inject a stub.
+    HttpClient Client => client ?? HttpClientFactory.Get();
 
     public string Id => "OpenCollective";
 
@@ -79,7 +81,7 @@ public sealed class OpenCollectivePlatform(HttpClient client) : ISponsorshipPlat
             request.Headers.Add("Personal-Token", token);
         }
 
-        using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);
+        using var response = await Client.SendAsync(request, cancel).ConfigureAwait(false);
         var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (response.IsSuccessStatusCode)
         {

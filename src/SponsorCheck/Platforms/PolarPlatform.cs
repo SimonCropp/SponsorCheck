@@ -1,9 +1,11 @@
-public sealed class PolarPlatform(HttpClient client) :
+public sealed class PolarPlatform(HttpClient? client = null) :
     ISponsorshipPlatform
 {
     const string baseUrl = "https://api.polar.sh/v1/";
 
-    public PolarPlatform() : this(HttpClientFactory.Get()) { }
+    // Lazy client — see GitHubSponsorsPlatform.Client: registry construction on the verifier path
+    // must not allocate an HttpClient; only a real fetch touches the network. Tests inject a stub.
+    HttpClient Client => client ?? HttpClientFactory.Get();
 
     public string Id => "Polar";
 
@@ -34,7 +36,7 @@ public sealed class PolarPlatform(HttpClient client) :
             var url = $"{baseUrl}subscriptions/?organization_slug={Uri.EscapeDataString(ownerAccount)}&active=true&limit={limit}&page={page}";
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new("Bearer", token);
-            using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);
+            using var response = await Client.SendAsync(request, cancel).ConfigureAwait(false);
             var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
