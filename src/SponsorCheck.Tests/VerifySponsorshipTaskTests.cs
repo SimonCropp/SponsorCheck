@@ -1101,6 +1101,83 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
     }
 
+    [Test]
+    public async Task PerpetualLicense_9999_12_Passes()
+    {
+        // "9999-12" is the natural "perpetual license" sentinel. Deciding expiry by materializing
+        // start-of-next-month via AddMonths(1) overflowed DateTime.MaxValue and threw; the
+        // calendar-field comparison passes cleanly. "now" is DateTime.MaxValue — the latest instant
+        // a build can occur, still within the licensed month, so it must pass.
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var decision = LicenseModeResolver.Resolve(
+            null,
+            "9999-12",
+            null,
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = null,
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            null,
+            "MyOssLib");
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), DateTime.MaxValue);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task PerpetualLicense_9999_12_ThroughTask_Passes()
+    {
+        // Regression for the full verifier path: before the calendar-field expiry check, "9999-12"
+        // overflowed DateTime.MaxValue inside ApplyLicensed and the generic catch surfaced it as a
+        // code-less build error, bricking the consumer build. It must now pass with no diagnostics.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            LicensedUntilFromRef = "9999-12"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task ExpiredLicense_NearMaxDate_FailsWithoutOverflow()
+    {
+        // The expired branch computes the licensed month's last day for the message. Guard that this
+        // stays overflow-safe at the calendar extreme: a "9999-11" license evaluated in 9999-12
+        // expires and reports the correct end-of-month (9999-11-30) without throwing.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var decision = LicenseModeResolver.Resolve(
+            null,
+            "9999-11",
+            null,
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = null,
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            null,
+            "MyOssLib");
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), [], new Dictionary<string, string>(), new Dictionary<string, Severity>(), new Dictionary<string, string>(), new TaskLoggingHelperFor(engine), new(9999, 12, 15, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC009");
+        await Assert.That(engine.Errors[0].Message).Contains("9999-11-30");
+    }
+
     static string WriteOverrides(TempDirectory dir, params (string code, Severity severity)[] entries)
     {
         var path = Path.Combine(dir, "SeverityOverrides.txt");

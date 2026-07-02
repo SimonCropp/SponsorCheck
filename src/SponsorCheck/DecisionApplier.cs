@@ -305,13 +305,18 @@ public static class DecisionApplier
             return false;
         }
 
-        // Cutoff is the start of the next month: a build at any instant within the licensed
-        // month — including the final fractional second — must still pass. Using the last day
-        // at 23:59:59 (whole-second precision) would incorrectly flag builds in the last second.
-        var startOfNextMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1);
-        if (utcNow >= startOfNextMonth)
+        // Expiry is decided at month granularity by comparing (year, month) directly rather than
+        // materializing "start of next month". A build in any month at or before the licensed month
+        // passes — including the final fractional second of the last day, with no whole-second edge —
+        // while the first day of the next month is the cutoff. Comparing the calendar fields also
+        // avoids overflowing DateTime.MaxValue for the perpetual sentinel SponsorshipLicensedUntil=
+        // "9999-12": AddMonths(1) there throws ArgumentOutOfRangeException, which would otherwise
+        // surface as a code-less build error instead of passing.
+        var expired = utcNow.Year > year ||
+                      (utcNow.Year == year && utcNow.Month > month);
+        if (expired)
         {
-            var lastDay = startOfNextMonth.AddDays(-1);
+            var lastDay = new DateTime(year, month, DateTime.DaysInMonth(year, month), 0, 0, 0, DateTimeKind.Utc);
             var (code, opener) = context.Mode switch
             {
                 ConsumerMode.Owner => ("SC025", $"Package '{l.PackageId}': {context.OwnerId}_SponsorshipLicensedUntil='{l.LicensedUntilRaw}' property has expired (end of month {lastDay:yyyy-MM-dd} UTC)."),
