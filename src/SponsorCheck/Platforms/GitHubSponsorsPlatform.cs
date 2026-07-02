@@ -1,4 +1,4 @@
-public sealed class GitHubSponsorsPlatform(HttpClient client) :
+public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
     ISponsorshipPlatform
 {
     const string endpoint = "https://api.github.com/graphql";
@@ -46,10 +46,10 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
 
     public static readonly TimeSpan OneTimeWindow = TimeSpan.FromDays(30);
 
-    public GitHubSponsorsPlatform() :
-        this(HttpClientFactory.Get())
-    {
-    }
+    // Resolve the shared HttpClient lazily. PlatformRegistry constructs all three platforms just for
+    // id→URL/name mapping on the verifier's hot path; building them must not allocate an HttpClient.
+    // Only an actual fetch (bundler pack time) touches the network. Tests inject a stub client.
+    HttpClient Client => client ?? HttpClientFactory.Get();
 
     public string Id => "GitHubSponsors";
 
@@ -185,7 +185,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient client) :
 
         request.Headers.Authorization = new("Bearer", token);
 
-        using var response = await client.SendAsync(request, cancel).ConfigureAwait(false);
+        using var response = await Client.SendAsync(request, cancel).ConfigureAwait(false);
         var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (response.IsSuccessStatusCode)
         {
