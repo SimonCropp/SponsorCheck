@@ -324,7 +324,21 @@ public sealed class BundleSponsorListTask :
     IReadOnlyList<SponsorEntry> FetchFromOverride()
     {
         Log.LogMessage(MessageImportance.High, $"SponsorCheck: using sponsor override list '{OverrideListPath}'.");
-        return SponsorOverrideFile.Read(OverrideListPath);
+        // Canonicalize each entry's platform id through the registry (and reject unknown platforms).
+        // SponsorHasher does not case-fold the platform id, and the verifier always hashes with the
+        // canonical literal ("GitHubSponsors" etc.), so an override entry like "githubsponsors" would
+        // otherwise bundle a hash no consumer could ever match — packing cleanly, then failing every
+        // consumer with SC007. The API path never hits this because it already resolves canonical ids
+        // via PlatformRegistry; Get throws MaintenanceFeeException (SC100) for an unknown platform.
+        var entries = SponsorOverrideFile.Read(OverrideListPath);
+        var normalized = new List<SponsorEntry>(entries.Count);
+        foreach (var entry in entries)
+        {
+            var platform = PlatformRegistry.Get(entry.Platform);
+            normalized.Add(new(platform.Id, entry.Account));
+        }
+
+        return normalized;
     }
 
     async Task<IReadOnlyList<SponsorEntry>> FetchFromPlatformsAsync(Dictionary<string, string> enabled)
