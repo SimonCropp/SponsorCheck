@@ -62,11 +62,18 @@ public sealed class VerifySponsorshipTask :
             };
 
             var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, exemption, sponsors, sponsorshipStart, ThePackageId);
-            var landingUrl = ReadLandingUrl(LandingUrlPath);
-            var authorAccounts = ResolveAuthorAccounts(AuthorAccountsPath, landingUrl);
-            var exemptionsDefined = SponsorshipExemptionsFile.Read(ExemptionsPath);
-            var severityOverrides = SeverityOverrideFile.Read(SeverityOverridesPath);
-            var messageOverrides = MessageOverrideFile.Read(MessageOverridesPath);
+            // These four sidecar files back only diagnostic rendering (and the exemption lookup), so
+            // wrap each read in Lazy — a passing build (sponsor matches, or license valid) returns from
+            // DecisionApplier without forcing any of them and reads only the pack date and hash list.
+            // The landing-url read folds into the author-accounts lazy since it only shapes those URLs.
+            var authorAccounts = new Lazy<IReadOnlyList<AuthorAccount>>(
+                () => ResolveAuthorAccounts(AuthorAccountsPath, ReadLandingUrl(LandingUrlPath)));
+            var exemptionsDefined = new Lazy<IReadOnlyDictionary<string, string>>(
+                () => SponsorshipExemptionsFile.Read(ExemptionsPath));
+            var severityOverrides = new Lazy<IReadOnlyDictionary<string, Severity>>(
+                () => SeverityOverrideFile.Read(SeverityOverridesPath));
+            var messageOverrides = new Lazy<IReadOnlyDictionary<string, string>>(
+                () => MessageOverrideFile.Read(MessageOverridesPath));
             return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, exemptionsDefined, severityOverrides, messageOverrides, Log, DateTime.UtcNow);
         }
         catch (MaintenanceFeeException exception)

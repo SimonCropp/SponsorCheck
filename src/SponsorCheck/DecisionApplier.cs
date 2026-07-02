@@ -7,10 +7,14 @@ public static class DecisionApplier
         string sponsorHashListPath,
         string packDatePath,
         ConsumerContext context,
-        IReadOnlyList<AuthorAccount> authorAccounts,
-        IReadOnlyDictionary<string, string> exemptionsDefined,
-        IReadOnlyDictionary<string, Severity> severityOverrides,
-        IReadOnlyDictionary<string, string> messageOverrides,
+        // Lazy: these back only diagnostic rendering (and the exemption lookup). The happy paths —
+        // sponsor account matches, or license still valid — return without forcing any of them, so a
+        // correctly configured consumer build reads none of the four backing sidecar files. Each is
+        // forced with .Value only at the point a branch needs it.
+        Lazy<IReadOnlyList<AuthorAccount>> authorAccounts,
+        Lazy<IReadOnlyDictionary<string, string>> exemptionsDefined,
+        Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
+        Lazy<IReadOnlyDictionary<string, string>> messageOverrides,
         TaskLoggingHelper log,
         DateTime utcNow)
     {
@@ -28,12 +32,12 @@ public static class DecisionApplier
                     log,
                     code,
                     Severity.Error,
-                    severityOverrides,
-                    messageOverrides,
+                    severityOverrides.Value,
+                    messageOverrides.Value,
                     $"""
                      {opener}
 
-                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts, exemptionsDefined)}
+                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts.Value, exemptionsDefined.Value)}
                      """);
             }
 
@@ -56,7 +60,7 @@ public static class DecisionApplier
                 // SponsorshipExemption only appears in the "keep one of" list when the publisher
                 // has defined at least one — listing it for a package that doesn't offer any
                 // would tease an option that has no valid value.
-                var exemptionInList = exemptionsDefined.Count > 0
+                var exemptionInList = exemptionsDefined.Value.Count > 0
                     ? $"{prefix}SponsorshipExemption, "
                     : "";
                 SponsorCheckLog.Error(
@@ -84,12 +88,12 @@ public static class DecisionApplier
                     log,
                     code,
                     Severity.Warning,
-                    severityOverrides,
-                    messageOverrides,
+                    severityOverrides.Value,
+                    messageOverrides.Value,
                     $"""
                      {opener}
 
-                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts, exemptionsDefined, includeIgnoreOption: false)}
+                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts.Value, exemptionsDefined.Value, includeIgnoreOption: false)}
                      """);
             }
 
@@ -110,14 +114,14 @@ public static class DecisionApplier
     static bool ApplyExempt(
         LicenseDecision.Exempt exempt,
         ConsumerContext context,
-        IReadOnlyDictionary<string, string> exemptionsDefined,
-        IReadOnlyDictionary<string, Severity> severityOverrides,
-        IReadOnlyDictionary<string, string> messageOverrides,
+        Lazy<IReadOnlyDictionary<string, string>> exemptionsDefined,
+        Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
+        Lazy<IReadOnlyDictionary<string, string>> messageOverrides,
         TaskLoggingHelper log)
     {
         // Lookup is case-insensitive (the loaded dict uses OrdinalIgnoreCase) but the warning
         // body surfaces what the consumer actually typed — that's the audit signal in CI logs.
-        if (!exemptionsDefined.TryGetValue(exempt.ExemptionName, out var publisherMessage))
+        if (!exemptionsDefined.Value.TryGetValue(exempt.ExemptionName, out var publisherMessage))
         {
             var (unknownCode, unknownOpener) = context.Mode switch
             {
@@ -131,7 +135,7 @@ public static class DecisionApplier
                 $"""
                  {unknownOpener}
 
-                 {ConsumerMetadataExamples.RenderAvailableExemptions(context, exemptionsDefined)}
+                 {ConsumerMetadataExamples.RenderAvailableExemptions(context, exemptionsDefined.Value)}
                  """);
             return false;
         }
@@ -148,8 +152,8 @@ public static class DecisionApplier
             log,
             code,
             Severity.Warning,
-            severityOverrides,
-            messageOverrides,
+            severityOverrides.Value,
+            messageOverrides.Value,
             opener);
     }
 
@@ -158,9 +162,9 @@ public static class DecisionApplier
         string sponsorHashListPath,
         string packDatePath,
         ConsumerContext context,
-        IReadOnlyList<AuthorAccount> authorAccounts,
-        IReadOnlyDictionary<string, Severity> severityOverrides,
-        IReadOnlyDictionary<string, string> messageOverrides,
+        Lazy<IReadOnlyList<AuthorAccount>> authorAccounts,
+        Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
+        Lazy<IReadOnlyDictionary<string, string>> messageOverrides,
         TaskLoggingHelper log,
         DateTime utcNow)
     {
@@ -265,7 +269,7 @@ public static class DecisionApplier
             "",
             $"Tried: {string.Join(", ", checkAttempts)}"
         };
-        var sponsorAt = ConsumerMetadataExamples.RenderSponsorAtBlock(authorAccounts);
+        var sponsorAt = ConsumerMetadataExamples.RenderSponsorAtBlock(authorAccounts.Value);
         if (sponsorAt.Length > 0)
         {
             lines.Add("");
@@ -282,17 +286,17 @@ public static class DecisionApplier
             log,
             code,
             Severity.Error,
-            severityOverrides,
-            messageOverrides,
+            severityOverrides.Value,
+            messageOverrides.Value,
             string.Join(newline, lines));
     }
 
     static bool ApplyLicensed(
         LicenseDecision.Licensed l,
         ConsumerContext context,
-        IReadOnlyList<AuthorAccount> authorAccounts,
-        IReadOnlyDictionary<string, Severity> severityOverrides,
-        IReadOnlyDictionary<string, string> messageOverrides,
+        Lazy<IReadOnlyList<AuthorAccount>> authorAccounts,
+        Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
+        Lazy<IReadOnlyDictionary<string, string>> messageOverrides,
         TaskLoggingHelper log,
         DateTime utcNow)
     {
@@ -339,7 +343,7 @@ public static class DecisionApplier
                 "",
                 ConsumerMetadataExamples.RenderLicensedUntilRenewal(context)
             };
-            var expiredSponsorAt = ConsumerMetadataExamples.RenderSponsorAtBlock(authorAccounts);
+            var expiredSponsorAt = ConsumerMetadataExamples.RenderSponsorAtBlock(authorAccounts.Value);
             if (expiredSponsorAt.Length > 0)
             {
                 expiredLines.Add("");
@@ -350,8 +354,8 @@ public static class DecisionApplier
                 log,
                 code,
                 Severity.Error,
-                severityOverrides,
-                messageOverrides,
+                severityOverrides.Value,
+                messageOverrides.Value,
                 string.Join(newline, expiredLines));
         }
 
