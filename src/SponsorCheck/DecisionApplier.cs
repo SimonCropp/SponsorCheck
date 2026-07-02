@@ -234,17 +234,23 @@ public static class DecisionApplier
             return false;
         }
 
-        var hashes = new HashSet<string>(File.ReadAllLines(sponsorHashListPath), StringComparer.Ordinal);
-        var checkAttempts = new List<string>();
+        // Compute the consumer's candidate hashes up front — at most one per configured platform (≤3) —
+        // then stream the bundled list and return on the first match. The verifier runs on every consumer
+        // build in every configuration, so this is the product's hottest path: streaming with File.ReadLines
+        // avoids materializing the whole file into a string[] plus HashSet, and short-circuits as soon as a
+        // matching line is found instead of always reading the entire list.
+        var candidateHashes = new HashSet<string>(StringComparer.Ordinal);
         foreach (var pair in sponsor.AccountByPlatform)
         {
-            var hash = SponsorHasher.Hash(pair.Key, pair.Value);
-            if (hashes.Contains(hash))
+            candidateHashes.Add(SponsorHasher.Hash(pair.Key, pair.Value));
+        }
+
+        foreach (var bundledHash in File.ReadLines(sponsorHashListPath))
+        {
+            if (candidateHashes.Contains(bundledHash))
             {
                 return true;
             }
-
-            checkAttempts.Add($"{pair.Key}={pair.Value}");
         }
 
         var (code, opener) = context.Mode switch
@@ -253,6 +259,10 @@ public static class DecisionApplier
             ConsumerMode.Cpm => ("SC008", $"Package '{sponsor.PackageId}': no sponsor account declared on the <PackageVersion> in Directory.Packages.props matches the bundled list."),
             _ => ("SC007", $"Package '{sponsor.PackageId}': no sponsor account declared on the <PackageReference> matches the bundled list.")
         };
+        // Same ordering as the candidate loop above (AccountByPlatform iteration order), so the
+        // "Tried:" audit line in the SC007/SC008/SC024 message is unchanged. Built only on the
+        // failure path — the success path never allocates it.
+        var checkAttempts = sponsor.AccountByPlatform.Select(_ => $"{_.Key}={_.Value}");
         var lines = new List<string>
         {
             opener,
