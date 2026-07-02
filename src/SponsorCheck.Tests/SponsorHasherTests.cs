@@ -54,6 +54,36 @@ public class SponsorHasherTests
     }
 
     [Test]
+    public async Task HashAll_MatchesPerEntryHash()
+    {
+        // The batch reuses a single SHA256 across all entries; ComputeHash re-initializes between
+        // calls, so each result must equal the independent per-entry Hash. Covers a mixed-case
+        // account (lowercasing) and a duplicate (identical input mid-batch → identical hash).
+        var entries = new List<SponsorEntry>
+        {
+            new("GitHubSponsors", "alice"),
+            new("GitHubSponsors", "Bob"),
+            new("OpenCollective", "acme-org"),
+            new("Polar", "acme"),
+            new("GitHubSponsors", "alice")
+        };
+
+        var batch = SponsorHasher.HashAll(entries);
+        var perEntry = entries.Select(_ => SponsorHasher.Hash(_.Platform, _.Account)).ToList();
+
+        await Assert.That(batch.Count).IsEqualTo(perEntry.Count);
+        for (var i = 0; i < perEntry.Count; i++)
+        {
+            await Assert.That(batch[i]).IsEqualTo(perEntry[i]);
+        }
+    }
+
+    [Test]
+    public void HashAll_RejectsEmptyAccountInBatch() =>
+        Assert.Throws<ArgumentException>(() =>
+            SponsorHasher.HashAll([new("GitHubSponsors", "alice"), new("Polar", "  ")]));
+
+    [Test]
     public void RejectsEmptyPlatform() =>
         Assert.Throws<ArgumentException>(() => SponsorHasher.Hash("", "alice"));
 

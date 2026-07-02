@@ -124,8 +124,7 @@ public sealed class BundleSponsorListTask :
                 entries = FetchFromOverride();
             }
 
-            var hashes = entries
-                .Select(_ => SponsorHasher.Hash(_.Platform, _.Account))
+            var hashes = SponsorHasher.HashAll(entries)
                 .Distinct(StringComparer.Ordinal)
                 .OrderBy(_ => _, StringComparer.Ordinal)
                 .ToList();
