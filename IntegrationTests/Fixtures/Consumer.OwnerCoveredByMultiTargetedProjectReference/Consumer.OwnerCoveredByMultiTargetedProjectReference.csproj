@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- Same shape as Consumer.OwnerCoveredByProjectReference (no direct PackageReference, no sponsor
+       property) EXCEPT the referenced Lib is multi-targeted. ThePackage flows in transitively via
+       Lib, and CheckTransitiveReferences imports the verifier here too. The coverage <MSBuild> call
+       to Lib carries no TargetFramework, so it resolves against Lib's OUTER build — the path the
+       single-targeted coverage fixtures never exercise. If the responder isn't visible there,
+       coverage is missed and this project (no property set) spuriously fails SC021. -->
+  <ItemGroup>
+    <ProjectReference Include="Lib\Lib.csproj" />
+  </ItemGroup>
+</Project>

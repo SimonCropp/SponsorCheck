@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Multi-targeted: this is the whole point of the fixture. A ProjectReference target invoked
+         without a TargetFramework hits the outer build, and NuGet imports package build/buildTransitive
+         targets into the per-TFM inner builds. Two TFMs (both build with the net10 SDK, no extra
+         runtime needed) force that outer/inner split. -->
+    <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
+    <!-- Owner-mode sponsorship on the project that DIRECTLY references the package; the parent
+         (no direct ref, no property) relies on this Lib's verifier covering it. -->
+    <acme_GitHubSponsorAccount>alice</acme_GitHubSponsorAccount>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerModeTransitive" Version="1.0.0" />
+  </ItemGroup>
+</Project>

@@ -321,6 +321,29 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    [Skip("Confirmed gap (2026-07): the project-reference coverage walk invokes a multi-targeted " +
+          "reference without a TargetFramework, so it resolves against the reference's OUTER build, " +
+          "where the package's buildTransitive responder targets are not imported (they land in the " +
+          "per-TFM inner builds). Coverage is missed and this top-level project — which sets no " +
+          "sponsor property — spuriously fails SC021. Fails closed (over-strict, never under-enforces). " +
+          "Un-skip once the coverage <MSBuild> calls negotiate the reference's TargetFramework.")]
+    public async Task OwnerMode_MultiTargetedRefCoverage_SkipsRedundantVerification()
+    {
+        // Coverage when the project that directly references ThePackage (Lib) is MULTI-TARGETED.
+        // The top-level's coverage <MSBuild> call carries no TargetFramework, so it resolves against
+        // Lib's outer build; NuGet imports the package's buildTransitive targets (which define the
+        // coverage responder) into the per-TFM inner builds. If the responder isn't visible on the
+        // outer build, coverage is missed and the top-level — which sets no sponsor property — would
+        // spuriously fail SC021. Currently skipped: this is the confirmed repro of that gap.
+        var result = await BuildFixture(
+            "Consumer.OwnerCoveredByMultiTargetedProjectReference",
+            authorFixture: "ThePackageOwnerModeTransitive");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC021");
+        await Assert.That(result.Combined).DoesNotContain("SC024");
+    }
+
+    [Test]
     public async Task OwnerMode_NoConfig_FailsWithSC021()
     {
         // Owner-mode counterpart of SC001/SC002: no sponsorship property set anywhere.
