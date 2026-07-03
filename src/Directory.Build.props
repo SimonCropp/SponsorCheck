@@ -4,7 +4,13 @@
     <NoWarn>CS1591;NU1608;NU1109;NU1901;PolyfillTargetsForNuget</NoWarn>
     <Version>0.13.0</Version>
     <LangVersion>preview</LangVersion>
-    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <!-- Do NOT pin AssemblyVersion. SponsorCheck.dll is an MSBuild task assembly shipped inside many
+         packages (Morph, Parchment, OpenXmlHtml, Excelsior, ...). A fixed AssemblyVersion makes MSBuild's
+         task loader treat every build as one assembly identity, so it keeps whichever copy hit the task
+         cache first — even across packages shipping different task APIs — causing MSB4064 ("parameter X
+         not supported by VerifySponsorshipTask"). Defaulting AssemblyVersion to Version gives each
+         release a distinct identity, so every UsingTask loads its own matching copy. -->
+    <AssemblyVersion>$(Version)</AssemblyVersion>
     <Description>Enforce the Licensing/Sponsorship Fee at build time via pluggable sponsorship platforms (GitHub Sponsors, Open Collective, Polar).</Description>
     <Authors>Simon Cropp</Authors>
     <Copyright>Copyright Simon Cropp</Copyright>
