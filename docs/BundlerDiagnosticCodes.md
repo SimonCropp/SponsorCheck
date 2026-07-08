@@ -30,6 +30,7 @@ Every emitted message is prefixed with the code's short **Name** (e.g. `Platform
 - **Meaning:** A platform that requires a credential is missing one (GitHub Sponsors, Polar). Setup advice flips between user-secrets-first (local) and env-var-only (CI) based on `BuildServerDetector`.
 - **Syntax:** `{platformLabel}: API token required. {advice}` where `advice` is `Run \`dotnet user-secrets set SponsorCheck:{Platform}Token <pat>\` (recommended for local dev), or set the <{Platform}Token> MSBuild property, or set the '{Platform}Token' env var.` locally, or `Set the '{Platform}Token' env var (CI providers should expose their encrypted secret under this name; MSBuild auto-imports it as the <{Platform}Token> property).` on CI.
 - **Example:** `GitHub Sponsors: API token required. Run \`dotnet user-secrets set SponsorCheck:GitHubToken <pat>\` (recommended for local dev), or set the <GitHubToken> MSBuild property, or set the 'GitHubToken' env var.`
+- **Pull-request builds:** on a detected pull-request CI build the bundler is *skipped* rather than failing with SC102 — the credential is normally unavailable on PRs and the PR package is throwaway (packs without the verifier). Force bundling on PRs with `<SponsorCheckBundleInPullRequest>true</SponsorCheckBundleInPullRequest>`. See readme → "Pull request builds".
 
 
 ### SC103

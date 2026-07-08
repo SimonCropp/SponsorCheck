@@ -11,9 +11,45 @@
   <UsingTask TaskName="BundleSponsorListTask"
              AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
 
+  <!-- Pull-request detection. On PR CI the platform credential (e.g. GitHubToken) is normally not
+       exposed to the build, so bundling the sponsor list would fail with SC102 — and a PR build
+       never publishes the package it produces, so the verifier it would carry is throwaway anyway.
+       When a PR is detected the bundler is skipped: the package still packs, just without the
+       sponsorship verifier. Authors who DO have a credential on PR builds (and want the verifier
+       validated there) opt back in with <SponsorCheckBundleInPullRequest>true</...>.
+
+       Detection is deliberately conservative — every signal below is a CI-provider PR-only variable,
+       so a real release build is never mistaken for a PR (a *missed* detection just falls back to the
+       normal credential-required path, which is safe). MSBuild auto-imports environment variables as
+       properties of the same name, so these read the CI environment directly. -->
+  <PropertyGroup>
+    <_SponsorCheck_IsPullRequest>false</_SponsorCheck_IsPullRequest>
+    <_SponsorCheck_IsPullRequest Condition="'$(APPVEYOR_PULL_REQUEST_NUMBER)' != ''">true</_SponsorCheck_IsPullRequest>
+    <_SponsorCheck_IsPullRequest Condition="'$(SYSTEM_PULLREQUEST_PULLREQUESTID)' != ''">true</_SponsorCheck_IsPullRequest>
+    <_SponsorCheck_IsPullRequest Condition="'$(GITHUB_EVENT_NAME)' == 'pull_request' or '$(GITHUB_EVENT_NAME)' == 'pull_request_target'">true</_SponsorCheck_IsPullRequest>
+    <_SponsorCheck_IsPullRequest Condition="'$(CHANGE_ID)' != ''">true</_SponsorCheck_IsPullRequest>
+    <_SponsorCheck_IsPullRequest Condition="'$(CI_MERGE_REQUEST_IID)' != ''">true</_SponsorCheck_IsPullRequest>
+    <_SponsorCheck_IsPullRequest Condition="'$(BITBUCKET_PR_ID)' != ''">true</_SponsorCheck_IsPullRequest>
+    <_SponsorCheck_IsPullRequest Condition="'$(CIRCLE_PULL_REQUEST)' != ''">true</_SponsorCheck_IsPullRequest>
+    <_SponsorCheck_IsPullRequest Condition="'$(TRAVIS_PULL_REQUEST)' != '' and '$(TRAVIS_PULL_REQUEST)' != 'false'">true</_SponsorCheck_IsPullRequest>
+    <_SponsorCheck_IsPullRequest Condition="'$(BUILDKITE_PULL_REQUEST)' != '' and '$(BUILDKITE_PULL_REQUEST)' != 'false'">true</_SponsorCheck_IsPullRequest>
+
+    <_SponsorCheck_SkipForPullRequest>false</_SponsorCheck_SkipForPullRequest>
+    <_SponsorCheck_SkipForPullRequest Condition="'$(_SponsorCheck_IsPullRequest)' == 'true' and '$(SponsorCheckBundleInPullRequest)' != 'true'">true</_SponsorCheck_SkipForPullRequest>
+  </PropertyGroup>
+
+  <!-- Informs the author (and audit log) why the verifier is absent when a PR skip happens. High
+       importance so it surfaces at the default 'minimal' verbosity of dotnet build/pack. -->
+  <Target Name="_SponsorCheck_NotePullRequestSkip"
+          BeforeTargets="_GetPackageFiles;GenerateNuspec"
+          Condition="'$(Configuration)' == 'Release' and '$(IsPackable)' == 'true' and '$(_SponsorCheck_SkipForPullRequest)' == 'true'">
+    <Message Importance="high"
+             Text="SponsorCheck: pull-request build detected; skipping sponsor-list bundling (the platform credential is normally unavailable on PR CI). The package packs without the sponsorship verifier. Set &lt;SponsorCheckBundleInPullRequest&gt;true&lt;/SponsorCheckBundleInPullRequest&gt; to force bundling." />
+  </Target>
+
   <Target Name="_SponsorCheck_BundleSponsorList"
           BeforeTargets="_GetPackageFiles;GenerateNuspec"
-          Condition="'$(Configuration)' == 'Release' and '$(IsPackable)' == 'true'">
+          Condition="'$(Configuration)' == 'Release' and '$(IsPackable)' == 'true' and '$(_SponsorCheck_SkipForPullRequest)' != 'true'">
     <PropertyGroup>
       <_SponsorCheck_HashListPath>$(IntermediateOutputPath)SponsorCheck\SponsorHashes.txt</_SponsorCheck_HashListPath>
       <_SponsorCheck_GeneratedTargetsPath>$(IntermediateOutputPath)SponsorCheck\$(PackageId).targets</_SponsorCheck_GeneratedTargetsPath>
