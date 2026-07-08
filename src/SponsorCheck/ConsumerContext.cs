@@ -16,11 +16,29 @@ public sealed record ConsumerContext(
 
     public string ElementName => IsCpm ? "PackageVersion" : "PackageReference";
 
-    public string TargetFilePath =>
-        IsCpm && !string.IsNullOrWhiteSpace(DirectoryPackagesPropsPath)
-            ? DirectoryPackagesPropsPath
-            : ConsumerProjectPath;
+    public string TargetFilePath
+    {
+        get
+        {
+            if (IsCpm && !string.IsNullOrWhiteSpace(DirectoryPackagesPropsPath))
+            {
+                return DirectoryPackagesPropsPath;
+            }
 
-    public string DisplayVersion =>
-        string.IsNullOrWhiteSpace(ResolvedVersion) ? "<version>" : ResolvedVersion;
+            return ConsumerProjectPath;
+        }
+    }
+
+    public string DisplayVersion
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(ResolvedVersion))
+            {
+                return "<version>";
+            }
+
+            return ResolvedVersion;
+        }
+    }
 }
