@@ -61,7 +61,11 @@ public static class ThePackageBuilder
                     ["SponsorCheckVersion"] = sponsorCheckVersion,
                     // Backdate pack so Consumer.RecentSponsor can have a SponsorshipStart that is
                     // both AFTER the pack date and BEFORE today (i.e. not in the future).
-                    ["SponsorCheck_PackDateOverride"] = "2024-01-01"
+                    ["SponsorCheck_PackDateOverride"] = "2024-01-01",
+                    // Force bundling so the suite is hermetic: if it runs on a PR CI build, the
+                    // ambient PR env var would otherwise trip the bundler's pull-request skip and
+                    // these fixtures would pack without the verifier, breaking pack assertions.
+                    ["SponsorCheckBundleInPullRequest"] = "true"
                 },
                 workDir,
                 packagesDir).ConfigureAwait(false);
@@ -130,7 +134,9 @@ public static class ThePackageBuilder
                         ["SponsorListOverride"] = TestEnvironment.OverrideListPath,
                         ["PackageOutputPath"] = feed,
                         ["SponsorCheckVersion"] = sponsorCheckVersion,
-                        ["SponsorCheck_PackDateOverride"] = "2024-01-01"
+                        ["SponsorCheck_PackDateOverride"] = "2024-01-01",
+                        // Force bundling for hermeticity — see the note in EnsureBuilt.
+                        ["SponsorCheckBundleInPullRequest"] = "true"
                     },
                     workDir,
                     packagesDir).ConfigureAwait(false);
@@ -163,6 +169,20 @@ public static class ThePackageBuilder
         bool useOverrideList = true,
         IReadOnlyDictionary<string, string>? extraProperties = null)
     {
+        var (result, _) = await TryPackToFeed(fixtureName, useOverrideList, extraProperties).ConfigureAwait(false);
+        return result;
+    }
+
+    /// Like <see cref="TryPack"/> but also returns the fresh feed dir so the caller can open the
+    /// produced nupkg. <paramref name="forceBundleInPullRequest"/> defaults to true for hermeticity
+    /// (so an ambient PR env var on CI doesn't disable the bundler); the PR-skip tests pass false to
+    /// exercise the actual pull-request skip.
+    public static async Task<(CliResult Result, string Feed)> TryPackToFeed(
+        string fixtureName,
+        bool useOverrideList = true,
+        IReadOnlyDictionary<string, string>? extraProperties = null,
+        bool forceBundleInPullRequest = true)
+    {
         var feed = Path.Combine(Path.GetTempPath(), "sponsorcheck-it-feed", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(feed);
 
@@ -183,6 +203,11 @@ public static class ThePackageBuilder
             ["SponsorCheckVersion"] = sponsorCheckVersion,
             ["SponsorCheck_PackDateOverride"] = "2024-01-01"
         };
+        if (forceBundleInPullRequest)
+        {
+            properties["SponsorCheckBundleInPullRequest"] = "true";
+        }
+
         if (useOverrideList)
         {
             properties["SponsorListOverride"] = TestEnvironment.OverrideListPath;
@@ -196,13 +221,14 @@ public static class ThePackageBuilder
             }
         }
 
-        return await DotnetCliRunner.Run(
+        var result = await DotnetCliRunner.Run(
             "pack",
             Path.Combine(workDir, $"{fixtureName}.csproj"),
             "Release",
             properties,
             workDir,
             packagesDir).ConfigureAwait(false);
+        return (result, feed);
     }
 
     static string ExtractVersion(string nupkgPath)

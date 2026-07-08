@@ -298,6 +298,55 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task PullRequestBuild_SkipsBundling()
+    {
+        // On PR CI the platform credential is normally unavailable, so rather than failing SC102 the
+        // bundler is skipped and the package packs cleanly without the verifier. Simulate a PR via
+        // the AppVeyor signal — MSBuild reads the env-var-named property directly.
+        // forceBundleInPullRequest:false so the suite's hermeticity guard doesn't re-enable bundling.
+        var (result, feed) = await ThePackageBuilder.TryPackToFeed(
+            "ThePackage",
+            extraProperties: new Dictionary<string, string>
+            {
+                ["APPVEYOR_PULL_REQUEST_NUMBER"] = "7"
+            },
+            forceBundleInPullRequest: false);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("skipping sponsor-list bundling");
+
+        var nupkg = Directory.GetFiles(feed, "ThePackage.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entries = zip.Entries.Select(_ => _.FullName).ToList();
+        // No verifier, no bundled sponsor data, no tasks/ DLLs — all live inside the skipped target.
+        await Assert.That(entries.Any(_ => _ == "build/ThePackage.targets")).IsFalse();
+        await Assert.That(entries.Any(_ => _.StartsWith("build/SponsorCheck."))).IsFalse();
+        await Assert.That(entries.Any(_ => _.StartsWith("tasks/"))).IsFalse();
+    }
+
+    [Test]
+    public async Task PullRequestBuild_OverrideForcesBundling()
+    {
+        // <SponsorCheckBundleInPullRequest>true</> opts back in: the bundler runs even on a PR, so
+        // the verifier and bundled sponsor data are present exactly as on a normal build.
+        var (result, feed) = await ThePackageBuilder.TryPackToFeed(
+            "ThePackage",
+            extraProperties: new Dictionary<string, string>
+            {
+                ["APPVEYOR_PULL_REQUEST_NUMBER"] = "7"
+            },
+            forceBundleInPullRequest: true);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+
+        var nupkg = Directory.GetFiles(feed, "ThePackage.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entries = zip.Entries.Select(_ => _.FullName).ToList();
+        await Assert.That(entries).Contains("build/ThePackage.targets");
+        await Assert.That(entries).Contains("build/SponsorCheck.SponsorHashes.txt");
+    }
+
+    [Test]
     public async Task SeverityOverrides_InvalidValue_FailsPackWithSC104()
     {
         // ThePackageBadOverride declares NoLicenseSpecifiedSeverityOverride="critical" — not a

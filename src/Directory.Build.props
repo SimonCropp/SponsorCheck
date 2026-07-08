@@ -2,7 +2,7 @@
 <Project>
   <PropertyGroup>
     <NoWarn>CS1591;NU1608;NU1109;NU1901;PolyfillTargetsForNuget</NoWarn>
-    <Version>0.13.0</Version>
+    <Version>0.14.0</Version>
     <LangVersion>preview</LangVersion>
     <!-- Do NOT pin AssemblyVersion. SponsorCheck.dll is an MSBuild task assembly shipped inside many
          packages (Morph, Parchment, OpenXmlHtml, Excelsior, ...). A fixed AssemblyVersion makes MSBuild's
