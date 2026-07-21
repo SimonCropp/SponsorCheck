@@ -14,9 +14,9 @@ for:
       - appveyor DownloadFile https://dot.net/v1/dotnet-install.ps1
       - pwsh: ./dotnet-install.ps1 -JSonFile global.json -Architecture x64 -InstallDir 'C:\Program Files\dotnet'
       - dotnet build src --configuration Release
-      - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -- --no-ansi --no-progress
+      - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -- --no-ansi --no-progress --report-trx
       - dotnet build IntegrationTests --configuration Release
-      - dotnet run --project IntegrationTests/IntegrationTests --configuration Release --no-build -- --no-ansi --no-progress
+      - dotnet run --project IntegrationTests/IntegrationTests --configuration Release --no-build -- --no-ansi --no-progress --report-trx
   -
     matrix:
       only:
@@ -27,9 +27,9 @@ for:
           chmod +x dotnet-install.sh
           sudo ./dotnet-install.sh --jsonfile global.json --architecture x64 --install-dir /usr/share/dotnet
       - dotnet build src --configuration Release
-      - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -- --no-ansi --no-progress
+      - dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -- --no-ansi --no-progress --report-trx
       - dotnet build IntegrationTests --configuration Release
-      - dotnet run --project IntegrationTests/IntegrationTests --configuration Release --no-build -- --no-ansi --no-progress
+      - dotnet run --project IntegrationTests/IntegrationTests --configuration Release --no-build -- --no-ansi --no-progress --report-trx
 on_failure:
   - pwsh: |
       $root = (Get-Location).Path
@@ -38,5 +38,14 @@ on_failure:
         Push-AppveyorArtifact $_.FullName -FileName $rel
       }
 test: off
+on_finish:
+  - pwsh: |
+      $url = "https://ci.appveyor.com/api/testresults/mstest/$env:APPVEYOR_JOB_ID"
+      $client = [System.Net.WebClient]::new()
+      foreach ($trx in Get-ChildItem -Recurse -Filter *.trx -ErrorAction SilentlyContinue)
+      {
+        Write-Host "Uploading $($trx.FullName)"
+        $client.UploadFile($url, $trx.FullName)
+      }
 artifacts:
   - path: nugets/*.nupkg
