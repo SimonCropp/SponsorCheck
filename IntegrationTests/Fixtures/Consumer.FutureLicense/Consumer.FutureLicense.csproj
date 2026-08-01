@@ -3,9 +3,11 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Normally a literal month, e.g. SponsorshipLicensedUntil="2027-06". Computed here so this
+         fixture stays inside the 1-year cap no matter when the test suite runs. -->
     <PackageReference
       Include="ThePackage"
       Version="1.0.0"
-      SponsorshipLicensedUntil="2099-12" />
+      SponsorshipLicensedUntil="$([System.DateTime]::UtcNow.AddMonths(6).ToString('yyyy-MM'))" />
   </ItemGroup>
 </Project>

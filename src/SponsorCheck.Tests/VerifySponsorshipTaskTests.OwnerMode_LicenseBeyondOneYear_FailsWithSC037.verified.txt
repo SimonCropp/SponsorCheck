@@ -1,0 +1,17 @@
+﻿{
+  Errors: [
+    {
+      Code: SC037,
+      Message:
+License too far in the future. Package 'MyOssLib': acme_SponsorshipLicensedUntil='2030-01' property is more than 1 year in the future (maximum 2027-05).
+
+Set the acme_SponsorshipLicensedUntil property to 2027-05 or earlier in Directory.Build.props or the consuming project.
+
+Example format:
+
+  <acme_SponsorshipLicensedUntil>2027-05</acme_SponsorshipLicensedUntil>
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc037
+    }
+  ]
+}

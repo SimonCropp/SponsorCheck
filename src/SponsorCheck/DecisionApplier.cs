@@ -319,13 +319,39 @@ public static class DecisionApplier
             return false;
         }
 
+        // SponsorshipLicensedUntil is an unverified self-attestation, so it is capped at one year
+        // out — otherwise "9999-12" would be a permanent opt-out dressed up as a license. The cap
+        // forces the consumer to re-affirm the arrangement each year. Compared on calendar fields
+        // rather than utcNow.AddYears(1) so a build in year 9999 doesn't overflow DateTime.MaxValue.
+        var maxYear = utcNow.Year + 1;
+        if (year > maxYear ||
+            (year == maxYear && month > utcNow.Month))
+        {
+            var maxMonth = $"{maxYear:0000}-{utcNow.Month:00}";
+            var (code, opener) = context.Mode switch
+            {
+                ConsumerMode.Owner => ("SC037", $"Package '{l.PackageId}': {context.OwnerId}_SponsorshipLicensedUntil='{l.LicensedUntilRaw}' property is more than 1 year in the future (maximum {maxMonth})."),
+                ConsumerMode.Cpm => ("SC036", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props is more than 1 year in the future (maximum {maxMonth})."),
+                _ => ("SC035", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> is more than 1 year in the future (maximum {maxMonth}).")
+            };
+            SponsorCheckLog.Error(
+                log,
+                code,
+                $"""
+                 {opener}
+
+                 {ConsumerMetadataExamples.RenderLicensedUntilMaxFix(context, maxMonth)}
+                 """);
+            return false;
+        }
+
         // Expiry is decided at month granularity by comparing (year, month) directly rather than
         // materializing "start of next month". A build in any month at or before the licensed month
         // passes — including the final fractional second of the last day, with no whole-second edge —
         // while the first day of the next month is the cutoff. Comparing the calendar fields also
-        // avoids overflowing DateTime.MaxValue for the perpetual sentinel SponsorshipLicensedUntil=
-        // "9999-12": AddMonths(1) there throws ArgumentOutOfRangeException, which would otherwise
-        // surface as a code-less build error instead of passing.
+        // avoids overflowing DateTime.MaxValue at the calendar extreme, where the cap above still
+        // admits "9999-12": AddMonths(1) there throws ArgumentOutOfRangeException, which would
+        // otherwise surface as a code-less build error instead of passing.
         var expired = utcNow.Year > year ||
                       (utcNow.Year == year && utcNow.Month > month);
         if (expired)

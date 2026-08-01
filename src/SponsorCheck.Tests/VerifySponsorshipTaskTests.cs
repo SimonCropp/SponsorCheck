@@ -29,6 +29,26 @@ public class VerifySponsorshipTaskTests
     static ConsumerContext NonCpmContext(string packageId = "MyOssLib", string version = "1.2.3") =>
         new(ConsumerMode.NonCpm, consumerProject, "", packageId, version);
 
+    static ConsumerContext CpmContext(string packageId = "MyOssLib", string version = "1.2.3") =>
+        new(ConsumerMode.Cpm, consumerProject, directoryPackagesProps, packageId, version);
+
+    static ConsumerContext OwnerContext(string packageId = "MyOssLib", string version = "1.2.3") =>
+        new(ConsumerMode.Owner, consumerProject, "", packageId, version, "acme");
+
+    static LicenseDecision LicensedDecision(string licensedUntil) =>
+        LicenseModeResolver.Resolve(
+            null,
+            licensedUntil,
+            null,
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = null,
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            null,
+            "MyOssLib");
+
     // Empty lazy sidecars for direct DecisionApplier.Apply calls. They mirror the Lazy wrapping
     // VerifySponsorshipTask does; forcing .Value just yields an empty collection (no file read).
     static readonly Lazy<IReadOnlyList<AuthorAccount>> noAuthorAccounts = new(() => []);
@@ -316,6 +336,10 @@ public class VerifySponsorshipTaskTests
         await Verify(engine);
     }
 
+    // A month that is in the future but inside the one-year cap. The task reads the real clock, so
+    // these happy-path tests compute the value rather than hardcoding one that would age out.
+    static string WithinCapMonth => DateTime.UtcNow.AddMonths(6).ToString("yyyy-MM", CultureInfo.InvariantCulture);
+
     [Test]
     public async Task FutureLicense_Passes()
     {
@@ -326,7 +350,7 @@ public class VerifySponsorshipTaskTests
             ThePackageId = "MyOssLib",
             ConsumerProjectPath = consumerProject,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
-            LicensedUntilFromRef = "2099-12"
+            LicensedUntilFromRef = WithinCapMonth
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -614,7 +638,7 @@ public class VerifySponsorshipTaskTests
             ConsumerProjectPath = consumerProject,
             DirectoryPackagesPropsPath = directoryPackagesProps,
             SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
-            LicensedUntilFromVer = "2099-12"
+            LicensedUntilFromVer = WithinCapMonth
         };
 
         await Assert.That(task.Execute()).IsTrue();
@@ -1109,26 +1133,16 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task PerpetualLicense_9999_12_Passes()
+    public async Task LicenseAtCalendarExtreme_Passes()
     {
-        // "9999-12" is the natural "perpetual license" sentinel. Deciding expiry by materializing
-        // start-of-next-month via AddMonths(1) overflowed DateTime.MaxValue and threw; the
-        // calendar-field comparison passes cleanly. "now" is DateTime.MaxValue — the latest instant
-        // a build can occur, still within the licensed month, so it must pass.
+        // Deciding expiry by materializing start-of-next-month via AddMonths(1) overflowed
+        // DateTime.MaxValue and threw; the calendar-field comparison passes cleanly. "now" is
+        // DateTime.MaxValue — the latest instant a build can occur — and "9999-12" is both within
+        // the licensed month and inside the one-year cap from there, so it must pass. This is the
+        // only clock at which "9999-12" is still a legal value; see LicenseBeyondOneYear_*.
         using var dir = new TempDirectory();
         var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
-        var decision = LicenseModeResolver.Resolve(
-            null,
-            "9999-12",
-            null,
-            new Dictionary<string, string?>
-            {
-                ["GitHubSponsors"] = null,
-                ["OpenCollective"] = null,
-                ["Polar"] = null
-            },
-            null,
-            "MyOssLib");
+        var decision = LicensedDecision("9999-12");
         var engine = new StubBuildEngine();
         var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), DateTime.MaxValue);
         await Assert.That(ok).IsTrue();
@@ -1136,11 +1150,12 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task PerpetualLicense_9999_12_ThroughTask_Passes()
+    public async Task PerpetualLicense_9999_12_ThroughTask_FailsWithSC035()
     {
-        // Regression for the full verifier path: before the calendar-field expiry check, "9999-12"
-        // overflowed DateTime.MaxValue inside ApplyLicensed and the generic catch surfaced it as a
-        // code-less build error, bricking the consumer build. It must now pass with no diagnostics.
+        // Regression for the full verifier path (real clock): "9999-12" is the natural "perpetual
+        // license" sentinel and is exactly what the one-year cap exists to reject. It must fail as
+        // a coded SC035 diagnostic — not as the code-less overflow error ApplyLicensed used to
+        // throw when it materialized start-of-next-month via AddMonths(1).
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
         var task = new VerifySponsorshipTask
@@ -1154,8 +1169,76 @@ public class VerifySponsorshipTaskTests
             LicensedUntilFromRef = "9999-12"
         };
 
-        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC035");
+    }
+
+    [Test]
+    public async Task LicenseBeyondOneYear_FailsWithSC035()
+    {
+        // SponsorshipLicensedUntil is an unverified self-attestation, so it is capped at one year
+        // from the build clock. A fixed utcNow keeps the rendered cap month deterministic.
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(LicensedDecision("2030-01"), path, "", NonCpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC035");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task CpmLicenseBeyondOneYear_FailsWithSC036()
+    {
+        // CPM sibling of SC035: the remediation block points at Directory.Packages.props and
+        // renders <PackageVersion> rather than <PackageReference>.
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(LicensedDecision("2030-01"), path, "", CpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC036");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task OwnerMode_LicenseBeyondOneYear_FailsWithSC037()
+    {
+        // Owner-mode sibling of SC035/SC036: the cap applies to the owner-prefixed global property.
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(LicensedDecision("2030-01"), path, "", OwnerContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC037");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task LicenseExactlyOneYearOut_Passes()
+    {
+        // The cap is inclusive of the same month next year — the last value a consumer can declare.
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(LicensedDecision("2027-05"), path, "", NonCpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(ok).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task LicenseOneMonthPastCap_FailsWithSC035()
+    {
+        // Mirror of LicenseExactlyOneYearOut_Passes: the next month over is the first rejected value.
+        using var dir = new TempDirectory();
+        var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
+        var engine = new StubBuildEngine();
+        var ok = DecisionApplier.Apply(LicensedDecision("2027-06"), path, "", NonCpmContext(), noAuthorAccounts, noExemptions, noSeverityOverrides, noMessageOverrides, new TaskLoggingHelperFor(engine), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC035");
+        await Assert.That(engine.Errors[0].Message).Contains("maximum 2027-05");
     }
 
     [Test]
@@ -1219,23 +1302,13 @@ public class VerifySponsorshipTaskTests
     public async Task ValidLicense_DoesNotForceSidecarReads()
     {
         // The other happy path: a still-valid SponsorshipLicensedUntil returns without rendering a
-        // diagnostic, so no sidecar is forced. Uses a far-future month (not the 9999 sentinel).
+        // diagnostic, so no sidecar is forced. The month sits inside the one-year cap, paired with
+        // a fixed clock so the test doesn't age out of that window.
         using var dir = new TempDirectory();
         var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
-        var decision = LicenseModeResolver.Resolve(
-            null,
-            "2999-12",
-            null,
-            new Dictionary<string, string?>
-            {
-                ["GitHubSponsors"] = null,
-                ["OpenCollective"] = null,
-                ["Polar"] = null
-            },
-            null,
-            "MyOssLib");
+        var decision = LicensedDecision("2026-12");
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), Poison<IReadOnlyList<AuthorAccount>>(), Poison<IReadOnlyDictionary<string, string>>(), Poison<IReadOnlyDictionary<string, Severity>>(), Poison<IReadOnlyDictionary<string, string>>(), new TaskLoggingHelperFor(engine), DateTime.UtcNow);
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), Poison<IReadOnlyList<AuthorAccount>>(), Poison<IReadOnlyDictionary<string, string>>(), Poison<IReadOnlyDictionary<string, Severity>>(), Poison<IReadOnlyDictionary<string, string>>(), new TaskLoggingHelperFor(engine), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
     }

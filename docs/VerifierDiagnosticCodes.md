@@ -1,6 +1,6 @@
 # Verifier diagnostic codes
 
-Codes in the `SC0xx` range are emitted by the verifier in consumer projects. Pairs are interleaved by mode: **odd-numbered codes** fire when the consumer is **not** using Central Package Management (metadata lives on `<PackageReference>` in the consumer csproj); **even-numbered codes** fire when the consumer **is** using CPM (metadata lives on `<PackageVersion>` in `Directory.Packages.props`). Sibling = `code ± 1` — SC001/SC002, SC003/SC004, SC011/SC012, and so on. The trailing SC017–SC020 codes are unpaired (audit message, install-integrity check, and the two placement errors).
+Codes in the `SC0xx` range are emitted by the verifier in consumer projects. Pairs are interleaved by mode: **odd-numbered codes** fire when the consumer is **not** using Central Package Management (metadata lives on `<PackageReference>` in the consumer csproj); **even-numbered codes** fire when the consumer **is** using CPM (metadata lives on `<PackageVersion>` in `Directory.Packages.props`). Sibling = `code ± 1` — SC001/SC002, SC003/SC004, SC011/SC012, and so on. The trailing SC017–SC020 codes are unpaired (audit message, install-integrity check, and the two placement errors). Codes added from SC029 onward drop the interleaving and run as consecutive triples instead — non-CPM, CPM, owner mode — so SC029/SC030/SC031, SC032/SC033/SC034, and SC035/SC036/SC037 each cover one scenario across all three placements.
 
 **Owner mode (SC021–SC028).** When the OSS author opts a package into *owner mode* (`SponsorOwner="<id>"` at pack time), the consumer configures sponsorship **once**, via global MSBuild **properties** (in `Directory.Build.props` or the consuming project), rather than per-package metadata. Because there is a single property source — no `<PackageReference>`/`<PackageVersion>` split — each scenario needs only one code, so SC021–SC028 are **unpaired** owner-mode counterparts of the per-package family: SC021↔SC001/SC002 (no config), SC022↔SC003/SC004 (conflicting modes), SC023↔SC005/SC006 (ignored), SC024↔SC007/SC008 (invalid account), SC025↔SC009/SC010 (expired), SC026↔SC011/SC012 (bad license date), SC027↔SC013/SC014 (bad SponsorshipStart), SC028↔SC015/SC016 (future SponsorshipStart). The placement-agnostic SC017 (attestation) and SC018 (missing hash file) are reused as-is; SC019/SC020 do not apply (no items to misplace).
 
@@ -34,12 +34,14 @@ flowchart TD
 
     Which -->|Licensed Until| ParseYM{Valid<br/>yyyy-MM?}
     ParseYM -->|No| SC011[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011'>SC011 Error<br/>Invalid date format</a>]
-    ParseYM -->|Yes| Expired{End of month<br/>in the past?}
+    ParseYM -->|Yes| TooFar{More than<br/>1 year out?}
+    TooFar -->|Yes| SC035[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc035'>SC035 Error<br/>Beyond the 1 year cap</a>]
+    TooFar -->|No| Expired{End of month<br/>in the past?}
     Expired -->|Yes| SC009[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>SC009 Error<br/>License expired</a>]
     Expired -->|No| PassLicense([Build passes])
 ```
 
-> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), [SC029](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029)→[SC030](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030), [SC032](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032)→[SC033](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent for the original modes (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028)) plus [SC031](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031)/[SC034](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034) for the exemption branch; [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared. The exemption branch only fires when the publisher defined `<SponsorExemption>` items at pack time — packages without any exemptions never reach `KnownName`.
+> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), [SC029](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029)→[SC030](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030), [SC032](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032)→[SC033](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033), [SC035](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc035)→[SC036](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc036), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent for the original modes (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028)) plus [SC031](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031)/[SC034](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034) for the exemption branch and [SC037](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc037) for the one-year cap; [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared. The exemption branch only fires when the publisher defined `<SponsorExemption>` items at pack time — packages without any exemptions never reach `KnownName`.
 <!-- endInclude -->
 
 ### SC001
@@ -754,3 +756,65 @@ flowchart TD
 - **Meaning:** Owner-mode equivalent of [SC032](#sc032)/[SC033](#sc033): the `{OwnerId}_SponsorshipExemption` property names an exemption the publisher did not define.
 - **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemption="{name}" does not name a known exemption.` (body uses the owner-mode "Claim one by setting the property" remediation block.)
 - **Example opener:** `Package 'Papyrine': papyrine_SponsorshipExemption="MadeUpName" does not name a known exemption.`
+
+
+### SC035
+
+- **Name:** License too far in the future
+- **Level**: Error
+- **Meaning:** `SponsorshipLicensedUntil` on the `<PackageReference>` is dated more than one year past the build clock. The value is an unverified consumer-side self-attestation, so it is capped: without a ceiling, `SponsorshipLicensedUntil="9999-12"` would be a permanent opt-out dressed up as a license. The cap is the same calendar month one year out, inclusive — with a build in 2026-05, `2027-05` is the last accepted value and `2027-06` fails. Not overrideable. CPM equivalent: [SC036](#sc036). Owner-mode equivalent: [SC037](#sc037).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipLicensedUntil='{value}' on the <PackageReference> is more than 1 year in the future (maximum {maxMonth}).
+
+  Set the SponsorshipLicensedUntil attribute to {maxMonth} or earlier in:
+
+    {csprojPath}
+
+  Example format:
+
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="{maxMonth}" />
+  ```
+
+  Unlike the [SC011](#sc011) format-fix block, the example renders the actual cap month rather than a literal `yyyy-MM` placeholder, so it is directly pasteable.
+- **Example:**
+
+  ```
+  Package 'MyOssLib': SponsorshipLicensedUntil='2030-01' on the <PackageReference> is more than 1 year in the future (maximum 2027-05).
+
+  Set the SponsorshipLicensedUntil attribute to 2027-05 or earlier in:
+
+    /work/MyApp/MyApp.csproj
+
+  Example format:
+
+    <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="2027-05" />
+  ```
+
+
+### SC036
+
+- **Name:** License too far in the future
+- **Level**: Error
+- **Meaning:** CPM equivalent of [SC035](#sc035): `SponsorshipLicensedUntil` on the `<PackageVersion>` in `Directory.Packages.props` is dated more than one year out. Body shape matches SC035 with `<PackageVersion>` in place of `<PackageReference>` and the props file path in place of the csproj path.
+- **Example opener:** `Package 'MyOssLib': SponsorshipLicensedUntil='2030-01' on the <PackageVersion> in Directory.Packages.props is more than 1 year in the future (maximum 2027-05).`
+
+
+### SC037
+
+- **Name:** License too far in the future
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC035](#sc035)/[SC036](#sc036): the `{OwnerId}_SponsorshipLicensedUntil` property is dated more than one year out.
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': {OwnerId}_SponsorshipLicensedUntil='{value}' property is more than 1 year in the future (maximum {maxMonth}).
+
+  Set the {OwnerId}_SponsorshipLicensedUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
+
+  Example format:
+
+    <{OwnerId}_SponsorshipLicensedUntil>{maxMonth}</{OwnerId}_SponsorshipLicensedUntil>
+  ```
+- **Example opener:** `Package 'MyOssLib': acme_SponsorshipLicensedUntil='2030-01' property is more than 1 year in the future (maximum 2027-05).`
