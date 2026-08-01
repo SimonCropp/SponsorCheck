@@ -1,63 +1,117 @@
-﻿<!DOCTYPE html><html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;"><head>
+﻿<!DOCTYPE html>
+<html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;">
+  <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <base href="/">
     <link rel="preload" href="css/app.css" as="style">
     <link rel="preload" href="fonts/open-sans.woff2" as="font" type="font/woff2" crossorigin="">
     <link rel="preload" href="fonts/ubuntu-mono.woff2" as="font" type="font/woff2" crossorigin="">
     <link rel="preload" href="_framework/blazor.webassembly.js" as="script">
     <link rel="stylesheet" href="css/app.css">
-<!--!--><!--!--><!--!--><title><!--!-->SponsorCheck Setup Wizard — consumer</title><!--!--><!--!--><!--!--></head>
-
-<body>
-    <div id="app"><!--!--><!--!--><!--!--><!--!--><!--!--><header class="app-header"><div class="inner"><h1 tabindex="-1"><a href="">SponsorCheck Setup Wizard</a></h1>
-        <p>
+    <title>SponsorCheck Setup Wizard — consumer</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="inner">
+          <h1 tabindex="-1">
+            <a href="">SponsorCheck Setup Wizard</a>
+          </h1>
+          <p>
             Guided configuration for
             <a href="https://github.com/SimonCropp/SponsorCheck" target="_blank">SponsorCheck</a>
             — build-time sponsorship verification for NuGet packages.
-        </p></div></header>
-
-<main><!--!--><!--!--><!--!--><!--!-->
-
-<div class="wizard"><!--!--><ol class="stepper"><li class="done"><button type="button" class="step-link" title="Back to Package">Package</button></li><li class="done"><button type="button" class="step-link" title="Back to Situation">Situation</button></li><li class="active">License mode</li><li class="">Output</li></ol><!--!-->
-
-    <div class="step-body"><!--!--><h2>License mode</h2>
-                <!--!--><p class="hint">The modes are mutually exclusive — pick exactly one.</p>
-                <div class="mode-cards"><button type="button" class="mode-card selected"><!--!--><strong>Sponsor account</strong>
-                        <!--!--><span>Sponsoring the author (or about to)</span></button><!--!-->
-                    <button type="button" class="mode-card "><!--!--><strong>Private license</strong>
-                        <!--!--><span>A licensing arrangement with the author</span></button><button type="button" class="mode-card "><!--!--><strong>Exemption</strong>
-                            <!--!--><span>Claiming a carve-out the publisher defined</span></button><button type="button" class="mode-card "><!--!--><strong>Ignore</strong>
-                        <!--!--><span>Proceed unlicensed, warning accepted</span></button></div><!--!--><p class="hint">Enable each platform the sponsorship runs on and enter the sponsoring account. The verifier passes on any single match.</p><div class="platform-row"><div class="check"><input type="checkbox" id="sponsor-GitHub" style="caret-color: transparent !important;"><!--!-->
-                                    <label for="sponsor-GitHub">GitHub Sponsors</label></div><div class="account field"><label for="sponsor-account-GitHub">GitHubSponsorAccount</label><!--!-->
-                                        <input id="sponsor-account-GitHub" type="text" placeholder="the sponsoring account" style="caret-color: transparent !important;"></div></div><div class="platform-row"><div class="check"><input type="checkbox" id="sponsor-OpenCollective" style="caret-color: transparent !important;"><!--!-->
-                                    <label for="sponsor-OpenCollective">Open Collective</label></div></div><div class="platform-row"><div class="check"><input type="checkbox" id="sponsor-Polar" style="caret-color: transparent !important;"><!--!-->
-                                    <label for="sponsor-Polar">Polar</label></div></div><div class="check" style="margin-top:1rem"><input type="checkbox" id="startedAfter" style="caret-color: transparent !important;"><!--!-->
-                            <label for="startedAfter"><!--!-->
-                                The sponsorship started after this package version was released
-                                <p class="hint">The bundled sponsor list is frozen at pack time, so a recent sponsorship can't be in it yet — an attested start date bridges the gap until the next upgrade.</p></label></div></div><!--!-->
-
-    <div class="wizard-nav"><span><button type="button">Back</button></span><!--!-->
-        <span><button type="button" class="primary">Generate</button></span></div></div></main><!--!-->
-
-<!--!--><footer class="app-footer">
-    SponsorCheck adds no runtime dependency — verification happens only during the build.
-    Full documentation in the
-    <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,
-    the <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,
-    and the <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
-</footer><!--!-->
-        <!--!--></div>
-
+          </p>
+        </div>
+      </header>
+      <main>
+        <div class="wizard">
+          <ol class="stepper">
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Package">Package</button>
+            </li>
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Situation">Situation</button>
+            </li>
+            <li class="active">License mode</li>
+            <li class="">Output</li>
+          </ol>
+          <div class="step-body">
+            <h2>License mode</h2>
+            <p class="hint">The modes are mutually exclusive — pick exactly one.</p>
+            <div class="mode-cards">
+              <button type="button" class="mode-card selected">
+                <strong>Sponsor account</strong>
+                <span>Sponsoring the author (or about to)</span>
+              </button>
+              <button type="button" class="mode-card ">
+                <strong>Private license</strong>
+                <span>A licensing arrangement with the author</span>
+              </button>
+              <button type="button" class="mode-card ">
+                <strong>Exemption</strong>
+                <span>Claiming a carve-out the publisher defined</span>
+              </button>
+              <button type="button" class="mode-card ">
+                <strong>Ignore</strong>
+                <span>Proceed unlicensed, warning accepted</span>
+              </button>
+            </div>
+            <p class="hint">Enable each platform the sponsorship runs on and enter the sponsoring account. The verifier passes on any single match.</p>
+            <div class="platform-row">
+              <div class="check">
+                <input type="checkbox" id="sponsor-GitHub" style="caret-color: transparent !important;">
+                <label for="sponsor-GitHub">GitHub Sponsors</label>
+              </div>
+              <div class="account field">
+                <label for="sponsor-account-GitHub">GitHubSponsorAccount</label>
+                <input id="sponsor-account-GitHub" type="text" placeholder="the sponsoring account" style="caret-color: transparent !important;">
+              </div>
+            </div>
+            <div class="platform-row">
+              <div class="check">
+                <input type="checkbox" id="sponsor-OpenCollective" style="caret-color: transparent !important;">
+                <label for="sponsor-OpenCollective">Open Collective</label>
+              </div>
+            </div>
+            <div class="platform-row">
+              <div class="check">
+                <input type="checkbox" id="sponsor-Polar" style="caret-color: transparent !important;">
+                <label for="sponsor-Polar">Polar</label>
+              </div>
+            </div>
+            <div class="check" style="margin-top:1rem">
+              <input type="checkbox" id="startedAfter" style="caret-color: transparent !important;">
+              <label for="startedAfter">
+                The sponsorship started after this package version was released
+                <p class="hint">The bundled sponsor list is frozen at pack time, so a recent sponsorship can't be in it yet — an attested start date bridges the gap until the next upgrade.</p>
+              </label>
+            </div>
+          </div>
+          <div class="wizard-nav">
+            <span>
+              <button type="button">Back</button>
+            </span>
+            <span>
+              <button type="button" class="primary">Generate</button>
+            </span>
+          </div>
+        </div>
+      </main>
+      <footer class="app-footer">
+        SponsorCheck adds no runtime dependency — verification happens only during the build.     Full documentation in the
+        <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,     the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,     and the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
+      </footer>
+    </div>
     <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">X</a>
+      An unhandled error has occurred.
+      <a href="" class="reload">Reload</a>
+      <a class="dismiss">X</a>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="js/interop.js"></script>
-
-
-
-</body></html>
+  </body>
+</html>

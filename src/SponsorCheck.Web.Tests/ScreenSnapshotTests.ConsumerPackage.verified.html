@@ -1,57 +1,78 @@
-﻿<!DOCTYPE html><html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;"><head>
+﻿<!DOCTYPE html>
+<html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;">
+  <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <base href="/">
     <link rel="preload" href="css/app.css" as="style">
     <link rel="preload" href="fonts/open-sans.woff2" as="font" type="font/woff2" crossorigin="">
     <link rel="preload" href="fonts/ubuntu-mono.woff2" as="font" type="font/woff2" crossorigin="">
     <link rel="preload" href="_framework/blazor.webassembly.js" as="script">
     <link rel="stylesheet" href="css/app.css">
-<!--!--><!--!--><!--!--><title><!--!-->SponsorCheck Setup Wizard — consumer</title><!--!--><!--!--><!--!--></head>
-
-<body>
-    <div id="app"><!--!--><!--!--><!--!--><!--!--><!--!--><header class="app-header"><div class="inner"><h1 tabindex="-1"><a href="">SponsorCheck Setup Wizard</a></h1>
-        <p>
+    <title>SponsorCheck Setup Wizard — consumer</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="inner">
+          <h1 tabindex="-1">
+            <a href="">SponsorCheck Setup Wizard</a>
+          </h1>
+          <p>
             Guided configuration for
             <a href="https://github.com/SimonCropp/SponsorCheck" target="_blank">SponsorCheck</a>
             — build-time sponsorship verification for NuGet packages.
-        </p></div></header>
-
-<main><!--!--><!--!--><!--!--><!--!-->
-
-<div class="wizard"><!--!--><ol class="stepper"><li class="active">Package</li><li class="">Situation</li><li class="">License mode</li><li class="">Output</li></ol><!--!-->
-
-    <div class="step-body"><!--!--><h2>The package</h2>
-                <div class="field"><!--!--><label for="packageId">Package id</label>
-                    <!--!--><p class="hint">The package named in the diagnostic. With a nuget.org lookup, the wizard reads the bundled SponsorCheck configuration and pre-answers the questions.</p>
-                    <input id="packageId" type="text" placeholder="ThePackage" style="caret-color: transparent !important;"></div><!--!-->
-                <div class="field"><!--!--><label for="packageVersion">Version <span class="optional-tag">optional</span></label>
-                    <!--!--><p class="hint">The referenced version. Blank: the lookup inspects the latest stable release.</p>
-                    <input id="packageVersion" type="text" placeholder="1.0.0" style="caret-color: transparent !important;"></div><!--!-->
-                <div class="field"><button type="button" class="lookup">Look up on nuget.org</button><!--!-->
-                    <!--!--><p class="hint">Optional — the download and inspection happen in the browser; nothing is uploaded anywhere.</p></div></div><!--!-->
-
-    <div class="wizard-nav"><span></span><!--!-->
-        <span><button type="button" class="primary">Next</button></span></div></div></main><!--!-->
-
-<!--!--><footer class="app-footer">
-    SponsorCheck adds no runtime dependency — verification happens only during the build.
-    Full documentation in the
-    <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,
-    the <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,
-    and the <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
-</footer><!--!-->
-        <!--!--></div>
-
+          </p>
+        </div>
+      </header>
+      <main>
+        <div class="wizard">
+          <ol class="stepper">
+            <li class="active">Package</li>
+            <li class="">Situation</li>
+            <li class="">License mode</li>
+            <li class="">Output</li>
+          </ol>
+          <div class="step-body">
+            <h2>The package</h2>
+            <div class="field">
+              <label for="packageId">Package id</label>
+              <p class="hint">The package named in the diagnostic. With a nuget.org lookup, the wizard reads the bundled SponsorCheck configuration and pre-answers the questions.</p>
+              <input id="packageId" type="text" placeholder="ThePackage" style="caret-color: transparent !important;">
+            </div>
+            <div class="field">
+              <label for="packageVersion">Version
+                <span class="optional-tag">optional</span>
+              </label>
+              <p class="hint">The referenced version. Blank: the lookup inspects the latest stable release.</p>
+              <input id="packageVersion" type="text" placeholder="1.0.0" style="caret-color: transparent !important;">
+            </div>
+            <div class="field">
+              <button type="button" class="lookup">Look up on nuget.org</button>
+              <p class="hint">Optional — the download and inspection happen in the browser; nothing is uploaded anywhere.</p>
+            </div>
+          </div>
+          <div class="wizard-nav">
+            <span></span>
+            <span>
+              <button type="button" class="primary">Next</button>
+            </span>
+          </div>
+        </div>
+      </main>
+      <footer class="app-footer">
+        SponsorCheck adds no runtime dependency — verification happens only during the build.     Full documentation in the
+        <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,     the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,     and the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
+      </footer>
+    </div>
     <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">X</a>
+      An unhandled error has occurred.
+      <a href="" class="reload">Reload</a>
+      <a class="dismiss">X</a>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="js/interop.js"></script>
-
-
-
-</body></html>
+  </body>
+</html>

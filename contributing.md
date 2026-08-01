@@ -22,6 +22,8 @@ dotnet run  --project IntegrationTests/IntegrationTests --configuration Release 
 
 The web tests install Playwright's Chromium on first run (no separate install step needed locally).
 
+Each wizard screen is snapshotted as a PNG plus the page html. The html is pretty printed via [Verify.AngleSharp](https://github.com/VerifyTests/Verify.AngleSharp), and Blazor's `<!--!-->` render markers are stripped in the same pass, so a snapshot diff points at the element that actually changed. Content inside `<pre>` is preserved verbatim, keeping the generated snippet in each code box faithful.
+
 Filter to a single test (TUnit uses `--treenode-filter`, not `--filter`):
 
 ```pwsh
