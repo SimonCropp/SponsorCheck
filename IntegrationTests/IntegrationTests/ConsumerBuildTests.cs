@@ -84,6 +84,16 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task TooFarLicense_FailsWithSC035()
+    {
+        // A self-attested license is capped at one year out, so the "9999-12" perpetual form is
+        // rejected rather than treated as a never-expiring opt-out.
+        var result = await BuildFixture("Consumer.TooFarLicense");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC035");
+    }
+
+    [Test]
     public async Task MultipleModes_FailsWithSC003()
     {
         var result = await BuildFixture("Consumer.MultipleModes");

@@ -221,6 +221,28 @@ public static class ConsumerMetadataExamples
                  {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
                """;
 
+    // Body of SC035/SC036/SC037 (license dated beyond the one-year cap). Unlike the format-fix
+    // block this renders the actual cap month rather than a literal "yyyy-MM" placeholder — the
+    // consumer needs to know the ceiling, and it makes the example directly pasteable.
+    public static string RenderLicensedUntilMaxFix(ConsumerContext context, string maxMonth) =>
+        context.IsOwner
+            ? $"""
+               Set the {context.OwnerId}_SponsorshipLicensedUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
+
+               Example format:
+
+                 {RenderItem(context, ("SponsorshipLicensedUntil", maxMonth))}
+               """
+            : $"""
+               Set the SponsorshipLicensedUntil attribute to {maxMonth} or earlier in:
+
+                 {context.TargetFilePath}
+
+               Example format:
+
+                 {RenderItem(context, ("SponsorshipLicensedUntil", maxMonth))}
+               """;
+
     public static string RenderSponsorshipStartFix(ConsumerContext context)
     {
         if (context.IsOwner)

@@ -1,0 +1,19 @@
+﻿{
+  Errors: [
+    {
+      Code: SC035,
+      Message:
+License too far in the future. Package 'MyOssLib': SponsorshipLicensedUntil='2030-01' on the <PackageReference> is more than 1 year in the future (maximum 2027-05).
+
+Set the SponsorshipLicensedUntil attribute to 2027-05 or earlier in:
+
+  C:/Consumer/MyApp.csproj
+
+Example format:
+
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="2027-05" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc035
+    }
+  ]
+}

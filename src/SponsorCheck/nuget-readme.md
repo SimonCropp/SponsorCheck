@@ -23,7 +23,7 @@ At least one `<Platform>Account` must be set. Credentials per platform come from
 <!-- Sponsor match (any-platform: passes if any matches the bundled list) -->
 <PackageReference Include="ThePackage" Version="1.0" GitHubSponsorAccount="alice" />
 
-<!-- Explicit time-bounded license -->
+<!-- Explicit time-bounded license (max 1 year out, else SC035) -->
 <PackageReference Include="ThePackage" Version="1.0" SponsorshipLicensedUntil="2026-12" />
 
 <!-- Escape hatch (passes with warning SC005) -->

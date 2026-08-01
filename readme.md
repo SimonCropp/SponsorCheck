@@ -62,7 +62,7 @@ The license modes (sponsor account, time-bounded license, ignore) are mutually e
 
 For the per-package modes, setting the metadata on the wrong element raises [wrong location - SC020](docs/VerifierDiagnosticCodes.md#sc020) — the diagnostic message names the misplaced attribute(s) and the file they should move to. [set on both - SC019](docs/VerifierDiagnosticCodes.md#sc019) is a defensive backstop for the rare case where [SC020](docs/VerifierDiagnosticCodes.md#sc020)'s check is bypassed. (Owner mode reads a single property, so neither applies.)
 
-Verifier diagnostics that prompt changes to consumer-side configuration ([SC001](docs/VerifierDiagnosticCodes.md#sc001)/[SC002](docs/VerifierDiagnosticCodes.md#sc002), [SC005](docs/VerifierDiagnosticCodes.md#sc005)/[SC006](docs/VerifierDiagnosticCodes.md#sc006), [SC007](docs/VerifierDiagnosticCodes.md#sc007)/[SC008](docs/VerifierDiagnosticCodes.md#sc008), [SC009](docs/VerifierDiagnosticCodes.md#sc009)/[SC010](docs/VerifierDiagnosticCodes.md#sc010), [SC011](docs/VerifierDiagnosticCodes.md#sc011)/[SC012](docs/VerifierDiagnosticCodes.md#sc012), [SC013](docs/VerifierDiagnosticCodes.md#sc013)/[SC014](docs/VerifierDiagnosticCodes.md#sc014), [SC015](docs/VerifierDiagnosticCodes.md#sc015)/[SC016](docs/VerifierDiagnosticCodes.md#sc016), and the owner-mode [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021)) render a copy-pasteable snippet pre-filled with the package id, version, and the file to edit. Each odd/even pair is the non-CPM / CPM sibling of the same condition; SC021–SC028 are the owner-mode (global-property) equivalents.
+Verifier diagnostics that prompt changes to consumer-side configuration ([SC001](docs/VerifierDiagnosticCodes.md#sc001)/[SC002](docs/VerifierDiagnosticCodes.md#sc002), [SC005](docs/VerifierDiagnosticCodes.md#sc005)/[SC006](docs/VerifierDiagnosticCodes.md#sc006), [SC007](docs/VerifierDiagnosticCodes.md#sc007)/[SC008](docs/VerifierDiagnosticCodes.md#sc008), [SC009](docs/VerifierDiagnosticCodes.md#sc009)/[SC010](docs/VerifierDiagnosticCodes.md#sc010), [SC011](docs/VerifierDiagnosticCodes.md#sc011)/[SC012](docs/VerifierDiagnosticCodes.md#sc012), [SC013](docs/VerifierDiagnosticCodes.md#sc013)/[SC014](docs/VerifierDiagnosticCodes.md#sc014), [SC015](docs/VerifierDiagnosticCodes.md#sc015)/[SC016](docs/VerifierDiagnosticCodes.md#sc016), [SC035](docs/VerifierDiagnosticCodes.md#sc035)/[SC036](docs/VerifierDiagnosticCodes.md#sc036)/[SC037](docs/VerifierDiagnosticCodes.md#sc037), and the owner-mode [SC021–SC028](docs/VerifierDiagnosticCodes.md#sc021)) render a copy-pasteable snippet pre-filled with the package id, version, and the file to edit. Each odd/even pair is the non-CPM / CPM sibling of the same condition; SC021–SC028 are the owner-mode (global-property) equivalents, and codes from SC029 on run as non-CPM/CPM/owner triples instead.
 
 
 #### Sponsor account match (any platform)
@@ -165,17 +165,21 @@ The bundled hash list is frozen per package version. The verifier has no notion 
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Normally a literal month, e.g. SponsorshipLicensedUntil="2027-06". Computed here so this
+         fixture stays inside the 1-year cap no matter when the test suite runs. -->
     <PackageReference
       Include="ThePackage"
       Version="1.0.0"
-      SponsorshipLicensedUntil="2099-12" />
+      SponsorshipLicensedUntil="$([System.DateTime]::UtcNow.AddMonths(6).ToString('yyyy-MM'))" />
   </ItemGroup>
 </Project>
 ```
-<sup><a href='/IntegrationTests/Fixtures/Consumer.FutureLicense/Consumer.FutureLicense.csproj#L1-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.FutureLicense.csproj' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/IntegrationTests/Fixtures/Consumer.FutureLicense/Consumer.FutureLicense.csproj#L1-L13' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.FutureLicense.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 For private B2B licensing arrangements outside of the platforms. Format is `yyyy-MM`; the license is valid through the end of that month UTC.
+
+The value is capped at one year from the build clock — the same calendar month next year is the latest accepted value, and anything beyond it fails with [SC035](docs/VerifierDiagnosticCodes.md#sc035) (CPM: [SC036](docs/VerifierDiagnosticCodes.md#sc036), owner mode: [SC037](docs/VerifierDiagnosticCodes.md#sc037)). Nothing verifies the declaration, so without a ceiling `SponsorshipLicensedUntil="9999-12"` would be a permanent opt-out wearing a license's clothes. Capping it means a lapsed arrangement surfaces within a year, and renewing is a one-line edit.
 
 In [owner mode](#owner-mode) the same license is declared once as a global `{owner}_SponsorshipLicensedUntil` property — in the consuming csproj or in `Directory.Build.props` — rather than `<PackageReference>` metadata:
 
@@ -185,15 +189,17 @@ In [owner mode](#owner-mode) the same license is declared once as a global `{own
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <!-- Owner mode: a time-bounded private license configured as a global MSBuild property. Valid through end of 2099-12 UTC. -->
-    <acme_SponsorshipLicensedUntil>2099-12</acme_SponsorshipLicensedUntil>
+    <!-- Owner mode: a time-bounded private license configured as a global MSBuild property. Normally
+         a literal month, e.g. 2027-06; computed here so this fixture stays inside the 1-year cap no
+         matter when the test suite runs. -->
+    <acme_SponsorshipLicensedUntil>$([System.DateTime]::UtcNow.AddMonths(6).ToString('yyyy-MM'))</acme_SponsorshipLicensedUntil>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
   </ItemGroup>
 </Project>
 ```
-<sup><a href='/IntegrationTests/Fixtures/Consumer.OwnerFutureLicense/Consumer.OwnerFutureLicense.csproj#L1-L10' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.OwnerFutureLicense.csproj' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/IntegrationTests/Fixtures/Consumer.OwnerFutureLicense/Consumer.OwnerFutureLicense.csproj#L1-L12' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.OwnerFutureLicense.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 An expired value fails with [SC025](docs/VerifierDiagnosticCodes.md#sc025), the owner-mode counterpart of the per-package [SC009](docs/VerifierDiagnosticCodes.md#sc009)/[SC010](docs/VerifierDiagnosticCodes.md#sc010).
@@ -715,12 +721,14 @@ flowchart TD
 
     Which -->|Licensed Until| ParseYM{Valid<br/>yyyy-MM?}
     ParseYM -->|No| SC011[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc011'>SC011 Error<br/>Invalid date format</a>]
-    ParseYM -->|Yes| Expired{End of month<br/>in the past?}
+    ParseYM -->|Yes| TooFar{More than<br/>1 year out?}
+    TooFar -->|Yes| SC035[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc035'>SC035 Error<br/>Beyond the 1 year cap</a>]
+    TooFar -->|No| Expired{End of month<br/>in the past?}
     Expired -->|Yes| SC009[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>SC009 Error<br/>License expired</a>]
     Expired -->|No| PassLicense([Build passes])
 ```
 
-> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), [SC029](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029)→[SC030](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030), [SC032](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032)→[SC033](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent for the original modes (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028)) plus [SC031](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031)/[SC034](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034) for the exemption branch; [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared. The exemption branch only fires when the publisher defined `<SponsorExemption>` items at pack time — packages without any exemptions never reach `KnownName`.
+> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), [SC029](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029)→[SC030](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030), [SC032](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032)→[SC033](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033), [SC035](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc035)→[SC036](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc036), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent for the original modes (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028)) plus [SC031](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031)/[SC034](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034) for the exemption branch and [SC037](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc037) for the one-year cap; [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared. The exemption branch only fires when the publisher defined `<SponsorExemption>` items at pack time — packages without any exemptions never reach `KnownName`.
 <!-- endInclude -->
 
 

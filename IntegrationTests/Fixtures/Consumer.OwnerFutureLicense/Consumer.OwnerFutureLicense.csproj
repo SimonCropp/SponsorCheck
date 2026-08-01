@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <!-- Owner mode: a time-bounded private license configured as a global MSBuild property. Valid through end of 2099-12 UTC. -->
-    <acme_SponsorshipLicensedUntil>2099-12</acme_SponsorshipLicensedUntil>
+    <!-- Owner mode: a time-bounded private license configured as a global MSBuild property. Normally
+         a literal month, e.g. 2027-06; computed here so this fixture stays inside the 1-year cap no
+         matter when the test suite runs. -->
+    <acme_SponsorshipLicensedUntil>$([System.DateTime]::UtcNow.AddMonths(6).ToString('yyyy-MM'))</acme_SponsorshipLicensedUntil>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />

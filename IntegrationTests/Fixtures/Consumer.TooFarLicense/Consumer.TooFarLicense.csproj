@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      SponsorshipLicensedUntil="9999-12" />
+  </ItemGroup>
+</Project>
