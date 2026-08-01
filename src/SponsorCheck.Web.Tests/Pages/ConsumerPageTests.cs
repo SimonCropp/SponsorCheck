@@ -165,6 +165,42 @@ public class ConsumerPageTests : WebTestContext
     }
 
     [Test]
+    public async Task EditingPackageIdentityClearsFacts()
+    {
+        var nupkg = TestNupkg.Build(ownerId: "acme");
+        Services.AddScoped(_ => new HttpClient(new StubNuGetHandler(nupkg, "1.2.3")));
+
+        var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        cut.Find("#packageId").Input("ThePackage");
+        cut.Find("button.lookup").Click();
+        cut.WaitForState(() => cut.Markup.Contains("Read from ThePackage 1.2.3"));
+
+        cut.Find("#packageId").Input("OtherPackage");
+
+        await Assert.That(cut.Markup).DoesNotContain("Read from ThePackage");
+
+        cut.Find("button.primary").Click();           // package -> situation, manual questions again
+
+        await Assert.That(cut.FindAll("#style-owner").Count).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task LookupFailureShowsErrorAndManualPathRemains()
+    {
+        // WebTestContext's default HttpClient throws on any request (no network).
+        var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        cut.Find("#packageId").Input("ThePackage");
+        cut.Find("button.lookup").Click();
+        cut.WaitForState(() => cut.Markup.Contains("Lookup failed"));
+
+        await Assert.That(cut.Find("button.lookup").HasAttribute("disabled")).IsFalse();
+
+        cut.Find("button.primary").Click();           // package -> situation
+
+        await Assert.That(cut.FindAll("#scCode").Count).IsEqualTo(1);
+    }
+
+    [Test]
     public async Task LookupWithoutSponsorCheckFallsBackToManualQuestions()
     {
         var nupkg = TestNupkg.Build(sponsorCheck: false);

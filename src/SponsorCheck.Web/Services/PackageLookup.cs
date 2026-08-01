@@ -41,11 +41,22 @@ public sealed class PackageLookup(HttpClient http)
                 $"'{id}' {resolved} is {response.Content.Headers.ContentLength / 1_000_000} MB — too large to inspect in the browser. Answer the questions manually.");
         }
 
-        // ZipArchive needs a seekable stream, so buffer the download.
+        // ZipArchive needs a seekable stream, so buffer the download — bounding the copy so a
+        // response without a Content-Length header can't stream unbounded into browser memory.
         using var memory = new MemoryStream();
         await using (var stream = await response.Content.ReadAsStreamAsync())
         {
-            await stream.CopyToAsync(memory);
+            var buffer = new byte[81920];
+            int read;
+            while ((read = await stream.ReadAsync(buffer)) > 0)
+            {
+                memory.Write(buffer, 0, read);
+                if (memory.Length > MaxNupkgBytes)
+                {
+                    throw new PackageLookupException(
+                        $"'{id}' {resolved} exceeds {MaxNupkgBytes / 1_000_000} MB — too large to inspect in the browser. Answer the questions manually.");
+                }
+            }
         }
 
         memory.Position = 0;

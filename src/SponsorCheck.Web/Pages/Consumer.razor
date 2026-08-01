@@ -14,13 +14,13 @@
                     <label for="packageId">Package id</label>
                     <p class="hint">The package named in the diagnostic. With a nuget.org lookup, the wizard reads the bundled SponsorCheck configuration and pre-answers the questions.</p>
                     <input id="packageId" type="text" placeholder="ThePackage"
-                           @bind="model.PackageId" @bind:event="oninput" />
+                           @bind="model.PackageId" @bind:event="oninput" @bind:after="PackageChanged" />
                 </div>
                 <div class="field">
                     <label for="packageVersion">Version <span class="optional-tag">optional</span></label>
                     <p class="hint">The referenced version. Blank: the lookup inspects the latest stable release.</p>
                     <input id="packageVersion" type="text" placeholder="1.0.0"
-                           @bind="model.PackageVersion" @bind:event="oninput" />
+                           @bind="model.PackageVersion" @bind:event="oninput" @bind:after="PackageChanged" />
                 </div>
                 <div class="field">
                     <button type="button" class="lookup" disabled="@(!CanLookup)" @onclick="LookupPackage">

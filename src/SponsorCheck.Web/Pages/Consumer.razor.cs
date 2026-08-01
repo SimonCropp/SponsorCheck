@@ -49,6 +49,14 @@ public partial class Consumer
         }
     }
 
+    /// <summary>Any edit to the package identity invalidates previously read facts — they described
+    /// a different package or version. A fresh lookup is one click.</summary>
+    void PackageChanged()
+    {
+        model.Facts = null;
+        lookupError = null;
+    }
+
     /// <summary>The exemption card only renders when the package is known to define exemptions —
     /// or when nothing was looked up and the wizard can't know.</summary>
     bool ExemptionModeAvailable =>
