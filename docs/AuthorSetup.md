@@ -311,6 +311,24 @@ For testing or offline builds, set `<SponsorListOverride>` to a JSON file path:
 
 ## What gets bundled
 
+```mermaid
+flowchart TD
+    Metadata["SponsorCheck reference metadata<br/>platform accounts, SponsorOwner, CheckTransitiveReferences,<br/>severity/message overrides, exemptions"] --> Bundler[BundleSponsorListTask]
+    Credentials["platform credentials<br/>MSBuild property / env var / user-secrets"] --> Bundler
+    Platforms["platform APIs<br/>GitHub Sponsors / Open Collective / Polar<br/>or SponsorListOverride JSON"] -->|sponsor accounts| Bundler
+    Bundler -->|"accounts hashed —<br/>first 12 hex chars of SHA-256"| Folder
+    Bundler --> TaskDll
+    subgraph Nupkg["produced nupkg"]
+        subgraph Folder["build/ — or buildTransitive/ when CheckTransitiveReferences=true"]
+            Hashes["SponsorCheck.SponsorHashes.txt"]
+            PackDate["SponsorCheck.PackDate.txt"]
+            Accounts["SponsorCheck.AuthorAccounts.txt"]
+            Targets["&lt;PackageId&gt;.targets — the generated verifier"]
+        end
+        TaskDll["tasks/ — SponsorCheck.dll (netstandard2.0 + net472)<br/>unaffected by the folder choice"]
+    end
+```
+
 The bundler runs at the OSS author's pack time (Release config, `IsPackable=true`). It:
 
 1. Reads `<Platform>Account` metadata from the SponsorCheck `PackageReference` / `PackageVersion`.

@@ -123,6 +123,22 @@ Pack-time diagnostics are documented in [Bundler diagnostic codes (SC1xx)](docs/
 
 ## How it works
 
+```mermaid
+flowchart LR
+    subgraph Author["OSS author — pack time"]
+        Platforms["GitHub Sponsors /<br/>Open Collective / Polar"] -->|fetch sponsor list| Bundler[bundler]
+        Bundler -->|"hashed accounts + pack date<br/>+ embedded verifier"| Nupkg[("produced nupkg")]
+    end
+    subgraph Consumer["Consumer — every build"]
+        Verifier["bundled verifier"] --> Mode{license mode?}
+        Mode -->|"sponsor match /<br/>valid license"| Pass(["build passes"])
+        Mode -->|"ignored /<br/>exemption"| Warn(["passes + warning"])
+        Mode -->|"none / no match /<br/>expired"| Fail(["SC0xx error"])
+    end
+    Nupkg -->|publish| Feed[("nuget.org")]
+    Feed -->|restore| Verifier
+```
+
 At the author's pack time, the **bundler** fetches the sponsor accounts from each configured platform and writes them into the produced nupkg as truncated hashes, alongside the pack date, the author's platform accounts (used to render sponsor URLs in diagnostics), a generated verifier targets file, and the verifier task DLL. [What gets bundled](docs/AuthorSetup.md#what-gets-bundled) has the file-by-file detail.
 
 On every consumer build — in every configuration — the **verifier** reads the consumer's declared license mode and passes, warns, or fails with an `SC0xx` code. The full decision tree is charted in [How verification works](docs/ConsumerUsage.md#how-verification-works).
