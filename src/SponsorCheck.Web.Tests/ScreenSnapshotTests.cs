@@ -2,8 +2,9 @@ namespace SponsorCheck.Web.Tests;
 
 /// <summary>
 /// One Verify.Playwright snapshot (full-page PNG + HTML) per wizard screen, driven through the real
-/// WASM runtime. PNG comparison uses SSIM with a lenient threshold (see ModuleInitializer) so the
-/// Windows-authored baselines tolerate Linux CI font rendering; the HTML target pins exact markup.
+/// WASM runtime. The wizard bundles its own fonts, so layout is identical on every OS and the PNG
+/// baselines hold cross-platform; SSIM with a lenient threshold (see ModuleInitializer) absorbs the
+/// remaining rasterization differences. The HTML target pins exact markup.
 /// Inputs are fixed values so every screen renders deterministic content.
 /// </summary>
 public class ScreenSnapshotTests
@@ -30,11 +31,21 @@ public class ScreenSnapshotTests
         return page;
     }
 
+    /// <summary>
+    /// The bundled webfonts are declared <c>font-display: block</c>, so text stays unpainted until
+    /// they load and a screenshot taken too early captures a blank or differently-measured page.
+    /// </summary>
+    static async Task VerifyScreen(IPage page)
+    {
+        await page.EvaluateAsync("async () => { await document.fonts.ready; }");
+        await Verify(page);
+    }
+
     [Test]
     public async Task Home()
     {
         var page = await Open("/", ".role-cards");
-        await Verify(page);
+        await VerifyScreen(page);
     }
 
     // ---- consumer screens ----
@@ -73,21 +84,21 @@ public class ScreenSnapshotTests
     public async Task ConsumerPackage()
     {
         var page = await ConsumerPackageScreen();
-        await Verify(page);
+        await VerifyScreen(page);
     }
 
     [Test]
     public async Task ConsumerSituation()
     {
         var page = await ConsumerSituationScreen();
-        await Verify(page);
+        await VerifyScreen(page);
     }
 
     [Test]
     public async Task ConsumerLicenseMode()
     {
         var page = await ConsumerLicenseModeScreen();
-        await Verify(page);
+        await VerifyScreen(page);
     }
 
     [Test]
@@ -96,7 +107,7 @@ public class ScreenSnapshotTests
         var page = await ConsumerLicenseModeScreen();
         await page.ClickAsync("button.primary");
         await page.WaitForSelectorAsync(".output");
-        await Verify(page);
+        await VerifyScreen(page);
     }
 
     // ---- author screens ----
@@ -146,28 +157,28 @@ public class ScreenSnapshotTests
     public async Task AuthorPackage()
     {
         var page = await AuthorPackageScreen();
-        await Verify(page);
+        await VerifyScreen(page);
     }
 
     [Test]
     public async Task AuthorPlatforms()
     {
         var page = await AuthorPlatformsScreen();
-        await Verify(page);
+        await VerifyScreen(page);
     }
 
     [Test]
     public async Task AuthorModeScope()
     {
         var page = await AuthorModeScopeScreen();
-        await Verify(page);
+        await VerifyScreen(page);
     }
 
     [Test]
     public async Task AuthorOptions()
     {
         var page = await AuthorOptionsScreen();
-        await Verify(page);
+        await VerifyScreen(page);
     }
 
     [Test]
@@ -176,6 +187,6 @@ public class ScreenSnapshotTests
         var page = await AuthorOptionsScreen();
         await page.ClickAsync("button.primary");
         await page.WaitForSelectorAsync(".output");
-        await Verify(page);
+        await VerifyScreen(page);
     }
 }

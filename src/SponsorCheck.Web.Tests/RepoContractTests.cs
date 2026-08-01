@@ -138,6 +138,80 @@ public class RepoContractTests
         await Assert.That(ownerTemplate).Contains(NupkgParser.OwnerIdElement);
     }
 
+    /// <summary>
+    /// Every character the wizard renders must be covered by a bundled webfont. A character outside
+    /// the shipped subsets falls through to whatever the OS supplies, whose advance width differs
+    /// per platform — that re-wraps prose and moves the height of the ScreenSnapshotTests PNGs,
+    /// which is exactly the drift the bundled fonts exist to remove. The unicode-range descriptors
+    /// in app.css are the source of truth, so adding a glyph to a font means widening them here too.
+    /// </summary>
+    [Test]
+    public async Task ShippedFontsCoverRenderedText()
+    {
+        var css = ReadSrc("SponsorCheck.Web", "wwwroot", "css", "app.css");
+        var covered = ParseUnicodeRanges(css);
+        await Assert.That(covered.Count).IsGreaterThan(0).Because("app.css should declare unicode-range descriptors");
+
+        var uncovered = new SortedSet<char>(RenderedCharacters().Where(_ => !covered.Contains(_)));
+
+        await Assert.That(uncovered)
+            .IsEmpty()
+            .Because(
+                "these characters have no bundled glyph and would fall back to a system font: " +
+                string.Join(", ", uncovered.Select(_ => $"U+{(int) _:X4} '{_}'")));
+    }
+
+    /// <summary>Text the wizard actually renders, taken from the html snapshots plus the razor sources.</summary>
+    static IEnumerable<char> RenderedCharacters()
+    {
+        var testDirectory = RepoPaths.SrcFile("SponsorCheck.Web.Tests");
+        foreach (var file in Directory.EnumerateFiles(testDirectory, "*.verified.html"))
+        {
+            // strip markup: attribute values are urls and css classes, not rendered text
+            var text = Regex.Replace(File.ReadAllText(file), "<[^>]*>", " ");
+            foreach (var character in WebUtility.HtmlDecode(text))
+            {
+                yield return character;
+            }
+        }
+
+        var webDirectory = RepoPaths.SrcFile("SponsorCheck.Web");
+        foreach (var razor in Directory.EnumerateFiles(webDirectory, "*.razor", SearchOption.AllDirectories))
+        {
+            foreach (var character in File.ReadAllText(razor))
+            {
+                yield return character;
+            }
+        }
+    }
+
+    static HashSet<char> ParseUnicodeRanges(string css)
+    {
+        var covered = new HashSet<char>
+        {
+            // markup and source formatting, never glyphs on screen
+            '\r',
+            '\n',
+            '\t',
+            '﻿'
+        };
+
+        foreach (Match declaration in Regex.Matches(css, @"unicode-range:\s*([^;]+);"))
+        {
+            foreach (Match range in Regex.Matches(declaration.Groups[1].Value, @"U\+([0-9A-Fa-f]+)(?:-([0-9A-Fa-f]+))?"))
+            {
+                var start = Convert.ToInt32(range.Groups[1].Value, 16);
+                var end = range.Groups[2].Success ? Convert.ToInt32(range.Groups[2].Value, 16) : start;
+                for (var code = start; code <= end; code++)
+                {
+                    covered.Add((char) code);
+                }
+            }
+        }
+
+        return covered;
+    }
+
     [Test]
     public async Task MentionedDiagnosticCodesAreDocumented()
     {

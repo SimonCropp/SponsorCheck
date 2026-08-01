@@ -7,8 +7,11 @@ static class ModuleInitializer
         VerifyDiffPlex.Initialize();
         VerifierSettings.InitializePlugins();
 
-        // PNG baselines are authored on Windows; SSIM comparison absorbs the font-rendering
-        // differences on the Linux CI images while still catching real layout changes.
+        // The wizard bundles its own fonts (see wwwroot/fonts/readme.md), so layout — and therefore
+        // screenshot dimensions — match on every OS. What still differs is rasterization: FreeType
+        // and DirectWrite hint and antialias the same outlines differently. SSIM compares structure
+        // rather than exact pixels, so a lenient threshold absorbs that while still catching real
+        // layout changes.
         VerifierSettings.UseSsimForPng(.7);
 
         VerifierSettings.ScrubLinesWithReplace(_ => Regex.Replace(

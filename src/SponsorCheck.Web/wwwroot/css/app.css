@@ -1,3 +1,42 @@
+/*
+ * Bundled webfonts. Chromium shapes text with HarfBuzz on every OS, so a font served with the app
+ * measures identically everywhere, while a system font (Segoe UI on Windows, whatever fontconfig
+ * picks on Linux) does not — and differing advance widths re-wrap prose, which moves the height of
+ * a full-page screenshot. Shipping the faces is what lets ScreenSnapshotTests compare PNGs on any
+ * OS. See wwwroot/fonts/readme.md for provenance and licences.
+ *
+ * The unicode-range descriptors are the source of truth for what the bundled subsets cover:
+ * RepoContractTests.ShippedFontsCoverRenderedText parses them and fails if the wizard renders a
+ * character that would fall through to a system font.
+ */
+@font-face {
+    font-family: 'SponsorCheck Sans';
+    src: url('../fonts/open-sans.woff2') format('woff2');
+    font-weight: 300 800;
+    font-style: normal;
+    font-display: block;
+    unicode-range: U+0020-007E, U+00A0-00FF, U+2013-2014, U+2018-2019, U+201C-201D, U+2022, U+2026, U+2039-203A, U+2122;
+}
+
+/* Open Sans has no arrows; these come from Work Sans under the same family name. */
+@font-face {
+    font-family: 'SponsorCheck Sans';
+    src: url('../fonts/work-sans-arrows.woff2') format('woff2');
+    font-weight: 300 800;
+    font-style: normal;
+    font-display: block;
+    unicode-range: U+2190-2193;
+}
+
+@font-face {
+    font-family: 'SponsorCheck Mono';
+    src: url('../fonts/ubuntu-mono.woff2') format('woff2');
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: block;
+    unicode-range: U+0020-007E, U+00A0-00FF, U+2013-2014, U+2018-2019, U+201C-201D, U+2022, U+2026, U+2039-203A, U+2122;
+}
+
 :root {
     --primary: #6f42c1;
     --primary-contrast: #ffffff;
@@ -36,14 +75,52 @@ html, body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'SponsorCheck Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
     line-height: 1.5;
+    /*
+     * Bundling the fonts pins which outlines are used, but not how they are measured: by default
+     * the rasterizer rounds advance widths to fit its hinting grid, and FreeType and DirectWrite
+     * round differently, so the same sentence wraps at a different word on Linux than on Windows.
+     * geometricPrecision measures from the font's own metrics instead, making line breaks — and so
+     * page height — identical everywhere. Without it the ScreenSnapshotTests PNGs drift per OS.
+     */
+    text-rendering: geometricPrecision;
 }
 
 a {
     color: var(--primary);
+}
+
+/*
+ * The UA stylesheet sets font-family on these elements, and that beats inheritance — so a <code>
+ * inside a styled <pre> silently renders in the platform's own monospace font rather than the
+ * bundled one. That also makes line box heights platform-dependent: the bundled face and the
+ * system face split ascent and descent differently, and a line containing both is sized from the
+ * union. Naming the bundled face here keeps inline code and code blocks pinned alike.
+ */
+code, pre, kbd, samp {
+    font-family: 'SponsorCheck Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+/*
+ * A line's height is the union of the strut and every inline box on it, each positioned from its
+ * own font's ascent and descent — values the rasterizer rounds to whole pixels, and Windows and
+ * Linux round them differently. So a prose line mixing the sans strut with a monospace span can
+ * come out a pixel taller on one platform. Keeping the inline box short enough to sit inside the
+ * strut makes the line height depend on the strut alone, which is the same everywhere. This does
+ * not change code blocks, where the strut is already the same monospace face.
+ */
+code, kbd, samp {
+    line-height: 1;
+}
+
+/* Form controls do not inherit font-family either, so they would measure per-platform too. */
+input,
+select,
+textarea {
+    font-family: inherit;
 }
 
 .loading {
@@ -481,7 +558,7 @@ button.copy-markdown {
     padding: .85rem;
     background: var(--code-bg);
     overflow-x: auto;
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-family: 'SponsorCheck Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
     font-size: .85rem;
     white-space: pre;
     tab-size: 2;
