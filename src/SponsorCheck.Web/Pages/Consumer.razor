@@ -1,0 +1,308 @@
+@page "/consumer"
+@namespace SponsorCheck.Web.Pages
+<PageTitle>SponsorCheck Setup Wizard — consumer</PageTitle>
+
+<div class="wizard">
+    <Stepper Labels="steps" Active="step" StepSelected="GoToStep" />
+
+    <div class="step-body">
+        @switch (step)
+        {
+            case 0:
+                <h2>The package</h2>
+                <div class="field">
+                    <label for="packageId">Package id</label>
+                    <p class="hint">The package named in the diagnostic. With a nuget.org lookup, the wizard reads the bundled SponsorCheck configuration and pre-answers the questions.</p>
+                    <input id="packageId" type="text" placeholder="ThePackage"
+                           @bind="model.PackageId" @bind:event="oninput" @bind:after="PackageChanged" />
+                </div>
+                <div class="field">
+                    <label for="packageVersion">Version <span class="optional-tag">optional</span></label>
+                    <p class="hint">The referenced version. Blank: the lookup inspects the latest stable release.</p>
+                    <input id="packageVersion" type="text" placeholder="1.0.0"
+                           @bind="model.PackageVersion" @bind:event="oninput" @bind:after="PackageChanged" />
+                </div>
+                <div class="field">
+                    <button type="button" class="lookup" disabled="@(!CanLookup)" @onclick="LookupPackage">
+                        @(lookupBusy ? "Inspecting…" : "Look up on nuget.org")
+                    </button>
+                    <p class="hint">Optional — the download and inspection happen in the browser; nothing is uploaded anywhere.</p>
+                    @if (lookupError is { } error)
+                    {
+                        <p class="validation-error">@error</p>
+                    }
+                    @if (model.Facts is { } facts)
+                    {
+                        @if (!facts.BundlesSponsorCheck)
+                        {
+                            <p class="callout">
+                                No SponsorCheck files found in <code>@facts.PackageId</code> @facts.Version — that version may
+                                predate SponsorCheck adoption. Continue with the manual questions, or look up the version the
+                                diagnostic came from.
+                            </p>
+                        }
+                        else
+                        {
+                            <div class="callout facts-summary">
+                                <strong>Read from @facts.PackageId @facts.Version:</strong>
+                                <ul>
+                                    <li>@(facts.OwnerMode ? $"Owner mode — configured once via '{facts.OwnerId}_…' properties" : "Per-package configuration")</li>
+                                    <li>Sponsorship platforms: @string.Join(", ", facts.Platforms.Select(_ => Platform.All.First(known => known.Kind == _.Kind).DisplayName))</li>
+                                    <li>@(facts.Exemptions.Count > 0 ? $"Publisher-defined exemptions: {string.Join(", ", facts.Exemptions.Select(_ => _.Name))}" : "No publisher-defined exemptions")</li>
+                                    @if (facts.PackDate is { } packDate)
+                                    {
+                                        <li>Packed on @packDate</li>
+                                    }
+                                    <li>Transitive checking: @(facts.CheckTransitive ? "on" : "off")</li>
+                                </ul>
+                            </div>
+                        }
+                    }
+                </div>
+                break;
+
+            case 1:
+                <h2>Your situation</h2>
+                @if (model.Facts is { BundlesSponsorCheck: true } knownFacts)
+                {
+                    <p class="callout facts-summary">
+                        @(knownFacts.OwnerMode
+                            ? $"This package uses owner mode (owner id '{knownFacts.OwnerId}') — detected from the package, nothing to answer here."
+                            : "This package uses per-package configuration — detected from the package.")
+                    </p>
+                    @if (!knownFacts.OwnerMode)
+                    {
+                        <CpmChoice Model="model" />
+                    }
+                }
+                else
+                {
+                    <div class="field">
+                        <label for="scCode">Diagnostic code from the failing build <span class="optional-tag">optional</span></label>
+                        <p class="hint">The SC code in the build output encodes the answers below — enter it and the questions pre-answer themselves (still editable).</p>
+                        <input id="scCode" type="text" placeholder="SC001"
+                               @bind="model.EnteredCode" @bind:event="oninput" @bind:after="CodeChanged" />
+                        @if (classification is { } parsed)
+                        {
+                            @if (!parsed.Recognized)
+                            {
+                                <p class="validation-error">Not a recognized SponsorCheck diagnostic code.</p>
+                            }
+                            else if (parsed.AuthorSide)
+                            {
+                                <p class="callout">@parsed.Note Switch to the <a href="author">author flow</a>.</p>
+                            }
+                            else if (parsed.Note is { } note)
+                            {
+                                <p class="callout">@note</p>
+                            }
+                            else
+                            {
+                                <p class="hint">Recognized — the questions below have been pre-answered.</p>
+                            }
+                        }
+                    </div>
+
+                    <div class="field">
+                        <label>Configuration style</label>
+                        <div class="radio-row">
+                            <input type="radio" id="style-package" name="configStyle"
+                                   checked="@(!model.OwnerMode)" @onchange="() => model.OwnerMode = false" />
+                            <label for="style-package">
+                                Per package
+                                <p class="hint">The metadata lives on the package reference itself (codes SC001–SC016 and most others).</p>
+                            </label>
+                        </div>
+                        <div class="radio-row">
+                            <input type="radio" id="style-owner" name="configStyle"
+                                   checked="@model.OwnerMode" @onchange="() => model.OwnerMode = true" />
+                            <label for="style-owner">
+                                Owner mode
+                                <p class="hint">The error names a global property like <code>&lt;acme_GitHubSponsorAccount&gt;</code> (codes SC021–SC028) — one declaration covers every package from that owner.</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    @if (model.OwnerMode)
+                    {
+                        <div class="field">
+                            <label for="ownerId">Owner id</label>
+                            <p class="hint">Copy it from the property name in the error message — the part before the underscore, e.g. <code>acme</code> for <code>&lt;acme_GitHubSponsorAccount&gt;</code>.</p>
+                            <input id="ownerId" type="text" placeholder="acme"
+                                   @bind="model.OwnerId" @bind:event="oninput" />
+                        </div>
+                    }
+                    else
+                    {
+                        <CpmChoice Model="model" />
+                    }
+                }
+                break;
+
+            case 2:
+                <h2>License mode</h2>
+                <p class="hint">The modes are mutually exclusive — pick exactly one.</p>
+                <div class="mode-cards">
+                    <button type="button" class="mode-card @CardClass(ConsumerLicenseMode.Sponsor)" @onclick="() => SetMode(ConsumerLicenseMode.Sponsor)">
+                        <strong>Sponsor account</strong>
+                        <span>Sponsoring the author (or about to)</span>
+                    </button>
+                    <button type="button" class="mode-card @CardClass(ConsumerLicenseMode.License)" @onclick="() => SetMode(ConsumerLicenseMode.License)">
+                        <strong>Private license</strong>
+                        <span>A licensing arrangement with the author</span>
+                    </button>
+                    @if (ExemptionModeAvailable)
+                    {
+                        <button type="button" class="mode-card @CardClass(ConsumerLicenseMode.Exemption)" @onclick="() => SetMode(ConsumerLicenseMode.Exemption)">
+                            <strong>Exemption</strong>
+                            <span>Claiming a carve-out the publisher defined</span>
+                        </button>
+                    }
+                    <button type="button" class="mode-card @CardClass(ConsumerLicenseMode.Ignore)" @onclick="() => SetMode(ConsumerLicenseMode.Ignore)">
+                        <strong>Ignore</strong>
+                        <span>Proceed unlicensed, warning accepted</span>
+                    </button>
+                </div>
+
+                @switch (model.Mode)
+                {
+                    case ConsumerLicenseMode.Sponsor:
+                        <p class="hint">Enable each platform the sponsorship runs on and enter the sponsoring account. The verifier passes on any single match.</p>
+                        @foreach (var platform in SponsorPlatforms)
+                        {
+                            var selection = model.Selection(platform.Kind);
+                            <div class="platform-row">
+                                <div class="check">
+                                    <input type="checkbox" id="@($"sponsor-{platform.Kind}")" @bind="selection.Enabled" />
+                                    <label for="@($"sponsor-{platform.Kind}")">@platform.DisplayName</label>
+                                </div>
+                                @if (selection.Enabled)
+                                {
+                                    <div class="account field">
+                                        <label for="@($"sponsor-account-{platform.Kind}")">@platform.ConsumerAccountMetadata</label>
+                                        <input id="@($"sponsor-account-{platform.Kind}")" type="text" placeholder="the sponsoring account"
+                                               @bind="selection.Account" @bind:event="oninput" />
+                                        @if (SponsorHint(platform) is { } sponsorHint)
+                                        {
+                                            <p class="hint">@sponsorHint</p>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        <div class="check" style="margin-top:1rem">
+                            <input type="checkbox" id="startedAfter" @bind="model.StartedAfterRelease" />
+                            <label for="startedAfter">
+                                The sponsorship started after this package version was released
+                                <p class="hint">
+                                    @(model.Facts?.PackDate is { } packedOn
+                                        ? $"This version was packed on {packedOn} — the bundled sponsor list is frozen at that date, so a later sponsorship can't be in it yet."
+                                        : "The bundled sponsor list is frozen at pack time, so a recent sponsorship can't be in it yet — an attested start date bridges the gap until the next upgrade.")
+                                </p>
+                            </label>
+                        </div>
+                        @if (model.StartedAfterRelease)
+                        {
+                            <div class="field">
+                                <label for="sponsorshipStart">Sponsorship start date</label>
+                                <input id="sponsorshipStart" type="text" placeholder="yyyy-MM-dd"
+                                       @bind="model.SponsorshipStart" @bind:event="oninput" />
+                                @if (model.SponsorshipStart.Trim().Length > 0 && !model.IsSponsorshipStartValid)
+                                {
+                                    <p class="validation-error">Use the format yyyy-MM-dd, e.g. 2026-04-30.</p>
+                                }
+                                else if (StartIsInFuture)
+                                {
+                                    <p class="callout">That date is in the future — the verifier rejects it (SC015 family). Use the real start date.</p>
+                                }
+                            </div>
+                        }
+                        break;
+
+                    case ConsumerLicenseMode.License:
+                        <div class="field">
+                            <label for="licensedUntil">Licensed until (last covered month)</label>
+                            <p class="hint">Format yyyy-MM; valid through the end of that month (UTC). Capped at one year out — a longer arrangement is renewed with a one-line edit.</p>
+                            <input id="licensedUntil" type="text" placeholder="yyyy-MM"
+                                   @bind="model.LicensedUntilMonth" @bind:event="oninput" />
+                            @if (model.LicensedUntilMonth.Trim().Length > 0 && !model.IsLicensedUntilValid)
+                            {
+                                <p class="validation-error">Use the format yyyy-MM, e.g. 2027-06.</p>
+                            }
+                        </div>
+                        break;
+
+                    case ConsumerLicenseMode.Exemption:
+                        <div class="field">
+                            <label for="exemptionName">Exemption</label>
+                            @if (model.Facts is { BundlesSponsorCheck: true, Exemptions.Count: > 0 } factsWithExemptions)
+                            {
+                                <p class="hint">The publisher defined these exemptions — pick the one that applies.</p>
+                                <select id="exemptionName" @bind="model.ExemptionName">
+                                    <option value="">Pick an exemption…</option>
+                                    @foreach (var exemption in factsWithExemptions.Exemptions)
+                                    {
+                                        <option value="@exemption.Name">@exemption.Name</option>
+                                    }
+                                </select>
+                                @if (factsWithExemptions.FindExemption(model.ExemptionName) is { } selected)
+                                {
+                                    <p class="hint">Criteria: @selected.Message</p>
+                                }
+                            }
+                            else
+                            {
+                                <p class="hint">Exemptions are defined by the publisher at pack time — the failing build's error message lists the available names when an unknown one is claimed.</p>
+                                <input id="exemptionName" type="text" placeholder="Consulting"
+                                       @bind="model.ExemptionName" @bind:event="oninput" />
+                            }
+                        </div>
+                        break;
+
+                    case ConsumerLicenseMode.Ignore:
+                        @if (model.FactSeverity("SC005", "SC006", "SC023") == "error")
+                        {
+                            <p class="callout">
+                                This publisher escalated the opt-out to an <strong>error</strong> at pack time —
+                                <code>SponsorshipLicenseIgnored</code> fails the build for this package instead of warning.
+                                Pick one of the other modes.
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="callout">
+                                The build will pass but log a breach-of-license warning on every build — visible in CI and code review.
+                                Publishers can also raise it to an error at pack time.
+                            </p>
+                        }
+                        break;
+                }
+                break;
+
+            case OutputStep:
+                <ConsumerOutputPanel Model="model" />
+                break;
+        }
+    </div>
+
+    <div class="wizard-nav">
+        <span>
+            @if (step > 0)
+            {
+                <button type="button" @onclick="Back">Back</button>
+            }
+        </span>
+        <span>
+            @if (step < OutputStep)
+            {
+                <button type="button" class="primary" disabled="@(!CanAdvance)" @onclick="Next">
+                    @(step == OutputStep - 1 ? "Generate" : "Next")
+                </button>
+            }
+            else
+            {
+                <button type="button" @onclick="Restart">Start over</button>
+            }
+        </span>
+    </div>
+</div>

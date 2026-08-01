@@ -1,0 +1,41 @@
+<div class="output">
+    <div class="output-header">
+        <h2>Generated configuration</h2>
+        <CopyMarkdownButton Markdown="@output.Markdown" />
+    </div>
+
+    <section class="output-part">
+        <h3>1. Reference SponsorCheck</h3>
+        <p>
+            Add SponsorCheck as a <code>PrivateAssets="all"</code> development dependency
+            (element(s) below go inside an <code>&lt;ItemGroup&gt;</code>; multi-file snippets name
+            the target file in a comment):
+        </p>
+        <CodeBox Title="@output.ReferenceTitle" Content="@output.Reference" />
+
+        @if (output.Credentials.Length > 0)
+        {
+            <p>Supply each platform's API token. Precedence is MSBuild property → env var → user-secret:</p>
+            <CodeBox Title="Credential setup" Content="@output.Credentials" />
+        }
+    </section>
+
+    <section class="output-part">
+        <h3>2. Tell your consumers</h3>
+        <p>Paste this markdown into the release notes / changelog for the version that adds SponsorCheck:</p>
+        <CodeBox Title="Release notes (markdown)" Content="@output.ReleaseNotes" />
+    </section>
+
+    <section class="output-part">
+        <h3>3. Next steps</h3>
+        <CodeBox Title="Checklist (markdown)" Content="@output.Checklist" />
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public AuthorModel Model { get; set; } = new();
+
+    AuthorOutput output = AuthorConfigGenerator.Generate(new());
+
+    protected override void OnParametersSet() => output = AuthorConfigGenerator.Generate(Model);
+}

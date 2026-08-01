@@ -1,0 +1,74 @@
+namespace SponsorCheck.Web.Tests.Models;
+
+public class ScCodeTests
+{
+    [Test]
+    [Arguments("SC001", Placement.PerPackageProject)]
+    [Arguments("sc001", Placement.PerPackageProject)]
+    [Arguments(" SC007 ", Placement.PerPackageProject)]
+    [Arguments("SC015", Placement.PerPackageProject)]
+    [Arguments("SC002", Placement.PerPackageCpm)]
+    [Arguments("SC008", Placement.PerPackageCpm)]
+    [Arguments("SC016", Placement.PerPackageCpm)]
+    [Arguments("SC019", Placement.PerPackageCpm)]
+    [Arguments("SC020", Placement.PerPackageCpm)]
+    [Arguments("SC021", Placement.OwnerMode)]
+    [Arguments("SC028", Placement.OwnerMode)]
+    [Arguments("SC029", Placement.PerPackageProject)]
+    [Arguments("SC030", Placement.PerPackageCpm)]
+    [Arguments("SC031", Placement.OwnerMode)]
+    [Arguments("SC032", Placement.PerPackageProject)]
+    [Arguments("SC033", Placement.PerPackageCpm)]
+    [Arguments("SC034", Placement.OwnerMode)]
+    [Arguments("SC035", Placement.PerPackageProject)]
+    [Arguments("SC036", Placement.PerPackageCpm)]
+    [Arguments("SC037", Placement.OwnerMode)]
+    public async Task ClassifiesPlacement(string code, Placement expected)
+    {
+        var classification = ScCode.Classify(code);
+        await Assert.That(classification.Recognized).IsTrue();
+        await Assert.That(classification.Placement).IsEqualTo(expected);
+        await Assert.That(classification.AuthorSide).IsFalse();
+    }
+
+    [Test]
+    [Arguments("SC017")]
+    [Arguments("SC018")]
+    public async Task RecognizedWithoutPlacement(string code)
+    {
+        var classification = ScCode.Classify(code);
+        await Assert.That(classification.Recognized).IsTrue();
+        await Assert.That(classification.Placement).IsNull();
+        await Assert.That(classification.Note).IsNotNull();
+    }
+
+    [Test]
+    [Arguments("SC100")]
+    [Arguments("SC106")]
+    public async Task AuthorCodesRedirectToAuthorFlow(string code)
+    {
+        var classification = ScCode.Classify(code);
+        await Assert.That(classification.Recognized).IsTrue();
+        await Assert.That(classification.AuthorSide).IsTrue();
+        await Assert.That(classification.Placement).IsNull();
+    }
+
+    [Test]
+    [Arguments("")]
+    [Arguments("   ")]
+    [Arguments("SC")]
+    [Arguments("SC0")]
+    [Arguments("SC000")]
+    [Arguments("SC038")]
+    [Arguments("SC099")]
+    [Arguments("SC200")]
+    [Arguments("SC-01")]
+    [Arguments("CS0001")]
+    [Arguments("banana")]
+    public async Task Unrecognized(string code)
+    {
+        var classification = ScCode.Classify(code);
+        await Assert.That(classification.Recognized).IsFalse();
+        await Assert.That(classification.Placement).IsNull();
+    }
+}

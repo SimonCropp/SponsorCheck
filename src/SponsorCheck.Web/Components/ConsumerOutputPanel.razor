@@ -1,0 +1,35 @@
+<div class="output">
+    <div class="output-header">
+        <h2>Generated configuration</h2>
+        <CopyMarkdownButton Markdown="@output.Markdown" />
+    </div>
+
+    <section class="output-part">
+        <h3>The change</h3>
+        <p class="file-to-edit">File to edit: @output.FileToEdit</p>
+        <p>@output.Instruction</p>
+        <CodeBox Title="@output.SnippetTitle" Content="@output.Snippet" />
+    </section>
+
+    <section class="output-part">
+        <h3>Expected build outcome</h3>
+        <p>@output.BuildOutcome</p>
+        @if (output.Notes.Count > 0)
+        {
+            <ul class="output-notes">
+                @foreach (var note in output.Notes)
+                {
+                    <li class="hint">@note</li>
+                }
+            </ul>
+        }
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ConsumerModel Model { get; set; } = new();
+
+    ConsumerOutput output = ConsumerConfigGenerator.Generate(new());
+
+    protected override void OnParametersSet() => output = ConsumerConfigGenerator.Generate(Model);
+}

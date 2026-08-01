@@ -1,0 +1,26 @@
+<ol class="stepper">
+    @for (var i = 0; i < Labels.Count; i++)
+    {
+        var index = i;
+        @if (index < Active)
+        {
+            <li class="done">
+                <button type="button" class="step-link" title="Back to @Labels[index]"
+                        @onclick="() => StepSelected.InvokeAsync(index)">@Labels[index]</button>
+            </li>
+        }
+        else
+        {
+            <li class="@(index == Active ? "active" : "")">@Labels[index]</li>
+        }
+    }
+</ol>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<string> Labels { get; set; } = [];
+    [Parameter] public int Active { get; set; }
+
+    /// <summary>Raised with the index of a completed step when it is clicked — steps ahead of the
+    /// active one are not clickable, since they are gated by validation.</summary>
+    [Parameter] public EventCallback<int> StepSelected { get; set; }
+}

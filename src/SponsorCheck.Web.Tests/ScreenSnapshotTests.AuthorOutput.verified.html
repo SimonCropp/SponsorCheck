@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <link rel="preload" href="css/app.css" as="style">
+    <link rel="preload" href="fonts/open-sans.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="fonts/ubuntu-mono.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="_framework/blazor.webassembly.js" as="script">
+    <link rel="stylesheet" href="css/app.css">
+    <title>SponsorCheck Setup Wizard — OSS author</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="inner">
+          <h1 tabindex="-1">
+            <a href="">SponsorCheck Setup Wizard</a>
+          </h1>
+          <p>
+            Guided configuration for
+            <a href="https://github.com/SimonCropp/SponsorCheck" target="_blank">SponsorCheck</a>
+            — build-time sponsorship verification for NuGet packages.
+          </p>
+        </div>
+      </header>
+      <main>
+        <div class="wizard">
+          <ol class="stepper">
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Package">Package</button>
+            </li>
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Platforms">Platforms</button>
+            </li>
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Mode &amp; scope">Mode &amp; scope</button>
+            </li>
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Options">Options</button>
+            </li>
+            <li class="active">Output</li>
+          </ol>
+          <div class="step-body">
+            <div class="output">
+              <div class="output-header">
+                <h2>Generated configuration</h2>
+                <button type="button" class="copy-markdown">Copy as markdown</button>
+              </div>
+              <section class="output-part">
+                <h3>1. Reference SponsorCheck</h3>
+                <p>
+                  Add SponsorCheck as a
+                  <code>PrivateAssets="all"</code>
+                  development dependency             (element(s) below go inside an
+                  <code>&lt;ItemGroup&gt;</code>; multi-file snippets name             the target file in a comment):
+                </p>
+                <div class="code-box">
+                  <div class="code-box-header">
+                    <span class="code-box-title">PackageReference (library .csproj)</span>
+                    <button type="button" class="copy-button">Copy</button>
+                  </div>
+                  <pre class="code-box-content"><code>&lt;PackageReference Include="SponsorCheck" Version="9.9.9" PrivateAssets="all"
+                  GitHubSponsorsAccount="acmecorp"
+                  SponsorOwner="acme" /&gt;
+&lt;SponsorExemption Include="Consulting"
+                  Message="Consulting clients are exempt for 6 months." /&gt;</code></pre>
+                </div>
+                <p>Supply each platform's API token. Precedence is MSBuild property → env var → user-secret:</p>
+                <div class="code-box">
+                  <div class="code-box-header">
+                    <span class="code-box-title">Credential setup</span>
+                    <button type="button" class="copy-button">Copy</button>
+                  </div>
+                  <pre class="code-box-content"><code># Local dev — store tokens outside the repo with user-secrets.
+# Run from the directory containing the library .csproj:
+dotnet user-secrets init
+dotnet user-secrets set "SponsorCheck:GitHubToken" "&lt;token&gt;"   # required
+
+# CI — expose each token as an environment variable of the SAME name
+# (MSBuild auto-imports it as the matching &lt;...Token&gt; property; GITHUB_TOKEN does NOT auto-flow):
+GitHubToken   # required
+
+# Pull-request CI builds: providers withhold encrypted secrets, so bundling is skipped
+# (the package packs without the verifier and a build message records it). To force
+# bundling on PR builds that do have the credential, set the MSBuild property:
+#   &lt;SponsorCheckBundleInPullRequest&gt;true&lt;/SponsorCheckBundleInPullRequest&gt;
+
+# Token notes:
+# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.</code></pre>
+                </div>
+              </section>
+              <section class="output-part">
+                <h3>2. Tell your consumers</h3>
+                <p>Paste this markdown into the release notes / changelog for the version that adds SponsorCheck:</p>
+                <div class="code-box">
+                  <div class="code-box-header">
+                    <span class="code-box-title">Release notes (markdown)</span>
+                    <button type="button" class="copy-button">Copy</button>
+                  </div>
+                  <pre class="code-box-content"><code>## Sponsorship is now checked at build time
+
+`MyOssLib` 2.0.0 now bundles [SponsorCheck](https://github.com/SimonCropp/SponsorCheck) — a build-time check that asks teams using this package to sponsor its ongoing development. SponsorCheck adds **no runtime dependency**; the check runs only during the build.
+
+After upgrading, every build looks for one of the options below. If none is configured the build fails with an error.
+
+### What you need to do
+
+This package uses **owner mode**, so you configure sponsorship **once** as a global MSBuild property (in `Directory.Build.props` or the consuming project) — it then covers every package from this author. Pick one of the following.
+
+#### Option 1 — Sponsor
+
+Sponsor the author, then declare the account you sponsor under:
+
+```xml
+&lt;!-- Owner mode: set once as a global property, in Directory.Build.props or the consuming .csproj --&gt;
+&lt;PropertyGroup&gt;
+  &lt;acme_GitHubSponsorAccount&gt;your-account&lt;/acme_GitHubSponsorAccount&gt;
+&lt;/PropertyGroup&gt;
+```
+
+Sponsor at https://github.com/sponsors/acmecorp
+
+_Started sponsoring only recently?_ If your sponsorship began after this version was published, the bundled list cannot contain you yet — add `SponsorshipStart="yyyy-MM-dd"` alongside the account to attest to the start date until you upgrade to a later release.
+
+#### Option 2 — Private license
+
+If you have a private (B2B) licensing arrangement, set a time-bounded license. The value is `yyyy-MM` (the last covered month) and is valid through the end of that month (UTC). Values more than one year out are rejected, so renewal is a periodic one-line edit:
+
+```xml
+&lt;!-- Owner mode: set once as a global property, in Directory.Build.props or the consuming .csproj --&gt;
+&lt;PropertyGroup&gt;
+  &lt;acme_SponsorshipLicensedUntil&gt;yyyy-MM&lt;/acme_SponsorshipLicensedUntil&gt;
+&lt;/PropertyGroup&gt;
+```
+
+#### Option 3 — Claim an exemption
+
+The following exemptions are defined for this package. If one applies, claim it by name — the build passes with a warning quoting the exemption's criteria (not a breach message):
+
+- `Consulting` — Consulting clients are exempt for 6 months.
+
+```xml
+&lt;!-- Owner mode: set once as a global property, in Directory.Build.props or the consuming .csproj --&gt;
+&lt;PropertyGroup&gt;
+  &lt;acme_SponsorshipExemption&gt;Consulting&lt;/acme_SponsorshipExemption&gt;
+&lt;/PropertyGroup&gt;
+```
+
+#### Option 4 — Opt out
+
+You can opt out of the check. The build stays green but logs a breach-of-license warning on every build.
+
+```xml
+&lt;!-- Owner mode: set once as a global property, in Directory.Build.props or the consuming .csproj --&gt;
+&lt;PropertyGroup&gt;
+  &lt;acme_SponsorshipLicenseIgnored&gt;true&lt;/acme_SponsorshipLicenseIgnored&gt;
+&lt;/PropertyGroup&gt;
+```
+
+### Reference
+
+Build diagnostics use `SC0xx` codes — see the [verifier diagnostic reference](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md).</code></pre>
+                </div>
+              </section>
+              <section class="output-part">
+                <h3>3. Next steps</h3>
+                <div class="code-box">
+                  <div class="code-box-header">
+                    <span class="code-box-title">Checklist (markdown)</span>
+                    <button type="button" class="copy-button">Copy</button>
+                  </div>
+                  <pre class="code-box-content"><code>- [ ] Store the platform token(s) — user-secrets locally; on CI an encrypted secret exposed as `GitHubToken`.
+- [ ] Apply the reference snippet, then pack with the Release configuration.
+- [ ] Inspect the produced nupkg: `build/SponsorCheck.SponsorHashes.txt` must be present (open the nupkg as a zip).
+- [ ] Add the release-notes markdown to the changelog / release description of the version that adds SponsorCheck.
+- [ ] Exemption names and criteria are baked in at pack time — editing them requires a repack.
+- [ ] Full author documentation: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md
+- [ ] Pack-time diagnostics reference: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/BundlerDiagnosticCodes.md</code></pre>
+                </div>
+              </section>
+            </div>
+          </div>
+          <div class="wizard-nav">
+            <span>
+              <button type="button">Back</button>
+            </span>
+            <span>
+              <button type="button">Start over</button>
+            </span>
+          </div>
+        </div>
+      </main>
+      <footer class="app-footer">
+        SponsorCheck adds no runtime dependency — verification happens only during the build.     Full documentation in the
+        <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,     the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,     and the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
+      </footer>
+    </div>
+    <div id="blazor-error-ui">
+      An unhandled error has occurred.
+      <a href="" class="reload">Reload</a>
+      <a class="dismiss">X</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="js/interop.js"></script>
+  </body>
+</html>

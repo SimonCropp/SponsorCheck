@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <link rel="preload" href="css/app.css" as="style">
+    <link rel="preload" href="fonts/open-sans.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="fonts/ubuntu-mono.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="_framework/blazor.webassembly.js" as="script">
+    <link rel="stylesheet" href="css/app.css">
+    <title>SponsorCheck Setup Wizard — OSS author</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="inner">
+          <h1 tabindex="-1">
+            <a href="">SponsorCheck Setup Wizard</a>
+          </h1>
+          <p>
+            Guided configuration for
+            <a href="https://github.com/SimonCropp/SponsorCheck" target="_blank">SponsorCheck</a>
+            — build-time sponsorship verification for NuGet packages.
+          </p>
+        </div>
+      </header>
+      <main>
+        <div class="wizard">
+          <ol class="stepper">
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Package">Package</button>
+            </li>
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Platforms">Platforms</button>
+            </li>
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Mode &amp; scope">Mode &amp; scope</button>
+            </li>
+            <li class="active">Options</li>
+            <li class="">Output</li>
+          </ol>
+          <div class="step-body">
+            <h2>Options
+              <span class="optional-tag">all optional</span>
+            </h2>
+            <p class="hint">Tune the severity and message of the verifier diagnostics consumers see, define exemptions, or point all sponsor links at one custom page. Leave as-is to use the defaults.</p>
+            <div class="override-row">
+              <label>No license specified
+                <span class="optional-tag">SC001/SC002/SC021 · default error</span>
+              </label>
+              <div class="controls">
+                <select>
+                  <option value="Default">Default (error)</option>
+                  <option value="Error">error</option>
+                  <option value="Warning">warning</option>
+                  <option value="Message">message</option>
+                </select>
+                <input type="text" placeholder="custom message (optional)" style="caret-color: transparent !important;">
+              </div>
+            </div>
+            <div class="override-row">
+              <label>License ignored
+                <span class="optional-tag">SC005/SC006/SC023 · default warning</span>
+              </label>
+              <div class="controls">
+                <select>
+                  <option value="Default">Default (warning)</option>
+                  <option value="Error">error</option>
+                  <option value="Warning">warning</option>
+                  <option value="Message">message</option>
+                </select>
+                <input type="text" placeholder="custom message (optional)" style="caret-color: transparent !important;">
+              </div>
+            </div>
+            <div class="override-row">
+              <label>Sponsor account not in list
+                <span class="optional-tag">SC007/SC008/SC024 · default error</span>
+              </label>
+              <div class="controls">
+                <select>
+                  <option value="Default">Default (error)</option>
+                  <option value="Error">error</option>
+                  <option value="Warning">warning</option>
+                  <option value="Message">message</option>
+                </select>
+                <input type="text" placeholder="custom message (optional)" style="caret-color: transparent !important;">
+              </div>
+            </div>
+            <div class="override-row">
+              <label>License expired
+                <span class="optional-tag">SC009/SC010/SC025 · default error</span>
+              </label>
+              <div class="controls">
+                <select>
+                  <option value="Default">Default (error)</option>
+                  <option value="Error">error</option>
+                  <option value="Warning">warning</option>
+                  <option value="Message">message</option>
+                </select>
+                <input type="text" placeholder="custom message (optional)" style="caret-color: transparent !important;">
+              </div>
+            </div>
+            <div class="field" style="margin-top:1.25rem">
+              <label>Exemptions</label>
+              <p class="hint">Named carve-outs for consumers who legitimately don't need to sponsor (consulting clients, small businesses, …). Consumers claim one by name; the build warning quotes the criteria text verbatim.</p>
+              <div class="exemptions-editor">
+                <div class="exemption-row">
+                  <input type="text" class="exemption-name" placeholder="Name (e.g. Consulting)" style="caret-color: transparent !important;">
+                  <input type="text" class="exemption-message" placeholder="Criteria text shown in the consumer's build warning" style="caret-color: transparent !important;">
+                  <button type="button">Remove</button>
+                </div>
+                <button type="button" class="add-exemption">Add exemption</button>
+              </div>
+            </div>
+            <div class="field" style="margin-top:1rem">
+              <label for="landingUrl">Custom sponsor landing URL</label>
+              <p class="hint">When set, every sponsor link in the verifier messages points here instead of the platform pages.</p>
+              <input id="landingUrl" type="url" placeholder="https://example.com/sponsor" style="caret-color: transparent !important;">
+            </div>
+          </div>
+          <div class="wizard-nav">
+            <span>
+              <button type="button">Back</button>
+            </span>
+            <span>
+              <button type="button" class="primary">Generate</button>
+            </span>
+          </div>
+        </div>
+      </main>
+      <footer class="app-footer">
+        SponsorCheck adds no runtime dependency — verification happens only during the build.     Full documentation in the
+        <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,     the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,     and the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
+      </footer>
+    </div>
+    <div id="blazor-error-ui">
+      An unhandled error has occurred.
+      <a href="" class="reload">Reload</a>
+      <a class="dismiss">X</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="js/interop.js"></script>
+  </body>
+</html>

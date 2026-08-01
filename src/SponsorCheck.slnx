@@ -10,7 +10,10 @@
     <File Path="../global.json" />
     <File Path="mdsnippets.json" />
     <File Path="nuget.config" />
+    <File Path="../.github/workflows/deploy-blazor.yml" />
   </Folder>
   <Project Path="SponsorCheck/SponsorCheck.csproj" />
   <Project Path="SponsorCheck.Tests/SponsorCheck.Tests.csproj" />
+  <Project Path="SponsorCheck.Web/SponsorCheck.Web.csproj" />
+  <Project Path="SponsorCheck.Web.Tests/SponsorCheck.Web.Tests.csproj" />
 </Solution>

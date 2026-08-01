@@ -1,0 +1,565 @@
+/*
+ * Bundled webfonts. Chromium shapes text with HarfBuzz on every OS, so a font served with the app
+ * measures identically everywhere, while a system font (Segoe UI on Windows, whatever fontconfig
+ * picks on Linux) does not — and differing advance widths re-wrap prose, which moves the height of
+ * a full-page screenshot. Shipping the faces is what lets ScreenSnapshotTests compare PNGs on any
+ * OS. See wwwroot/fonts/readme.md for provenance and licences.
+ *
+ * The unicode-range descriptors are the source of truth for what the bundled subsets cover:
+ * RepoContractTests.ShippedFontsCoverRenderedText parses them and fails if the wizard renders a
+ * character that would fall through to a system font.
+ */
+@font-face {
+    font-family: 'SponsorCheck Sans';
+    src: url('../fonts/open-sans.woff2') format('woff2');
+    font-weight: 300 800;
+    font-style: normal;
+    font-display: block;
+    unicode-range: U+0020-007E, U+00A0-00FF, U+2013-2014, U+2018-2019, U+201C-201D, U+2022, U+2026, U+2039-203A, U+2122;
+}
+
+/* Open Sans has no arrows; these come from Work Sans under the same family name. */
+@font-face {
+    font-family: 'SponsorCheck Sans';
+    src: url('../fonts/work-sans-arrows.woff2') format('woff2');
+    font-weight: 300 800;
+    font-style: normal;
+    font-display: block;
+    unicode-range: U+2190-2193;
+}
+
+@font-face {
+    font-family: 'SponsorCheck Mono';
+    src: url('../fonts/ubuntu-mono.woff2') format('woff2');
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: block;
+    unicode-range: U+0020-007E, U+00A0-00FF, U+2013-2014, U+2018-2019, U+201C-201D, U+2022, U+2026, U+2039-203A, U+2122;
+}
+
+:root {
+    --primary: #6f42c1;
+    --primary-contrast: #ffffff;
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --text: #1f2328;
+    --muted: #656d76;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --accent: #1f883d;
+    --warn-bg: #fff8c5;
+    --warn-border: #d4a72c;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary: #a371f7;
+        --primary-contrast: #15101f;
+        --bg: #0d1117;
+        --panel: #161b22;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --border: #30363d;
+        --code-bg: #0d1117;
+        --accent: #3fb950;
+        --warn-bg: #3a2d12;
+        --warn-border: #9e6a03;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    font-family: 'SponsorCheck Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    /*
+     * Bundling the fonts pins which outlines are used, but not how they are measured: by default
+     * the rasterizer rounds advance widths to fit its hinting grid, and FreeType and DirectWrite
+     * round differently, so the same sentence wraps at a different word on Linux than on Windows.
+     * geometricPrecision measures from the font's own metrics instead, making line breaks — and so
+     * page height — identical everywhere. Without it the ScreenSnapshotTests PNGs drift per OS.
+     */
+    text-rendering: geometricPrecision;
+}
+
+a {
+    color: var(--primary);
+}
+
+/*
+ * The UA stylesheet sets font-family on these elements, and that beats inheritance — so a <code>
+ * inside a styled <pre> silently renders in the platform's own monospace font rather than the
+ * bundled one. That also makes line box heights platform-dependent: the bundled face and the
+ * system face split ascent and descent differently, and a line containing both is sized from the
+ * union. Naming the bundled face here keeps inline code and code blocks pinned alike.
+ */
+code, pre, kbd, samp {
+    font-family: 'SponsorCheck Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+/*
+ * A line's height is the union of the strut and every inline box on it, each positioned from its
+ * own font's ascent and descent — values the rasterizer rounds to whole pixels, and Windows and
+ * Linux round them differently. So a prose line mixing the sans strut with a monospace span can
+ * come out a pixel taller on one platform. Keeping the inline box short enough to sit inside the
+ * strut makes the line height depend on the strut alone, which is the same everywhere. This does
+ * not change code blocks, where the strut is already the same monospace face.
+ */
+code, kbd, samp {
+    line-height: 1;
+}
+
+/* Form controls do not inherit font-family either, so they would measure per-platform too. */
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: var(--muted);
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+#blazor-error-ui {
+    background: #fff3cd;
+    color: #856404;
+    padding: 1rem;
+    text-align: center;
+    display: none;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+#blazor-error-ui.show,
+#blazor-error-ui[style*="display: block"] {
+    display: block;
+}
+
+header.app-header {
+    background: var(--primary);
+    color: var(--primary-contrast);
+    padding: 1.5rem 1rem;
+}
+
+header.app-header .inner {
+    max-width: 920px;
+    margin: 0 auto;
+}
+
+header.app-header h1 {
+    margin: 0;
+    font-size: 1.6rem;
+}
+
+header.app-header p {
+    margin: .35rem 0 0;
+    opacity: .9;
+}
+
+header.app-header a {
+    color: var(--primary-contrast);
+    text-decoration: underline;
+}
+
+header.app-header h1 a {
+    text-decoration: none;
+}
+
+main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+}
+
+footer.app-footer {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+/* home role cards */
+.role-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+a.role-card {
+    display: block;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    color: var(--text);
+    text-decoration: none;
+}
+
+a.role-card:hover {
+    border-color: var(--primary);
+}
+
+.role-card h2 {
+    margin: 0 0 .4rem;
+    color: var(--primary);
+}
+
+.role-card p {
+    margin: 0;
+    color: var(--muted);
+}
+
+/* stepper */
+.stepper {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    padding: 0;
+    margin: 0 0 1.5rem;
+}
+
+.stepper li {
+    flex: 1 1 auto;
+    text-align: center;
+    padding: .5rem .75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--muted);
+    font-size: .9rem;
+    white-space: nowrap;
+}
+
+.stepper li.active {
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.stepper li.done {
+    color: var(--accent);
+    border-color: var(--accent);
+    padding: 0;
+}
+
+.stepper li.done .step-link {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    width: 100%;
+    padding: .5rem .75rem;
+    cursor: pointer;
+}
+
+.stepper li.done:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* step body */
+.step-body {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.step-body h2 {
+    margin-top: 0;
+}
+
+.field {
+    margin-bottom: 1.1rem;
+}
+
+.field > label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: .3rem;
+}
+
+.field .hint,
+.hint {
+    color: var(--muted);
+    font-size: .88rem;
+    margin: .2rem 0 .4rem;
+}
+
+input[type="text"],
+input[type="url"],
+input[type="date"],
+select {
+    width: 100%;
+    max-width: 460px;
+    padding: .5rem .6rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.check {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    margin-bottom: .75rem;
+}
+
+.check input {
+    margin-top: .3rem;
+}
+
+.radio-row {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+
+.radio-row input {
+    margin-top: .3rem;
+}
+
+.radio-row label {
+    font-weight: 600;
+}
+
+.radio-row .hint {
+    font-weight: 400;
+    margin: 0;
+}
+
+.platform-row {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .75rem 1rem;
+    margin-bottom: .75rem;
+}
+
+.platform-row .account {
+    margin-top: .5rem;
+}
+
+.override-row {
+    border-top: 1px solid var(--border);
+    padding: .9rem 0;
+}
+
+.override-row:first-of-type {
+    border-top: none;
+}
+
+.override-row .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    align-items: center;
+}
+
+.override-row select {
+    max-width: 160px;
+}
+
+.exemption-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+
+.exemption-row input.exemption-name {
+    max-width: 180px;
+}
+
+.exemption-row input.exemption-message {
+    flex: 1 1 300px;
+    max-width: none;
+}
+
+.validation-error {
+    color: #d1242f;
+    font-size: .88rem;
+    margin: .2rem 0;
+}
+
+.callout {
+    border: 1px solid var(--warn-border);
+    background: var(--warn-bg);
+    border-radius: 6px;
+    padding: .6rem .9rem;
+    margin: .75rem 0;
+    font-size: .92rem;
+}
+
+.optional-tag {
+    font-size: .75rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0 .5rem;
+    margin-left: .4rem;
+    vertical-align: middle;
+}
+
+/* mode cards */
+.mode-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.mode-card {
+    text-align: left;
+    padding: .8rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    cursor: pointer;
+    font: inherit;
+    color: var(--text);
+}
+
+.mode-card.selected {
+    border-color: var(--primary);
+    outline: 1px solid var(--primary);
+}
+
+.mode-card strong {
+    display: block;
+    margin-bottom: .2rem;
+}
+
+.mode-card span {
+    color: var(--muted);
+    font-size: .88rem;
+}
+
+/* nav buttons */
+.wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+button {
+    font: inherit;
+    padding: .55rem 1.2rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+}
+
+button.primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-contrast);
+    font-weight: 600;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+/* output */
+.output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.output-header h2 {
+    margin: 0;
+}
+
+button.copy-markdown {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.output-part {
+    margin-bottom: 2rem;
+}
+
+.file-to-edit {
+    font-weight: 600;
+}
+
+.code-box {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: .75rem 0;
+}
+
+.code-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .4rem .75rem;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+}
+
+.code-box-title {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.copy-button {
+    padding: .2rem .7rem;
+    font-size: .8rem;
+}
+
+.code-box-content {
+    margin: 0;
+    padding: .85rem;
+    background: var(--code-bg);
+    overflow-x: auto;
+    font-family: 'SponsorCheck Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: .85rem;
+    white-space: pre;
+    tab-size: 2;
+}

@@ -1,0 +1,17 @@
+@inject ClipboardService Clipboard
+
+<button type="button" class="copy-markdown" @onclick="Copy">@(copied ? "Copied!" : "Copy as markdown")</button>
+
+@code {
+    // The full generated result as one self-contained markdown document — paste-ready for a PR
+    // description, an issue, team chat, or an AI coding agent.
+    [Parameter, EditorRequired] public string Markdown { get; set; } = "";
+
+    bool copied;
+
+    async Task Copy()
+    {
+        await Clipboard.CopyAsync(Markdown);
+        copied = true;
+    }
+}

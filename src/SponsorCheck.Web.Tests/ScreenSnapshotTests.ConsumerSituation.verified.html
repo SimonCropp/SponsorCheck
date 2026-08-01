@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html>
+<html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <link rel="preload" href="css/app.css" as="style">
+    <link rel="preload" href="fonts/open-sans.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="fonts/ubuntu-mono.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="_framework/blazor.webassembly.js" as="script">
+    <link rel="stylesheet" href="css/app.css">
+    <title>SponsorCheck Setup Wizard — consumer</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="inner">
+          <h1 tabindex="-1">
+            <a href="">SponsorCheck Setup Wizard</a>
+          </h1>
+          <p>
+            Guided configuration for
+            <a href="https://github.com/SimonCropp/SponsorCheck" target="_blank">SponsorCheck</a>
+            — build-time sponsorship verification for NuGet packages.
+          </p>
+        </div>
+      </header>
+      <main>
+        <div class="wizard">
+          <ol class="stepper">
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Package">Package</button>
+            </li>
+            <li class="active">Situation</li>
+            <li class="">License mode</li>
+            <li class="">Output</li>
+          </ol>
+          <div class="step-body">
+            <h2>Your situation</h2>
+            <div class="field">
+              <label for="scCode">Diagnostic code from the failing build
+                <span class="optional-tag">optional</span>
+              </label>
+              <p class="hint">The SC code in the build output encodes the answers below — enter it and the questions pre-answer themselves (still editable).</p>
+              <input id="scCode" type="text" placeholder="SC001" style="caret-color: transparent !important;">
+              <p class="hint">Recognized — the questions below have been pre-answered.</p>
+            </div>
+            <div class="field">
+              <label>Configuration style</label>
+              <div class="radio-row">
+                <input type="radio" id="style-package" name="configStyle" style="caret-color: transparent !important;">
+                <label for="style-package">
+                  Per package
+                  <p class="hint">The metadata lives on the package reference itself (codes SC001–SC016 and most others).</p>
+                </label>
+              </div>
+              <div class="radio-row">
+                <input type="radio" id="style-owner" name="configStyle" style="caret-color: transparent !important;">
+                <label for="style-owner">
+                  Owner mode
+                  <p class="hint">The error names a global property like
+                    <code>&lt;acme_GitHubSponsorAccount&gt;</code>
+                    (codes SC021–SC028) — one declaration covers every package from that owner.</p>
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label>Central Package Management?</label>
+              <div class="radio-row">
+                <input type="radio" id="cpm-no" name="cpm" style="caret-color: transparent !important;">
+                <label for="cpm-no">
+                  No
+                  <p class="hint">Versions sit on each
+                    <code>&lt;PackageReference&gt;</code>
+                    (odd-numbered codes: SC001, SC007, …).</p>
+                </label>
+              </div>
+              <div class="radio-row">
+                <input type="radio" id="cpm-yes" name="cpm" style="caret-color: transparent !important;">
+                <label for="cpm-yes">
+                  Yes
+                  <p class="hint">Versions live in
+                    <code>Directory.Packages.props</code>
+                    (even-numbered codes: SC002, SC008, …).</p>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="wizard-nav">
+            <span>
+              <button type="button">Back</button>
+            </span>
+            <span>
+              <button type="button" class="primary">Next</button>
+            </span>
+          </div>
+        </div>
+      </main>
+      <footer class="app-footer">
+        SponsorCheck adds no runtime dependency — verification happens only during the build.     Full documentation in the
+        <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,     the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,     and the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
+      </footer>
+    </div>
+    <div id="blazor-error-ui">
+      An unhandled error has occurred.
+      <a href="" class="reload">Reload</a>
+      <a class="dismiss">X</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="js/interop.js"></script>
+  </body>
+</html>

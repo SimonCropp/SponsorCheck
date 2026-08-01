@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <link rel="preload" href="css/app.css" as="style">
+    <link rel="preload" href="fonts/open-sans.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="fonts/ubuntu-mono.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="_framework/blazor.webassembly.js" as="script">
+    <link rel="stylesheet" href="css/app.css">
+    <title>SponsorCheck Setup Wizard — consumer</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="inner">
+          <h1 tabindex="-1">
+            <a href="">SponsorCheck Setup Wizard</a>
+          </h1>
+          <p>
+            Guided configuration for
+            <a href="https://github.com/SimonCropp/SponsorCheck" target="_blank">SponsorCheck</a>
+            — build-time sponsorship verification for NuGet packages.
+          </p>
+        </div>
+      </header>
+      <main>
+        <div class="wizard">
+          <ol class="stepper">
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Package">Package</button>
+            </li>
+            <li class="done">
+              <button type="button" class="step-link" title="Back to Situation">Situation</button>
+            </li>
+            <li class="done">
+              <button type="button" class="step-link" title="Back to License mode">License mode</button>
+            </li>
+            <li class="active">Output</li>
+          </ol>
+          <div class="step-body">
+            <div class="output">
+              <div class="output-header">
+                <h2>Generated configuration</h2>
+                <button type="button" class="copy-markdown">Copy as markdown</button>
+              </div>
+              <section class="output-part">
+                <h3>The change</h3>
+                <p class="file-to-edit">File to edit: The consuming project's .csproj — the file holding the &lt;PackageReference&gt; for 'ThePackage'.</p>
+                <p>Add the new attribute(s) to the existing &lt;PackageReference Include="ThePackage"&gt; element — do not create a second reference.</p>
+                <div class="code-box">
+                  <div class="code-box-header">
+                    <span class="code-box-title">PackageReference (consuming .csproj)</span>
+                    <button type="button" class="copy-button">Copy</button>
+                  </div>
+                  <pre class="code-box-content"><code>&lt;PackageReference Include="ThePackage" Version="1.2.3"
+                  GitHubSponsorAccount="alice" /&gt;</code></pre>
+                </div>
+              </section>
+              <section class="output-part">
+                <h3>Expected build outcome</h3>
+                <p>Passes silently when any declared account was in the bundled sponsor list at the version's pack time. If the build still fails with SC007, either the account or platform doesn't match what the author bundled, or the sponsorship began after this version was packed — in that case add SponsorshipStart="yyyy-MM-dd" (re-run the wizard and answer yes to the started-after question).</p>
+                <ul class="output-notes">
+                  <li class="hint">The bundled list is frozen per package version: versions that pass keep passing even if sponsorship later lapses; a lapse surfaces when upgrading to a version packed after it.</li>
+                  <li class="hint">If the solution adopts Central Package Management later, the metadata moves to the matching &lt;PackageVersion&gt; in Directory.Packages.props — wrong placement raises SC020, both places raises SC019.</li>
+                </ul>
+              </section>
+            </div>
+          </div>
+          <div class="wizard-nav">
+            <span>
+              <button type="button">Back</button>
+            </span>
+            <span>
+              <button type="button">Start over</button>
+            </span>
+          </div>
+        </div>
+      </main>
+      <footer class="app-footer">
+        SponsorCheck adds no runtime dependency — verification happens only during the build.     Full documentation in the
+        <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,     the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,     and the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
+      </footer>
+    </div>
+    <div id="blazor-error-ui">
+      An unhandled error has occurred.
+      <a href="" class="reload">Reload</a>
+      <a class="dismiss">X</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="js/interop.js"></script>
+  </body>
+</html>

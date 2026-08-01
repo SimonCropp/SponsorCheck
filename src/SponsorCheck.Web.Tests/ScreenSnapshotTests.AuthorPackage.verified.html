@@ -1,0 +1,105 @@
+﻿<!DOCTYPE html>
+<html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <link rel="preload" href="css/app.css" as="style">
+    <link rel="preload" href="fonts/open-sans.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="fonts/ubuntu-mono.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="_framework/blazor.webassembly.js" as="script">
+    <link rel="stylesheet" href="css/app.css">
+    <title>SponsorCheck Setup Wizard — OSS author</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="inner">
+          <h1 tabindex="-1">
+            <a href="">SponsorCheck Setup Wizard</a>
+          </h1>
+          <p>
+            Guided configuration for
+            <a href="https://github.com/SimonCropp/SponsorCheck" target="_blank">SponsorCheck</a>
+            — build-time sponsorship verification for NuGet packages.
+          </p>
+        </div>
+      </header>
+      <main>
+        <div class="wizard">
+          <ol class="stepper">
+            <li class="active">Package</li>
+            <li class="">Platforms</li>
+            <li class="">Mode &amp; scope</li>
+            <li class="">Options</li>
+            <li class="">Output</li>
+          </ol>
+          <div class="step-body">
+            <h2>Your package</h2>
+            <div class="field">
+              <label for="packageId">Package id</label>
+              <p class="hint">The id of the NuGet package being published (used in the consumer snippets and release notes).</p>
+              <input id="packageId" type="text" placeholder="MyOssLib" style="caret-color: transparent !important;">
+            </div>
+            <div class="field">
+              <label for="packageVersion">Next package version</label>
+              <p class="hint">The version that introduces SponsorCheck. Shown in the example snippets.</p>
+              <input id="packageVersion" type="text" placeholder="1.0.0" style="caret-color: transparent !important;">
+            </div>
+            <div class="field">
+              <label for="scVersion">SponsorCheck version</label>
+              <p class="hint">The version of the SponsorCheck dev-dependency to reference. Defaults to the version this wizard was built from.</p>
+              <input id="scVersion" type="text" placeholder="{SponsorCheckVersion}" style="caret-color: transparent !important;">
+            </div>
+            <div class="field">
+              <label>Repository shape</label>
+              <div class="radio-row">
+                <input type="radio" id="shape-single" name="repoShape" style="caret-color: transparent !important;">
+                <label for="shape-single">
+                  Single packable project
+                  <p class="hint">Versions declared on each
+                    <code>&lt;PackageReference&gt;</code>.</p>
+                </label>
+              </div>
+              <div class="radio-row">
+                <input type="radio" id="shape-cpm" name="repoShape" style="caret-color: transparent !important;">
+                <label for="shape-cpm">
+                  Single packable project, Central Package Management
+                  <p class="hint">Versions live in
+                    <code>Directory.Packages.props</code>
+                    — the SponsorCheck metadata goes there too.</p>
+                </label>
+              </div>
+              <div class="radio-row">
+                <input type="radio" id="shape-monorepo" name="repoShape" style="caret-color: transparent !important;">
+                <label for="shape-monorepo">
+                  Multiple packable projects (monorepo, Central Package Management)
+                  <p class="hint">Configure once; every packable project bundles independently at its own pack time.</p>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="wizard-nav">
+            <span></span>
+            <span>
+              <button type="button" class="primary">Next</button>
+            </span>
+          </div>
+        </div>
+      </main>
+      <footer class="app-footer">
+        SponsorCheck adds no runtime dependency — verification happens only during the build.     Full documentation in the
+        <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,     the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,     and the
+        <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
+      </footer>
+    </div>
+    <div id="blazor-error-ui">
+      An unhandled error has occurred.
+      <a href="" class="reload">Reload</a>
+      <a class="dismiss">X</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="js/interop.js"></script>
+  </body>
+</html>
