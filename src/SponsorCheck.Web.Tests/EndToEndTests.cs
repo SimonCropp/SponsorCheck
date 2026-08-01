@@ -110,13 +110,15 @@ public class EndToEndTests
         var page = await browser!.NewPageAsync();
         await page.GotoAsync($"http://localhost:{port}/");
         await page.ClickAsync("a.role-card[href='consumer']");
-        await page.WaitForSelectorAsync("#scCode");
+        await page.WaitForSelectorAsync("#packageId");
 
+        await page.FillAsync("#packageId", "ThePackage");
+        await page.ClickAsync("button.primary");          // package -> situation (no lookup: offline path)
+        await page.WaitForSelectorAsync("#scCode");
         await page.FillAsync("#scCode", "SC021");
         await page.WaitForSelectorAsync("#ownerId");
         await page.FillAsync("#ownerId", "acme");
-        await page.ClickAsync("button.primary");          // situation -> package
-        await page.ClickAsync("button.primary");          // package -> license mode (id optional in owner mode)
+        await page.ClickAsync("button.primary");          // situation -> license mode
 
         await page.ClickAsync("button.mode-card >> nth=0");   // sponsor
         await page.CheckAsync("#sponsor-GitHub");
@@ -136,10 +138,10 @@ public class EndToEndTests
         // Exercises the SPA fallback (404.html / MapFallbackToFile) that GitHub Pages relies on.
         var page = await browser!.NewPageAsync();
         await page.GotoAsync($"http://localhost:{port}/consumer");
-        await page.WaitForSelectorAsync("#scCode");
+        await page.WaitForSelectorAsync("#packageId");
 
         var heading = await page.TextContentAsync("h2");
-        await Assert.That(heading).IsEqualTo("Your situation");
+        await Assert.That(heading).IsEqualTo("The package");
     }
 
     static int GetAvailablePort()

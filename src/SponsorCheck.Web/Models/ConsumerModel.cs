@@ -16,15 +16,18 @@ public enum ConsumerLicenseMode
 /// </summary>
 public sealed class ConsumerModel
 {
+    // Step: package
+    public string PackageId { get; set; } = "";
+    public string PackageVersion { get; set; } = "";
+
+    /// <summary>Set when the package was inspected on nuget.org; drives pre-answered questions.</summary>
+    public PackageFacts? Facts { get; set; }
+
     // Step: situation
     public string EnteredCode { get; set; } = "";
     public bool OwnerMode { get; set; }
     public string OwnerId { get; set; } = "";
     public bool Cpm { get; set; }
-
-    // Step: package
-    public string PackageId { get; set; } = "";
-    public string PackageVersion { get; set; } = "";
 
     // Step: license mode
     public ConsumerLicenseMode? Mode { get; set; }
@@ -58,9 +61,36 @@ public sealed class ConsumerModel
     public bool IsSponsorshipStartValid =>
         DateTime.TryParseExact(SponsorshipStart.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 
+    /// <summary>Applies nupkg-derived facts: owner mode and owner id come from the package itself.
+    /// Facts always win over earlier manual answers — they are what the verifier will actually do.</summary>
+    public void ApplyFacts(PackageFacts facts)
+    {
+        Facts = facts;
+        if (!facts.BundlesSponsorCheck)
+        {
+            return;
+        }
+
+        OwnerMode = facts.OwnerMode;
+        OwnerId = facts.OwnerId ?? "";
+        if (string.IsNullOrWhiteSpace(PackageVersion))
+        {
+            PackageVersion = facts.Version;
+        }
+    }
+
+    /// <summary>The facts-recorded severity override for the current placement's code, if any.</summary>
+    public string? FactSeverity(string projectCode, string cpmCode, string ownerCode) =>
+        Facts?.Severities.GetValueOrDefault(Placement switch
+        {
+            Placement.PerPackageProject => projectCode,
+            Placement.PerPackageCpm => cpmCode,
+            _ => ownerCode
+        });
+
     public bool SituationComplete => !OwnerMode || !string.IsNullOrWhiteSpace(OwnerId);
 
-    public bool PackageComplete => OwnerMode || !string.IsNullOrWhiteSpace(PackageId);
+    public bool PackageComplete => !string.IsNullOrWhiteSpace(PackageId);
 
     public bool ModeComplete => Mode switch
     {

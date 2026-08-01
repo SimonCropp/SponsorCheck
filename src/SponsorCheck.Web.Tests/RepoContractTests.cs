@@ -107,6 +107,40 @@ public class RepoContractTests
     }
 
     [Test]
+    public async Task PlatformWireIdsExistInBundlerSource()
+    {
+        // The wire ids key the SponsorCheck.AuthorAccounts.txt sidecar that NupkgParser reads.
+        var bundler = ReadSrc("SponsorCheck", "BundleSponsorListTask.cs");
+        foreach (var platform in Platform.All)
+        {
+            await Assert.That(bundler).Contains($"\"{platform.WireId}\"").Because($"wire id '{platform.WireId}' should exist in BundleSponsorListTask.cs");
+        }
+    }
+
+    [Test]
+    public async Task SidecarFileNamesMatchVerifierTemplates()
+    {
+        // NupkgParser reads these names out of published nupkgs; the templates define what gets packed.
+        var template = ReadSrc("SponsorCheck", "EmbeddedTemplates", "ConsumerVerifier.targets");
+        string[] sidecars =
+        [
+            NupkgParser.HashesFileName,
+            NupkgParser.PackDateFileName,
+            NupkgParser.AuthorAccountsFileName,
+            NupkgParser.SeverityOverridesFileName,
+            NupkgParser.LandingUrlFileName,
+            NupkgParser.ExemptionsFileName
+        ];
+        foreach (var sidecar in sidecars)
+        {
+            await Assert.That(template).Contains(sidecar).Because($"sidecar '{sidecar}' should exist in ConsumerVerifier.targets");
+        }
+
+        var ownerTemplate = ReadSrc("SponsorCheck", "EmbeddedTemplates", "ConsumerVerifierOwner.targets");
+        await Assert.That(ownerTemplate).Contains(NupkgParser.OwnerIdElement);
+    }
+
+    [Test]
     public async Task MentionedDiagnosticCodesAreDocumented()
     {
         var webDirectory = RepoPaths.SrcFile("SponsorCheck.Web");

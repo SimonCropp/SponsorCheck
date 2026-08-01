@@ -17,11 +17,13 @@ public sealed class PlatformSelection
 /// Static description of a sponsorship platform: the metadata names the author and consumer use,
 /// how its credential is supplied, and how to render a sponsor URL. Single source for every
 /// platform-derived name the generators emit; the anti-rot tests check these against the real
-/// MSBuild targets shipped by SponsorCheck.
+/// MSBuild targets shipped by SponsorCheck. <see cref="WireId"/> is the platform identifier used
+/// inside bundled sidecar files (SponsorCheck.AuthorAccounts.txt).
 /// </summary>
 public sealed record Platform(
     PlatformKind Kind,
     string DisplayName,
+    string WireId,
     string AuthorAccountMetadata,
     string ConsumerAccountMetadata,
     string TokenProperty,
@@ -32,9 +34,13 @@ public sealed record Platform(
 {
     public string SponsorUrl(string account) => string.Format(SponsorUrlTemplate, account);
 
+    public static Platform? FromWireId(string wireId) =>
+        All.FirstOrDefault(_ => string.Equals(_.WireId, wireId, StringComparison.OrdinalIgnoreCase));
+
     public static readonly Platform GitHub = new(
         PlatformKind.GitHub,
         "GitHub Sponsors",
+        "GitHubSponsors",
         "GitHubSponsorsAccount",
         "GitHubSponsorAccount",
         "GitHubToken",
@@ -49,6 +55,7 @@ public sealed record Platform(
     public static readonly Platform OpenCollective = new(
         PlatformKind.OpenCollective,
         "Open Collective",
+        "OpenCollective",
         "OpenCollectiveAccount",
         "OpenCollectiveSponsorAccount",
         "OpenCollectiveToken",
@@ -60,6 +67,7 @@ public sealed record Platform(
 
     public static readonly Platform Polar = new(
         PlatformKind.Polar,
+        "Polar",
         "Polar",
         "PolarAccount",
         "PolarSponsorAccount",

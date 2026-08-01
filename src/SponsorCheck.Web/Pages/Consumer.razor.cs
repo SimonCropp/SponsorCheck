@@ -4,20 +4,79 @@ namespace SponsorCheck.Web.Pages;
 
 public partial class Consumer
 {
-    readonly string[] steps = ["Situation", "Package", "License mode", "Output"];
+    [Inject]
+    public required PackageLookup PackageLookup { get; set; }
+
+    readonly string[] steps = ["Package", "Situation", "License mode", "Output"];
     const int OutputStep = 3;
 
     ConsumerModel model = new();
     int step;
     ScCodeClassification? classification;
+    bool lookupBusy;
+    string? lookupError;
 
     bool CanAdvance => step switch
     {
-        0 => model.SituationComplete,
-        1 => model.PackageComplete,
+        0 => model.PackageComplete && !lookupBusy,
+        1 => model.SituationComplete,
         2 => model.ModeComplete,
         _ => true
     };
+
+    bool CanLookup => model.PackageComplete && !lookupBusy;
+
+    async Task LookupPackage()
+    {
+        lookupBusy = true;
+        lookupError = null;
+        try
+        {
+            var facts = await PackageLookup.Inspect(model.PackageId, model.PackageVersion);
+            model.ApplyFacts(facts);
+        }
+        catch (PackageLookupException exception)
+        {
+            lookupError = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            lookupError = $"Lookup failed: {exception.Message}";
+        }
+        finally
+        {
+            lookupBusy = false;
+        }
+    }
+
+    /// <summary>The exemption card only renders when the package is known to define exemptions —
+    /// or when nothing was looked up and the wizard can't know.</summary>
+    bool ExemptionModeAvailable =>
+        model.Facts is not { BundlesSponsorCheck: true } ||
+        model.Facts.Exemptions.Count > 0;
+
+    /// <summary>Facts narrow the platform list to the ones the author actually accepts.</summary>
+    IEnumerable<Platform> SponsorPlatforms =>
+        model.Facts is { BundlesSponsorCheck: true, Platforms.Count: > 0 } facts
+            ? Platform.All.Where(_ => facts.Platforms.Any(enabled => enabled.Kind == _.Kind))
+            : Platform.All;
+
+    string? SponsorHint(Platform platform)
+    {
+        if (model.Facts is not { BundlesSponsorCheck: true } facts)
+        {
+            return null;
+        }
+
+        var enabled = facts.Platforms.FirstOrDefault(_ => _.Kind == platform.Kind);
+        if (enabled == null)
+        {
+            return null;
+        }
+
+        var url = facts.LandingUrl ?? platform.SponsorUrl(enabled.Account);
+        return $"Sponsor at {url}. Enter the account the sponsorship is made from (the consumer-side account).";
+    }
 
     bool StartIsInFuture =>
         DateTime.TryParseExact(
@@ -62,6 +121,7 @@ public partial class Consumer
     {
         model = new();
         classification = null;
+        lookupError = null;
         step = 0;
     }
 }

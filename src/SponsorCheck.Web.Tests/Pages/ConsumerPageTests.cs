@@ -2,10 +2,29 @@ namespace SponsorCheck.Web.Tests.Pages;
 
 public class ConsumerPageTests : WebTestContext
 {
+    static void EnterPackage(IRenderedComponent<SponsorCheck.Web.Pages.Consumer> cut, string packageId = "ThePackage")
+    {
+        cut.Find("#packageId").Input(packageId);
+        cut.Find("button.primary").Click();           // package -> situation
+    }
+
+    [Test]
+    public async Task NextDisabledUntilPackageIdEntered()
+    {
+        var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+
+        await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsTrue();
+
+        cut.Find("#packageId").Input("ThePackage");
+
+        await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsFalse();
+    }
+
     [Test]
     public async Task CodeEntryPreAnswersOwnerMode()
     {
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        EnterPackage(cut);
 
         cut.Find("#scCode").Input("SC021");
 
@@ -17,6 +36,7 @@ public class ConsumerPageTests : WebTestContext
     public async Task CodeEntryPreAnswersCpm()
     {
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        EnterPackage(cut);
 
         cut.Find("#scCode").Input("SC002");
 
@@ -27,6 +47,7 @@ public class ConsumerPageTests : WebTestContext
     public async Task AuthorCodeShowsRedirect()
     {
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        EnterPackage(cut);
 
         cut.Find("#scCode").Input("SC102");
 
@@ -37,6 +58,7 @@ public class ConsumerPageTests : WebTestContext
     public async Task UnrecognizedCodeShowsError()
     {
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        EnterPackage(cut);
 
         cut.Find("#scCode").Input("SC999");
 
@@ -47,6 +69,7 @@ public class ConsumerPageTests : WebTestContext
     public async Task OwnerModeHidesCpmQuestion()
     {
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        EnterPackage(cut);
 
         await Assert.That(cut.FindAll("#cpm-yes").Count).IsEqualTo(1);
 
@@ -60,10 +83,9 @@ public class ConsumerPageTests : WebTestContext
     public async Task WalkthroughSponsorNonCpmReachesOutput()
     {
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        EnterPackage(cut);
 
-        cut.Find("button.primary").Click();           // situation -> package
-        cut.Find("#packageId").Input("ThePackage");
-        cut.Find("button.primary").Click();           // package -> license mode
+        cut.Find("button.primary").Click();           // situation -> license mode
 
         cut.FindAll("button.mode-card")[0].Click();   // sponsor
         cut.Find("#sponsor-GitHub").Change(true);
@@ -79,11 +101,11 @@ public class ConsumerPageTests : WebTestContext
     public async Task WalkthroughOwnerLicenseReachesOutput()
     {
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        EnterPackage(cut);
 
         cut.Find("#style-owner").Change(true);
         cut.Find("#ownerId").Input("acme");
-        cut.Find("button.primary").Click();           // situation -> package
-        cut.Find("button.primary").Click();           // package -> license mode (id optional in owner mode)
+        cut.Find("button.primary").Click();           // situation -> license mode
 
         cut.FindAll("button.mode-card")[1].Click();   // private license
         cut.Find("#licensedUntil").Input("2027-06");
@@ -96,10 +118,9 @@ public class ConsumerPageTests : WebTestContext
     public async Task SponsorModeRequiresAccount()
     {
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        EnterPackage(cut);
 
-        cut.Find("button.primary").Click();           // situation -> package
-        cut.Find("#packageId").Input("ThePackage");
-        cut.Find("button.primary").Click();           // package -> license mode
+        cut.Find("button.primary").Click();           // situation -> license mode
 
         await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsTrue();
 
@@ -111,5 +132,77 @@ public class ConsumerPageTests : WebTestContext
         cut.Find("#sponsor-account-GitHub").Input("alice");
 
         await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsFalse();
+    }
+
+    [Test]
+    public async Task LookupDrivesOwnerModeAndExemptions()
+    {
+        var nupkg = TestNupkg.Build(
+            ownerId: "acme",
+            transitive: true,
+            exemptions: new Dictionary<string, string> { ["Consulting"] = "Consulting clients are exempt for 6 months." });
+        Services.AddScoped(_ => new HttpClient(new StubNuGetHandler(nupkg, "1.2.3")));
+
+        var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        cut.Find("#packageId").Input("ThePackage");
+        cut.Find("button.lookup").Click();
+        cut.WaitForState(() => cut.Markup.Contains("Read from ThePackage 1.2.3"));
+
+        await Assert.That(cut.Markup).Contains("Owner mode — configured once via 'acme_…' properties");
+        await Assert.That(cut.Markup).Contains("Publisher-defined exemptions: Consulting");
+
+        cut.Find("button.primary").Click();           // package -> situation
+
+        await Assert.That(cut.Markup).Contains("owner id 'acme'");
+        await Assert.That(cut.FindAll("#style-owner").Count).IsEqualTo(0);
+
+        cut.Find("button.primary").Click();           // situation -> license mode
+        cut.FindAll("button.mode-card")[2].Click();   // exemption
+
+        var options = cut.FindAll("#exemptionName option");
+        await Assert.That(options.Count).IsEqualTo(2);
+        await Assert.That(options[1].TextContent).IsEqualTo("Consulting");
+    }
+
+    [Test]
+    public async Task LookupWithoutSponsorCheckFallsBackToManualQuestions()
+    {
+        var nupkg = TestNupkg.Build(sponsorCheck: false);
+        Services.AddScoped(_ => new HttpClient(new StubNuGetHandler(nupkg, "1.2.3")));
+
+        var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        cut.Find("#packageId").Input("ThePackage");
+        cut.Find("button.lookup").Click();
+        cut.WaitForState(() => cut.Markup.Contains("No SponsorCheck files found"));
+
+        cut.Find("button.primary").Click();           // package -> situation
+
+        await Assert.That(cut.FindAll("#scCode").Count).IsEqualTo(1);
+        await Assert.That(cut.FindAll("#style-owner").Count).IsEqualTo(1);
+    }
+
+    sealed class StubNuGetHandler(byte[] nupkg, string version) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancel)
+        {
+            var url = request.RequestUri!.ToString();
+            if (url.EndsWith("/index.json", StringComparison.Ordinal))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent($"{{\"versions\":[\"{version}\"]}}")
+                });
+            }
+
+            if (url.EndsWith(".nupkg", StringComparison.Ordinal))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new ByteArrayContent(nupkg)
+                });
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
     }
 }

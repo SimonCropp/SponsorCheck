@@ -181,4 +181,71 @@ public class ConsumerConfigGeneratorTests
         model.Mode = ConsumerLicenseMode.Ignore;
         await Verify(Dump(model));
     }
+
+    static PackageFacts Facts(
+        bool transitive = false,
+        string? packDate = "2026-01-15",
+        IReadOnlyList<PackageExemption>? exemptions = null,
+        IReadOnlyDictionary<string, string>? severities = null) =>
+        new(
+            "ThePackage",
+            "1.2.3",
+            BundlesSponsorCheck: true,
+            CheckTransitive: transitive,
+            OwnerMode: false,
+            OwnerId: null,
+            PackDate: packDate,
+            LandingUrl: null,
+            Platforms: [new(PlatformKind.GitHub, "acmecorp")],
+            Exemptions: exemptions ?? [],
+            Severities: severities ?? new Dictionary<string, string>());
+
+    [Test]
+    public async Task FactsExemptionSelected()
+    {
+        var model = BaseModel(Placement.PerPackageProject);
+        model.Mode = ConsumerLicenseMode.Exemption;
+        model.ExemptionName = "consulting";
+        model.Facts = Facts(exemptions: [new("Consulting", "Consulting clients are exempt for 6 months.")]);
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task FactsExemptionUnknown()
+    {
+        var model = BaseModel(Placement.PerPackageProject);
+        model.Mode = ConsumerLicenseMode.Exemption;
+        model.ExemptionName = "Enterprise";
+        model.Facts = Facts(exemptions: [new("Consulting", "Consulting clients are exempt for 6 months.")]);
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task FactsIgnoreEscalated()
+    {
+        var model = BaseModel(Placement.PerPackageProject);
+        model.Mode = ConsumerLicenseMode.Ignore;
+        model.Facts = Facts(severities: new Dictionary<string, string> { ["SC005"] = "error" });
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task FactsStartOnOrBeforePackDate()
+    {
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.GitHub, "carol");
+        model.StartedAfterRelease = true;
+        model.SponsorshipStart = "2026-01-10";
+        model.Facts = Facts();
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task FactsSponsorTransitiveWithPackDate()
+    {
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.GitHub, "alice");
+        model.Facts = Facts(transitive: true);
+        await Verify(Dump(model));
+    }
 }

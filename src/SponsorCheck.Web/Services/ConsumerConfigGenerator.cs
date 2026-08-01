@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using SponsorCheck.Web.Models;
 
@@ -134,6 +135,28 @@ public static class ConsumerConfigGenerator
             {
                 var futureCode = CodeFor(placement, "SC015", "SC016", "SC028");
                 var start = model.SponsorshipStart.Trim();
+                if (model.Facts?.PackDate is { } packDate &&
+                    TryParseDate(start, out var startDate) &&
+                    TryParseDate(packDate, out var packedDate))
+                {
+                    if (startDate <= packedDate)
+                    {
+                        var noMatchCode = CodeFor(placement, "SC007", "SC008", "SC024");
+                        return
+                            $"The declared start ({start}) is on or before this version's pack date ({packDate}) — the " +
+                            "boundary is strict, so the attestation does NOT bypass the check. The normal bundled-list " +
+                            $"check applies: the account must have been in the list at pack time, or the build fails with {noMatchCode}. " +
+                            "Re-check the actual start date, or drop SponsorshipStart.";
+                    }
+
+                    return
+                        $"This version was packed on {packDate}, so the attested start ({start}) is after it: the build " +
+                        "passes and logs a high-priority SC017 audit message naming the unverified sponsor. " +
+                        $"A future date fails with {futureCode}. The attestation self-expires: after upgrading to a " +
+                        "version packed later than the start date, the normal bundled-list check applies again and " +
+                        "SponsorshipStart can be dropped.";
+                }
+
                 return
                     $"When {start} is after the package version's pack date, the build passes and logs a high-priority " +
                     "SC017 audit message naming the unverified sponsor — the declaration is trusted because the bundled " +
@@ -146,11 +169,15 @@ public static class ConsumerConfigGenerator
             case ConsumerLicenseMode.Sponsor:
             {
                 var noMatchCode = CodeFor(placement, "SC007", "SC008", "SC024");
+                var packedClause = model.Facts?.PackDate is { } packedOn
+                    ? $" This version was packed on {packedOn} — a sponsorship that began after that date needs the attested start."
+                    : "";
                 return
                     "Passes silently when any declared account was in the bundled sponsor list at the version's pack time. " +
                     $"If the build still fails with {noMatchCode}, either the account or platform doesn't match what the " +
                     "author bundled, or the sponsorship began after this version was packed — in that case add " +
-                    "SponsorshipStart=\"yyyy-MM-dd\" (re-run the wizard and answer yes to the started-after question).";
+                    "SponsorshipStart=\"yyyy-MM-dd\" (re-run the wizard and answer yes to the started-after question)." +
+                    packedClause;
             }
 
             case ConsumerLicenseMode.License:
@@ -168,6 +195,30 @@ public static class ConsumerConfigGenerator
             {
                 var warnCode = CodeFor(placement, "SC029", "SC030", "SC031");
                 var unknownCode = CodeFor(placement, "SC032", "SC033", "SC034");
+                if (model.Facts is { BundlesSponsorCheck: true } facts)
+                {
+                    if (facts.Exemptions.Count == 0)
+                    {
+                        return
+                            $"This package defines no exemptions — claiming one fails with {unknownCode}. " +
+                            "Pick one of the other modes.";
+                    }
+
+                    var match = facts.FindExemption(model.ExemptionName);
+                    if (match == null)
+                    {
+                        var names = string.Join(", ", facts.Exemptions.Select(_ => _.Name));
+                        return
+                            $"'{model.ExemptionName.Trim()}' is not an exemption this package defines ({names}) — the " +
+                            $"build fails with {unknownCode}, and that error lists the defined names.";
+                    }
+
+                    return
+                        $"Passes with a {warnCode} warning quoting the publisher's criteria for '{match.Name}': " +
+                        $"\"{match.Message}\" — the build log records the specific carve-out being claimed rather than " +
+                        "a generic breach message.";
+                }
+
                 return
                     $"Passes with a {warnCode} warning whose body is the publisher's own criteria text — the build log " +
                     "records the specific carve-out being claimed rather than a generic breach message. A name the " +
@@ -177,6 +228,22 @@ public static class ConsumerConfigGenerator
             case ConsumerLicenseMode.Ignore:
             {
                 var warnCode = CodeFor(placement, "SC005", "SC006", "SC023");
+                var factSeverity = model.FactSeverity("SC005", "SC006", "SC023");
+                if (factSeverity == "error")
+                {
+                    return
+                        $"This publisher escalated the opt-out to an error at pack time — the build FAILS with {warnCode} " +
+                        "instead of warning, so SponsorshipLicenseIgnored is not a usable escape hatch for this package. " +
+                        "Pick one of the other modes.";
+                }
+
+                if (factSeverity == "message")
+                {
+                    return
+                        $"Passes with a {warnCode} informational message on every build — this publisher softened the " +
+                        "default breach-of-license warning to a message.";
+                }
+
                 return
                     $"Passes with a {warnCode} breach-of-license warning on every build. The author may have raised this " +
                     "diagnostic's severity to error at pack time, in which case the build fails instead of warning.";
@@ -186,6 +253,9 @@ public static class ConsumerConfigGenerator
                 return "";
         }
     }
+
+    static bool TryParseDate(string value, out DateTime date) =>
+        DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
 
     static List<string> Notes(ConsumerModel model, Placement placement, string owner)
     {
@@ -203,6 +273,13 @@ public static class ConsumerConfigGenerator
             notes.Add(
                 "The bundled list is frozen per package version: versions that pass keep passing even if sponsorship " +
                 "later lapses; a lapse surfaces when upgrading to a version packed after it.");
+        }
+
+        if (model.Facts is { BundlesSponsorCheck: true, CheckTransitive: true })
+        {
+            notes.Add(
+                "This package checks transitive references too — projects that pull it in indirectly also verify, and " +
+                "resolve it the same way: with a direct reference declaring a license mode.");
         }
 
         switch (placement)
@@ -269,6 +346,13 @@ public static class ConsumerConfigGenerator
         Line();
         Line($"- Chosen mode: {ModeDescription(model)}");
         Line($"- Placement: {PlacementDescription(placement, owner)}");
+        if (model.Facts is { BundlesSponsorCheck: true } packageFacts)
+        {
+            var packedClause = packageFacts.PackDate is { } packedOn ? $", packed {packedOn}" : "";
+            Line($"- Package facts (read from the published nupkg): version {packageFacts.Version}{packedClause}, " +
+                 $"transitive checking {(packageFacts.CheckTransitive ? "on" : "off")}");
+        }
+
         Line();
         Line("## Change to make");
         Line();
