@@ -1,0 +1,83 @@
+name: Deploy Blazor wizard to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/SponsorCheck.Web/**'
+      - 'src/SponsorCheck.Web.Tests/**'
+      - 'src/Directory.Packages.props'
+      - 'src/Directory.Build.props'
+      - 'src/nuget.config'
+      - 'global.json'
+      - '.github/workflows/deploy-blazor.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Build test project
+        run: dotnet build src/SponsorCheck.Web.Tests --configuration Release
+
+      - name: Install Playwright browser
+        run: pwsh src/SponsorCheck.Web.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run tests
+        run: dotnet run --project src/SponsorCheck.Web.Tests --configuration Release --no-build -- --no-ansi --no-progress
+
+      - name: Upload received snapshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: received-snapshots
+          path: '**/*.received.*'
+          if-no-files-found: ignore
+
+      - name: Publish
+        run: dotnet publish src/SponsorCheck.Web --configuration Release --output publish
+
+      - name: Set base href for GitHub Pages
+        run: sed -i 's|<base href="/" />|<base href="/SponsorCheck/" />|g' publish/wwwroot/index.html
+
+      - name: Add .nojekyll
+        run: touch publish/wwwroot/.nojekyll
+
+      - name: Copy index.html to 404.html for SPA routing
+        run: cp publish/wwwroot/index.html publish/wwwroot/404.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/wwwroot
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

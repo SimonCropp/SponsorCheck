@@ -1,6 +1,6 @@
 # OSS author setup
 
-Add `SponsorCheck` as a `PrivateAssets="all"` development dependency on the library project, with one `<Platform>Account` metadatum per supported platform. The produced package acquires no runtime dependency on SponsorCheck — everything ships embedded (see [What gets bundled](#what-gets-bundled)).
+Add `SponsorCheck` as a `PrivateAssets="all"` development dependency on the library project, with one `<Platform>Account` metadatum per supported platform. The produced package acquires no runtime dependency on SponsorCheck — everything ships embedded (see [What gets bundled](#what-gets-bundled)). The [setup wizard](https://simoncropp.github.io/SponsorCheck/author) generates the reference, the credential setup, and consumer-facing release notes from a few questions.
 
 <!-- snippet: ThePackage.csproj -->
 <a id='snippet-ThePackage.csproj'></a>

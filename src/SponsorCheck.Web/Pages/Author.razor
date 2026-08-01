@@ -1,0 +1,194 @@
+@page "/author"
+@namespace SponsorCheck.Web.Pages
+<PageTitle>SponsorCheck Setup Wizard — OSS author</PageTitle>
+
+<div class="wizard">
+    <Stepper Labels="steps" Active="step" />
+
+    <div class="step-body">
+        @switch (step)
+        {
+            case 0:
+                <h2>Your package</h2>
+                <div class="field">
+                    <label for="packageId">Package id</label>
+                    <p class="hint">The id of the NuGet package being published (used in the consumer snippets and release notes).</p>
+                    <input id="packageId" type="text" placeholder="MyOssLib"
+                           @bind="model.PackageId" @bind:event="oninput" />
+                </div>
+                <div class="field">
+                    <label for="packageVersion">Next package version</label>
+                    <p class="hint">The version that introduces SponsorCheck. Shown in the example snippets.</p>
+                    <input id="packageVersion" type="text" placeholder="1.0.0"
+                           @bind="model.PackageVersion" @bind:event="oninput" />
+                </div>
+                <div class="field">
+                    <label for="scVersion">SponsorCheck version</label>
+                    <p class="hint">The version of the SponsorCheck dev-dependency to reference. Defaults to the version this wizard was built from.</p>
+                    <input id="scVersion" type="text" placeholder="@WizardDefaults.SponsorCheckVersion"
+                           @bind="model.SponsorCheckVersion" @bind:event="oninput" />
+                </div>
+                <div class="field">
+                    <label>Repository shape</label>
+                    <div class="radio-row">
+                        <input type="radio" id="shape-single" name="repoShape"
+                               checked="@(model.RepoShape == RepoShape.SingleProject)"
+                               @onchange="() => SetShape(RepoShape.SingleProject)" />
+                        <label for="shape-single">
+                            Single packable project
+                            <p class="hint">Versions declared on each <code>&lt;PackageReference&gt;</code>.</p>
+                        </label>
+                    </div>
+                    <div class="radio-row">
+                        <input type="radio" id="shape-cpm" name="repoShape"
+                               checked="@(model.RepoShape == RepoShape.SingleProjectCpm)"
+                               @onchange="() => SetShape(RepoShape.SingleProjectCpm)" />
+                        <label for="shape-cpm">
+                            Single packable project, Central Package Management
+                            <p class="hint">Versions live in <code>Directory.Packages.props</code> — the SponsorCheck metadata goes there too.</p>
+                        </label>
+                    </div>
+                    <div class="radio-row">
+                        <input type="radio" id="shape-monorepo" name="repoShape"
+                               checked="@(model.RepoShape == RepoShape.MonorepoCpm)"
+                               @onchange="() => SetShape(RepoShape.MonorepoCpm)" />
+                        <label for="shape-monorepo">
+                            Multiple packable projects (monorepo, Central Package Management)
+                            <p class="hint">Configure once; every packable project bundles independently at its own pack time.</p>
+                        </label>
+                    </div>
+                    @if (model.RepoShape == RepoShape.MonorepoCpm)
+                    {
+                        <p class="callout">
+                            For a family of packages covered by one sponsor account, <strong>owner mode</strong> is
+                            recommended (pre-selected in the Mode &amp; scope step): consumers configure sponsorship once
+                            for the whole family instead of per package.
+                        </p>
+                    }
+                </div>
+                break;
+
+            case 1:
+                <h2>Sponsorship platforms</h2>
+                <p class="hint">Enable each platform sponsorship is accepted on, and enter the account the sponsor list is fetched from. At least one is required.</p>
+                @foreach (var platform in Platform.All)
+                {
+                    var selection = model.Selection(platform.Kind);
+                    <div class="platform-row">
+                        <div class="check">
+                            <input type="checkbox" id="@($"enable-{platform.Kind}")" @bind="selection.Enabled" />
+                            <label for="@($"enable-{platform.Kind}")">
+                                @platform.DisplayName
+                                @if (!platform.CredentialRequired)
+                                {
+                                    <span class="optional-tag">token optional</span>
+                                }
+                            </label>
+                        </div>
+                        @if (selection.Enabled)
+                        {
+                            <div class="account field">
+                                <label for="@($"account-{platform.Kind}")">@platform.AuthorAccountMetadata</label>
+                                <input id="@($"account-{platform.Kind}")" type="text" placeholder="account or org"
+                                       @bind="selection.Account" @bind:event="oninput" />
+                                <p class="hint">@platform.TokenHelp</p>
+                            </div>
+                        }
+                    </div>
+                }
+                break;
+
+            case 2:
+                <h2>Mode &amp; scope</h2>
+                <div class="check">
+                    <input type="checkbox" id="ownerMode" @bind="model.OwnerMode" />
+                    <label for="ownerMode">
+                        Owner mode
+                        <p class="hint">For a family of packages covered by one sponsor account. Consumers configure sponsorship once via a global MSBuild property instead of per-package metadata.</p>
+                    </label>
+                </div>
+                @if (model.OwnerMode)
+                {
+                    <div class="field">
+                        <label for="ownerId">Owner id</label>
+                        <p class="hint">An opaque label — give every package in the family the same value (e.g. an org slug). It becomes the consumer-side property prefix, e.g. <code>&lt;acme_GitHubSponsorAccount&gt;</code>.</p>
+                        <input id="ownerId" type="text" placeholder="acme"
+                               @bind="model.OwnerId" @bind:event="oninput" />
+                        @if (!string.IsNullOrWhiteSpace(model.OwnerId) && !model.IsOwnerIdValid)
+                        {
+                            <p class="validation-error">
+                                Must start with a letter and contain only letters, digits, and underscores —
+                                the id is baked into MSBuild property names (SC105).
+                            </p>
+                        }
+                    </div>
+                }
+                <div class="check">
+                    <input type="checkbox" id="transitive" @bind="model.CheckTransitive" />
+                    <label for="transitive">
+                        Check transitive references
+                        <p class="hint">By default only direct references are verified (<code>build/</code>). Enable to ship the verifier under <code>buildTransitive/</code> so projects that pull the package in transitively are checked too.</p>
+                    </label>
+                </div>
+                break;
+
+            case 3:
+                <h2>Options <span class="optional-tag">all optional</span></h2>
+                <p class="hint">Tune the severity and message of the verifier diagnostics consumers see, define exemptions, or point all sponsor links at one custom page. Leave as-is to use the defaults.</p>
+                @foreach (var info in OverrideInfo.All)
+                {
+                    var selection = model.Selection(info.Kind);
+                    <div class="override-row">
+                        <label>@info.DisplayName <span class="optional-tag">@info.Codes · default @info.DefaultSeverity</span></label>
+                        <div class="controls">
+                            <select @bind="selection.Severity">
+                                <option value="@SeverityOverride.Default">Default (@info.DefaultSeverity)</option>
+                                <option value="@SeverityOverride.Error">error</option>
+                                <option value="@SeverityOverride.Warning">warning</option>
+                                <option value="@SeverityOverride.Message">message</option>
+                            </select>
+                            <input type="text" placeholder="custom message (optional)"
+                                   @bind="selection.Message" @bind:event="oninput" />
+                        </div>
+                    </div>
+                }
+                <div class="field" style="margin-top:1.25rem">
+                    <label>Exemptions</label>
+                    <p class="hint">Named carve-outs for consumers who legitimately don't need to sponsor (consulting clients, small businesses, …). Consumers claim one by name; the build warning quotes the criteria text verbatim.</p>
+                    <ExemptionsEditor Model="model" Changed="StateHasChanged" />
+                </div>
+                <div class="field" style="margin-top:1rem">
+                    <label for="landingUrl">Custom sponsor landing URL</label>
+                    <p class="hint">When set, every sponsor link in the verifier messages points here instead of the platform pages.</p>
+                    <input id="landingUrl" type="url" placeholder="https://example.com/sponsor"
+                           @bind="model.LandingUrl" @bind:event="oninput" />
+                </div>
+                break;
+
+            case OutputStep:
+                <AuthorOutputPanel Model="model" />
+                break;
+        }
+    </div>
+
+    <div class="wizard-nav">
+        <span>
+            @if (step > 0)
+            {
+                <button type="button" @onclick="Back">Back</button>
+            }
+        </span>
+        <span>
+            @if (step < OutputStep)
+            {
+                <button type="button" class="primary" disabled="@(!CanAdvance)" @onclick="Next">
+                    @(step == OutputStep - 1 ? "Generate" : "Next")
+                </button>
+            }
+            else
+            {
+                <button type="button" @onclick="Restart">Start over</button>
+            }
+        </span>
+    </div>
+</div>

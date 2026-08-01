@@ -1,0 +1,204 @@
+﻿=== Reference (SponsorCheck reference (Directory.Packages.props + library .csproj)) ===
+<!-- Directory.Packages.props — the version and SponsorCheck metadata live on the PackageVersion -->
+<PackageVersion Include="SponsorCheck" Version="9.9.9"
+                GitHubSponsorsAccount="acmecorp" />
+
+<!-- the library .csproj — bare reference; the metadata comes from the PackageVersion -->
+<PackageReference Include="SponsorCheck" PrivateAssets="all" />
+
+=== Credentials ===
+# Local dev — store tokens outside the repo with user-secrets.
+# Run from the directory containing the library .csproj:
+dotnet user-secrets init
+dotnet user-secrets set "SponsorCheck:GitHubToken" "<token>"   # required
+
+# CI — expose each token as an environment variable of the SAME name
+# (MSBuild auto-imports it as the matching <...Token> property; GITHUB_TOKEN does NOT auto-flow):
+GitHubToken   # required
+
+# Pull-request CI builds: providers withhold encrypted secrets, so bundling is skipped
+# (the package packs without the verifier and a build message records it). To force
+# bundling on PR builds that do have the credential, set the MSBuild property:
+#   <SponsorCheckBundleInPullRequest>true</SponsorCheckBundleInPullRequest>
+
+# Token notes:
+# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.
+
+=== Release notes ===
+## Sponsorship is now checked at build time
+
+`MyOssLib` 2.0.0 now bundles [SponsorCheck](https://github.com/SimonCropp/SponsorCheck) — a build-time check that asks teams using this package to sponsor its ongoing development. SponsorCheck adds **no runtime dependency**; the check runs only during the build.
+
+After upgrading, every build looks for one of the options below. If none is configured the build fails with an error.
+
+### What you need to do
+
+Pick exactly one of the following and add it where the package is referenced (on the `<PackageReference>`, or on the `<PackageVersion>` in `Directory.Packages.props` if you use Central Package Management).
+
+#### Option 1 — Sponsor
+
+Sponsor the author, then declare the account you sponsor under:
+
+```xml
+<!-- Without Central Package Management: in the consuming .csproj -->
+<PackageReference Include="MyOssLib" Version="2.0.0" GitHubSponsorAccount="your-account" />
+
+<!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->
+<PackageVersion Include="MyOssLib" Version="2.0.0" GitHubSponsorAccount="your-account" />
+```
+
+Sponsor at https://github.com/sponsors/acmecorp
+
+_Started sponsoring only recently?_ If your sponsorship began after this version was published, the bundled list cannot contain you yet — add `SponsorshipStart="yyyy-MM-dd"` alongside the account to attest to the start date until you upgrade to a later release.
+
+#### Option 2 — Private license
+
+If you have a private (B2B) licensing arrangement, set a time-bounded license. The value is `yyyy-MM` (the last covered month) and is valid through the end of that month (UTC). Values more than one year out are rejected, so renewal is a periodic one-line edit:
+
+```xml
+<!-- Without Central Package Management: in the consuming .csproj -->
+<PackageReference Include="MyOssLib" Version="2.0.0" SponsorshipLicensedUntil="yyyy-MM" />
+
+<!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->
+<PackageVersion Include="MyOssLib" Version="2.0.0" SponsorshipLicensedUntil="yyyy-MM" />
+```
+
+#### Option 3 — Opt out
+
+You can opt out of the check. The build stays green but logs a breach-of-license warning on every build.
+
+```xml
+<!-- Without Central Package Management: in the consuming .csproj -->
+<PackageReference Include="MyOssLib" Version="2.0.0" SponsorshipLicenseIgnored="true" />
+
+<!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->
+<PackageVersion Include="MyOssLib" Version="2.0.0" SponsorshipLicenseIgnored="true" />
+```
+
+### Reference
+
+Build diagnostics use `SC0xx` codes — see the [verifier diagnostic reference](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md).
+
+=== Checklist ===
+- [ ] Store the platform token(s) — user-secrets locally; on CI an encrypted secret exposed as `GitHubToken`.
+- [ ] Apply the reference snippet, then pack with the Release configuration.
+- [ ] Inspect the produced nupkg: `build/SponsorCheck.SponsorHashes.txt` must be present (open the nupkg as a zip).
+- [ ] Add the release-notes markdown to the changelog / release description of the version that adds SponsorCheck.
+- [ ] Full author documentation: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md
+- [ ] Pack-time diagnostics reference: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/BundlerDiagnosticCodes.md
+
+=== Markdown ===
+# Add SponsorCheck to MyOssLib
+
+Generated by the [SponsorCheck setup wizard](https://simoncropp.github.io/SponsorCheck/author).
+
+[SponsorCheck](https://github.com/SimonCropp/SponsorCheck) bundles build-time sponsorship verification into the produced NuGet package at pack time — consumers of MyOssLib are asked for a license mode on every build. No runtime dependency is added.
+
+- Platforms: GitHub Sponsors (acmecorp)
+- Owner mode: off
+- Transitive checking: off
+
+## 1. Reference SponsorCheck
+
+Apply each block to the file named in its comment: the <PackageVersion> goes in Directory.Packages.props, the bare <PackageReference> in the packable library's .csproj (inside an <ItemGroup>).
+
+```xml
+<!-- Directory.Packages.props — the version and SponsorCheck metadata live on the PackageVersion -->
+<PackageVersion Include="SponsorCheck" Version="9.9.9"
+                GitHubSponsorsAccount="acmecorp" />
+
+<!-- the library .csproj — bare reference; the metadata comes from the PackageVersion -->
+<PackageReference Include="SponsorCheck" PrivateAssets="all" />
+```
+
+## 2. Provide platform credentials
+
+The bundler fetches the sponsor list at pack time and needs these credentials:
+
+```sh
+# Local dev — store tokens outside the repo with user-secrets.
+# Run from the directory containing the library .csproj:
+dotnet user-secrets init
+dotnet user-secrets set "SponsorCheck:GitHubToken" "<token>"   # required
+
+# CI — expose each token as an environment variable of the SAME name
+# (MSBuild auto-imports it as the matching <...Token> property; GITHUB_TOKEN does NOT auto-flow):
+GitHubToken   # required
+
+# Pull-request CI builds: providers withhold encrypted secrets, so bundling is skipped
+# (the package packs without the verifier and a build message records it). To force
+# bundling on PR builds that do have the credential, set the MSBuild property:
+#   <SponsorCheckBundleInPullRequest>true</SponsorCheckBundleInPullRequest>
+
+# Token notes:
+# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.
+```
+
+## 3. Release notes for consumers
+
+Paste into the release notes / changelog of the version that adds SponsorCheck:
+
+````markdown
+## Sponsorship is now checked at build time
+
+`MyOssLib` 2.0.0 now bundles [SponsorCheck](https://github.com/SimonCropp/SponsorCheck) — a build-time check that asks teams using this package to sponsor its ongoing development. SponsorCheck adds **no runtime dependency**; the check runs only during the build.
+
+After upgrading, every build looks for one of the options below. If none is configured the build fails with an error.
+
+### What you need to do
+
+Pick exactly one of the following and add it where the package is referenced (on the `<PackageReference>`, or on the `<PackageVersion>` in `Directory.Packages.props` if you use Central Package Management).
+
+#### Option 1 — Sponsor
+
+Sponsor the author, then declare the account you sponsor under:
+
+```xml
+<!-- Without Central Package Management: in the consuming .csproj -->
+<PackageReference Include="MyOssLib" Version="2.0.0" GitHubSponsorAccount="your-account" />
+
+<!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->
+<PackageVersion Include="MyOssLib" Version="2.0.0" GitHubSponsorAccount="your-account" />
+```
+
+Sponsor at https://github.com/sponsors/acmecorp
+
+_Started sponsoring only recently?_ If your sponsorship began after this version was published, the bundled list cannot contain you yet — add `SponsorshipStart="yyyy-MM-dd"` alongside the account to attest to the start date until you upgrade to a later release.
+
+#### Option 2 — Private license
+
+If you have a private (B2B) licensing arrangement, set a time-bounded license. The value is `yyyy-MM` (the last covered month) and is valid through the end of that month (UTC). Values more than one year out are rejected, so renewal is a periodic one-line edit:
+
+```xml
+<!-- Without Central Package Management: in the consuming .csproj -->
+<PackageReference Include="MyOssLib" Version="2.0.0" SponsorshipLicensedUntil="yyyy-MM" />
+
+<!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->
+<PackageVersion Include="MyOssLib" Version="2.0.0" SponsorshipLicensedUntil="yyyy-MM" />
+```
+
+#### Option 3 — Opt out
+
+You can opt out of the check. The build stays green but logs a breach-of-license warning on every build.
+
+```xml
+<!-- Without Central Package Management: in the consuming .csproj -->
+<PackageReference Include="MyOssLib" Version="2.0.0" SponsorshipLicenseIgnored="true" />
+
+<!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->
+<PackageVersion Include="MyOssLib" Version="2.0.0" SponsorshipLicenseIgnored="true" />
+```
+
+### Reference
+
+Build diagnostics use `SC0xx` codes — see the [verifier diagnostic reference](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md).
+````
+
+## 4. Checklist
+
+- [ ] Store the platform token(s) — user-secrets locally; on CI an encrypted secret exposed as `GitHubToken`.
+- [ ] Apply the reference snippet, then pack with the Release configuration.
+- [ ] Inspect the produced nupkg: `build/SponsorCheck.SponsorHashes.txt` must be present (open the nupkg as a zip).
+- [ ] Add the release-notes markdown to the changelog / release description of the version that adds SponsorCheck.
+- [ ] Full author documentation: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md
+- [ ] Pack-time diagnostics reference: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/BundlerDiagnosticCodes.md

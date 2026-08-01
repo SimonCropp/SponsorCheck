@@ -21,6 +21,10 @@ Integration tests build `src` first by depending on `nugets/SponsorCheck.<versio
 
 `SponsorCheck.csproj` has `<GeneratePackageOnBuild>true</GeneratePackageOnBuild>`, so `dotnet build src -c Release` produces the nupkg at `nugets/`. Don't add a separate `dotnet pack` step.
 
+## Setup wizard (SponsorCheck.Web)
+
+`src/SponsorCheck.Web` is a Blazor WASM wizard (deployed to GitHub Pages at https://simoncropp.github.io/SponsorCheck/ by `.github/workflows/deploy-blazor.yml`; tests gate the deploy) that generates consumer/author configuration. `src/SponsorCheck.Web.Tests` contains anti-rot tests (`RepoContractTests`) that compare the wizard's hardcoded names against `build/SponsorCheck.targets`, `EmbeddedTemplates/ConsumerVerifier*.targets`, `OverrideableCodes.cs`, and the diagnostic-code docs — adding or renaming metadata, properties, or SC codes fails those tests until the wizard models (`Models/Platform.cs`, `Models/Overrides.cs`, `Models/ScCode.cs`, the generators) are updated to match. Run them with `dotnet run --project src/SponsorCheck.Web.Tests --configuration Release --no-build`.
+
 ## The two-stage MSBuild architecture
 
 This is the central design. Hold it in mind when reading any file in `SponsorCheck/`.

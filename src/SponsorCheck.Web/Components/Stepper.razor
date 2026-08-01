@@ -1,0 +1,22 @@
+<ol class="stepper">
+    @for (var i = 0; i < Labels.Count; i++)
+    {
+        var index = i;
+        <li class="@StepClass(index)">@Labels[index]</li>
+    }
+</ol>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<string> Labels { get; set; } = [];
+    [Parameter] public int Active { get; set; }
+
+    string StepClass(int index)
+    {
+        if (index == Active)
+        {
+            return "active";
+        }
+
+        return index < Active ? "done" : "";
+    }
+}

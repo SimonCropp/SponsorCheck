@@ -1,6 +1,6 @@
 # Consumer usage
 
-A package referenced by the build bundles the SponsorCheck verifier: on every build, in every configuration, it checks for a declared license mode and passes, warns, or fails with an [SC0xx code](VerifierDiagnosticCodes.md). This page is the full consumer reference. For the short version, start with the failing build message itself — it contains a copy-pasteable fix — or the [readme quick start](../readme.md#consumer-usage).
+A package referenced by the build bundles the SponsorCheck verifier: on every build, in every configuration, it checks for a declared license mode and passes, warns, or fails with an [SC0xx code](VerifierDiagnosticCodes.md). This page is the full consumer reference. For the short version, start with the failing build message itself — it contains a copy-pasteable fix — or the [readme quick start](../readme.md#consumer-usage). The [setup wizard](https://simoncropp.github.io/SponsorCheck/consumer) asks a few questions and generates the exact snippet, the file to edit, and the expected outcome.
 
 
 ## License modes

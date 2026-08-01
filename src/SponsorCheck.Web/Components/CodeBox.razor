@@ -1,0 +1,22 @@
+@inject ClipboardService Clipboard
+
+<div class="code-box">
+    <div class="code-box-header">
+        <span class="code-box-title">@Title</span>
+        <button type="button" class="copy-button" @onclick="Copy">@(copied ? "Copied!" : "Copy")</button>
+    </div>
+    <pre class="code-box-content"><code>@Content</code></pre>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter, EditorRequired] public string Content { get; set; } = "";
+
+    bool copied;
+
+    async Task Copy()
+    {
+        await Clipboard.CopyAsync(Content);
+        copied = true;
+    }
+}
