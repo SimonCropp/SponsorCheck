@@ -4,7 +4,12 @@ public class AuthorOutputPanelTests : WebTestContext
 {
     static AuthorModel FullModel()
     {
-        var model = new AuthorModel { PackageId = "MyOssLib", PackageVersion = "2.0.0", SponsorCheckVersion = "9.9.9" };
+        var model = new AuthorModel
+        {
+            PackageId = "MyOssLib",
+            PackageVersion = "2.0.0",
+            SponsorCheckVersion = "9.9.9"
+        };
         var gitHub = model.Selection(PlatformKind.GitHub);
         gitHub.Enabled = true;
         gitHub.Account = "acmecorp";
@@ -14,14 +19,14 @@ public class AuthorOutputPanelTests : WebTestContext
     [Test]
     public async Task RendersFourCodeBoxes()
     {
-        var cut = Render<AuthorOutputPanel>(parameters => parameters.Add(_ => _.Model, FullModel()));
+        var cut = Render<AuthorOutputPanel>(_ => _.Add(_ => _.Model, FullModel()));
         await Assert.That(cut.FindAll(".code-box").Count).IsEqualTo(4);
     }
 
     [Test]
     public async Task IncludesAllParts()
     {
-        var cut = Render<AuthorOutputPanel>(parameters => parameters.Add(_ => _.Model, FullModel()));
+        var cut = Render<AuthorOutputPanel>(_ => _.Add(_ => _.Model, FullModel()));
         var markup = cut.Markup;
         await Assert.That(markup).Contains("Reference SponsorCheck");
         await Assert.That(markup).Contains("Tell your consumers");
@@ -32,7 +37,7 @@ public class AuthorOutputPanelTests : WebTestContext
     [Test]
     public async Task CopyMarkdownSendsComposedDocument()
     {
-        var cut = Render<AuthorOutputPanel>(parameters => parameters.Add(_ => _.Model, FullModel()));
+        var cut = Render<AuthorOutputPanel>(_ => _.Add(_ => _.Model, FullModel()));
 
         cut.Find("button.copy-markdown").Click();
 
@@ -46,7 +51,7 @@ public class AuthorOutputPanelTests : WebTestContext
     [Test]
     public async Task Markup()
     {
-        var cut = Render<AuthorOutputPanel>(parameters => parameters.Add(_ => _.Model, FullModel()));
+        var cut = Render<AuthorOutputPanel>(_ => _.Add(_ => _.Model, FullModel()));
         await Verify(cut.Markup);
     }
 }

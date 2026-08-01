@@ -19,7 +19,7 @@ public class ConsumerOutputPanelTests : WebTestContext
     [Test]
     public async Task IncludesAllParts()
     {
-        var cut = Render<ConsumerOutputPanel>(parameters => parameters.Add(_ => _.Model, SponsorModel()));
+        var cut = Render<ConsumerOutputPanel>(_ => _.Add(_ => _.Model, SponsorModel()));
         var markup = cut.Markup;
         await Assert.That(markup).Contains("File to edit");
         await Assert.That(markup).Contains("Expected build outcome");
@@ -29,7 +29,7 @@ public class ConsumerOutputPanelTests : WebTestContext
     [Test]
     public async Task CopyMarkdownSendsComposedDocument()
     {
-        var cut = Render<ConsumerOutputPanel>(parameters => parameters.Add(_ => _.Model, SponsorModel()));
+        var cut = Render<ConsumerOutputPanel>(_ => _.Add(_ => _.Model, SponsorModel()));
 
         cut.Find("button.copy-markdown").Click();
 
@@ -42,7 +42,7 @@ public class ConsumerOutputPanelTests : WebTestContext
     [Test]
     public async Task Markup()
     {
-        var cut = Render<ConsumerOutputPanel>(parameters => parameters.Add(_ => _.Model, SponsorModel()));
+        var cut = Render<ConsumerOutputPanel>(_ => _.Add(_ => _.Model, SponsorModel()));
         await Verify(cut.Markup);
     }
 }

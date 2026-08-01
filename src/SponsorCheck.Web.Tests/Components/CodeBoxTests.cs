@@ -5,7 +5,7 @@ public class CodeBoxTests : WebTestContext
     [Test]
     public async Task RendersTitleAndContent()
     {
-        var cut = Render<CodeBox>(parameters => parameters
+        var cut = Render<CodeBox>(_ => _
             .Add(_ => _.Title, "PackageReference")
             .Add(_ => _.Content, "<PackageReference Include=\"SponsorCheck\" />"));
 
@@ -16,7 +16,7 @@ public class CodeBoxTests : WebTestContext
     [Test]
     public async Task CopyButtonShowsCopiedAfterClick()
     {
-        var cut = Render<CodeBox>(parameters => parameters
+        var cut = Render<CodeBox>(_ => _
             .Add(_ => _.Title, "Title")
             .Add(_ => _.Content, "hello"));
 
