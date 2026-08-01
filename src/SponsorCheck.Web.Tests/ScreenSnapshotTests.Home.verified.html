@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html><html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <base href="/">
+    <link rel="preload" href="css/app.css" as="style">
+    <link rel="preload" href="_framework/blazor.webassembly.js" as="script">
+    <link rel="stylesheet" href="css/app.css">
+<!--!--><!--!--><!--!--><title>SponsorCheck Setup Wizard</title><!--!--><!--!--><!--!--></head>
+
+<body>
+    <div id="app"><!--!--><!--!--><!--!--><!--!--><!--!--><header class="app-header"><div class="inner"><h1 tabindex="-1"><a href="">SponsorCheck Setup Wizard</a></h1>
+        <p>
+            Guided configuration for
+            <a href="https://github.com/SimonCropp/SponsorCheck" target="_blank">SponsorCheck</a>
+            — build-time sponsorship verification for NuGet packages.
+        </p></div></header>
+
+<main><!--!--><!--!--><!--!--><!--!-->
+
+<!--!--><p>
+    SponsorCheck verifies sponsorship at build time. Pick the side of it that applies —
+    each flow asks a few questions and generates exact, copy-pasteable configuration.
+</p>
+
+<!--!--><div class="role-cards"><a class="role-card" href="consumer"><h2>Consumer</h2>
+        <p>
+            A build asked for sponsorship metadata (an SC0xx error or warning).
+            Generate the snippet and find out exactly which file it belongs in.
+        </p></a>
+    <a class="role-card" href="author"><h2>OSS author</h2>
+        <p>
+            Add SponsorCheck to a published package: platform accounts, credentials,
+            owner mode, exemptions, and release notes for consumers.
+        </p></a></div></main><!--!-->
+
+<!--!--><footer class="app-footer">
+    SponsorCheck adds no runtime dependency — verification happens only during the build.
+    Full documentation in the
+    <a href="https://github.com/SimonCropp/SponsorCheck#readme" target="_blank">readme</a>,
+    the <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/ConsumerUsage.md" target="_blank">consumer guide</a>,
+    and the <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md" target="_blank">author guide</a>.
+</footer><!--!-->
+        <!--!--></div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">X</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="js/interop.js"></script>
+
+
+
+</body></html>

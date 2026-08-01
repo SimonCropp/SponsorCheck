@@ -29,6 +29,7 @@
     <PackageReference Include="Verify" />
     <PackageReference Include="Verify.DiffPlex" />
     <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="Verify.Playwright" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
   </ItemGroup>
 

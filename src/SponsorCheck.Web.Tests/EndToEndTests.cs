@@ -1,84 +1,30 @@
 namespace SponsorCheck.Web.Tests;
 
 /// <summary>
-/// End-to-end tests that serve the published Blazor app from an in-memory Kestrel host and drive it with a
-/// real Chromium browser, exercising the actual WASM runtime (which the bunit tests do not). Assertions are
-/// text/selector based rather than pixel snapshots because PNG baselines are OS-specific and would break the
-/// Linux CI deploy; snapshot coverage of the rendered text lives in the deterministic generator / bunit tests.
+/// Behavioural end-to-end journeys over the published app (see <see cref="PublishedWizard"/>).
+/// Text/selector assertions only — per-screen visual coverage lives in <see cref="ScreenSnapshotTests"/>.
 /// </summary>
 public class EndToEndTests
 {
-    static WebApplication? app;
-    static int port;
-    static IPlaywright? playwright;
-    static IBrowser? browser;
+    static PublishedWizard? wizard;
 
     [Before(Class)]
-    public static async Task Setup()
-    {
-        var installExitCode = Program.Main(["install", "chromium"]);
-        if (installExitCode != 0)
-        {
-            throw new($"Playwright Chromium install failed with exit code {installExitCode}.");
-        }
-
-        port = GetAvailablePort();
-
-        var testAssemblyDirectory = Path.GetDirectoryName(typeof(EndToEndTests).Assembly.Location)!;
-        var wwwroot = Path.Combine(testAssemblyDirectory, "..", "blazor-publish", "wwwroot");
-
-        var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls($"http://localhost:{port}");
-        builder.Logging.ClearProviders();
-        app = builder.Build();
-
-        var contentTypes = new FileExtensionContentTypeProvider
-        {
-            Mappings =
-            {
-                [".wasm"] = "application/wasm"
-            }
-        };
-        var files = new PhysicalFileProvider(wwwroot);
-
-        app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = files });
-        app.UseStaticFiles(
-            new StaticFileOptions
-            {
-                FileProvider = files,
-                ContentTypeProvider = contentTypes,
-                ServeUnknownFileTypes = true
-            });
-        app.MapFallbackToFile("index.html", new StaticFileOptions { FileProvider = files });
-
-        await app.StartAsync();
-
-        playwright = await Playwright.CreateAsync();
-        browser = await playwright.Chromium.LaunchAsync();
-    }
+    public static async Task Setup() => wizard = await PublishedWizard.Start();
 
     [After(Class)]
     public static async Task Teardown()
     {
-        if (browser != null)
+        if (wizard != null)
         {
-            await browser.CloseAsync();
-        }
-
-        playwright?.Dispose();
-
-        if (app != null)
-        {
-            await app.StopAsync();
-            await app.DisposeAsync();
+            await wizard.DisposeAsync();
         }
     }
 
     [Test]
     public async Task Boots()
     {
-        var page = await browser!.NewPageAsync();
-        await page.GotoAsync($"http://localhost:{port}/");
+        var page = await wizard!.NewPage();
+        await page.GotoAsync(wizard.Url());
         await page.WaitForSelectorAsync(".role-cards");
 
         var cards = await page.QuerySelectorAllAsync("a.role-card");
@@ -88,8 +34,8 @@ public class EndToEndTests
     [Test]
     public async Task AuthorJourney()
     {
-        var page = await browser!.NewPageAsync();
-        await page.GotoAsync($"http://localhost:{port}/");
+        var page = await wizard!.NewPage();
+        await page.GotoAsync(wizard.Url());
         await page.ClickAsync("a.role-card[href='author']");
         await page.WaitForSelectorAsync("#packageId");
 
@@ -112,8 +58,8 @@ public class EndToEndTests
     [Test]
     public async Task ConsumerOwnerJourney()
     {
-        var page = await browser!.NewPageAsync();
-        await page.GotoAsync($"http://localhost:{port}/");
+        var page = await wizard!.NewPage();
+        await page.GotoAsync(wizard.Url());
         await page.ClickAsync("a.role-card[href='consumer']");
         await page.WaitForSelectorAsync("#packageId");
 
@@ -141,18 +87,11 @@ public class EndToEndTests
     public async Task DeepLinkToConsumerFlow()
     {
         // Exercises the SPA fallback (404.html / MapFallbackToFile) that GitHub Pages relies on.
-        var page = await browser!.NewPageAsync();
-        await page.GotoAsync($"http://localhost:{port}/consumer");
+        var page = await wizard!.NewPage();
+        await page.GotoAsync(wizard.Url("/consumer"));
         await page.WaitForSelectorAsync("#packageId");
 
         var heading = await page.TextContentAsync("h2");
         await Assert.That(heading).IsEqualTo("The package");
-    }
-
-    static int GetAvailablePort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        return ((IPEndPoint) listener.LocalEndpoint).Port;
     }
 }
