@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace SponsorCheck.Web.Services;
 
 /// <summary>Shared MSBuild-flavoured XML emitters used by both generators.</summary>

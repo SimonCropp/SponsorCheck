@@ -1,14 +1,4 @@
-using System.Globalization;
-
 namespace SponsorCheck.Web.Models;
-
-public enum ConsumerLicenseMode
-{
-    Sponsor,
-    License,
-    Exemption,
-    Ignore
-}
 
 /// <summary>
 /// All consumer choices the wizard collects. Bound directly to the step components and consumed

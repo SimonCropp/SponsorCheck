@@ -1,7 +1,3 @@
-using System.Net;
-using System.Text.Json;
-using SponsorCheck.Web.Models;
-
 namespace SponsorCheck.Web.Services;
 
 public sealed class PackageLookupException(string message) : Exception(message);
@@ -13,7 +9,7 @@ public sealed class PackageLookupException(string message) : Exception(message);
 public sealed class PackageLookup(HttpClient http)
 {
     public const long MaxNupkgBytes = 30_000_000;
-    const string FlatContainer = "https://api.nuget.org/v3-flatcontainer";
+    const string flatContainer = "https://api.nuget.org/v3-flatcontainer";
 
     public async Task<PackageFacts> Inspect(string packageId, string? version)
     {
@@ -23,7 +19,7 @@ public sealed class PackageLookup(HttpClient http)
         var versionLower = resolved.ToLowerInvariant();
 
         using var response = await http.GetAsync(
-            $"{FlatContainer}/{idLower}/{versionLower}/{idLower}.{versionLower}.nupkg",
+            $"{flatContainer}/{idLower}/{versionLower}/{idLower}.{versionLower}.nupkg",
             HttpCompletionOption.ResponseHeadersRead);
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -65,7 +61,7 @@ public sealed class PackageLookup(HttpClient http)
 
     async Task<string> LatestStableVersion(string id, string idLower)
     {
-        using var response = await http.GetAsync($"{FlatContainer}/{idLower}/index.json");
+        using var response = await http.GetAsync($"{flatContainer}/{idLower}/index.json");
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
             throw new PackageLookupException($"Package '{id}' was not found on nuget.org.");

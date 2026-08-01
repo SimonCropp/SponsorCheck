@@ -1,8 +1,3 @@
-using System.IO.Compression;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using SponsorCheck.Web.Models;
-
 namespace SponsorCheck.Web.Services;
 
 /// <summary>
@@ -126,7 +121,7 @@ public static class NupkgParser
                 var message = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
                 if (property.Name.Trim().Length > 0 && !string.IsNullOrWhiteSpace(message))
                 {
-                    result.Add(new(property.Name, message!));
+                    result.Add(new(property.Name, message));
                 }
             }
         }

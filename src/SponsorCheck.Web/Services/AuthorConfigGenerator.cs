@@ -1,6 +1,3 @@
-using System.Text;
-using SponsorCheck.Web.Models;
-
 namespace SponsorCheck.Web.Services;
 
 public sealed record AuthorOutput(

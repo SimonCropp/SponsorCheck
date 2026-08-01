@@ -1,26 +1,6 @@
 namespace SponsorCheck.Web.Models;
 
 /// <summary>
-/// Verifier severity an author can pin at pack time. <see cref="Default"/> means "leave the built-in
-/// severity", so no override metadata is emitted.
-/// </summary>
-public enum SeverityOverride
-{
-    Default,
-    Error,
-    Warning,
-    Message
-}
-
-public enum OverrideKind
-{
-    NoLicenseSpecified,
-    LicenseIgnored,
-    InvalidAccount,
-    LicenseExpired
-}
-
-/// <summary>
 /// One overrideable verifier condition. The author tunes severity and/or message text via the
 /// <c>{Stem}SeverityOverride</c> / <c>{Stem}MessageOverride</c> metadata; a single value covers the
 /// non-CPM, CPM, and owner-mode sibling codes. Mirrors src/SponsorCheck/OverrideableCodes.cs, which
@@ -50,22 +30,4 @@ public sealed record OverrideInfo(
 
     public static readonly IReadOnlyList<OverrideInfo> All =
         [NoLicenseSpecified, LicenseIgnored, InvalidAccount, LicenseExpired];
-}
-
-public sealed class OverrideSelection
-{
-    public SeverityOverride Severity { get; set; } = SeverityOverride.Default;
-    public string Message { get; set; } = "";
-
-    public bool HasSeverity => Severity != SeverityOverride.Default;
-    public bool HasMessage => !string.IsNullOrWhiteSpace(Message);
-    public bool IsSet => HasSeverity || HasMessage;
-
-    public string SeverityValue => Severity switch
-    {
-        SeverityOverride.Error => "error",
-        SeverityOverride.Warning => "warning",
-        SeverityOverride.Message => "message",
-        _ => ""
-    };
 }

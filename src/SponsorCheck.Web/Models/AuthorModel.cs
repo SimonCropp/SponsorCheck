@@ -1,21 +1,5 @@
 namespace SponsorCheck.Web.Models;
 
-public enum RepoShape
-{
-    SingleProject,
-    SingleProjectCpm,
-    MonorepoCpm
-}
-
-public sealed class ExemptionEntry
-{
-    public string Name { get; set; } = "";
-    public string Message { get; set; } = "";
-
-    public bool IsComplete => Name.Trim().Length > 0 && Message.Trim().Length > 0;
-    public bool IsBlank => Name.Trim().Length == 0 && Message.Trim().Length == 0;
-}
-
 /// <summary>
 /// All author choices the wizard collects. Bound directly to the step components and consumed
 /// (read-only) by <see cref="Services.AuthorConfigGenerator"/> to produce the outputs.

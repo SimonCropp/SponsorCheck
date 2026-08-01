@@ -6,7 +6,7 @@ public class PackageLookupTests
     {
         public List<string> Requested { get; } = [];
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancel)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
         {
             Requested.Add(request.RequestUri!.ToString());
             return Task.FromResult(respond(request));

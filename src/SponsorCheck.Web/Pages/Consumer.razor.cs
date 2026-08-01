@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace SponsorCheck.Web.Pages;
 
 public partial class Consumer

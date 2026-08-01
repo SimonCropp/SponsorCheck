@@ -15,7 +15,7 @@ public abstract class WebTestContext : BunitContext
 
     sealed class NoNetworkHandler : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancel) =>
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel) =>
             throw new HttpRequestException("No network in component tests — register a stub HttpClient.");
     }
 }

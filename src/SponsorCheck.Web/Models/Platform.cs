@@ -1,18 +1,5 @@
 namespace SponsorCheck.Web.Models;
 
-public enum PlatformKind
-{
-    GitHub,
-    OpenCollective,
-    Polar
-}
-
-public sealed class PlatformSelection
-{
-    public bool Enabled { get; set; }
-    public string Account { get; set; } = "";
-}
-
 /// <summary>
 /// Static description of a sponsorship platform: the metadata names the author and consumer use,
 /// how its credential is supplied, and how to render a sponsor URL. Single source for every
@@ -47,10 +34,7 @@ public sealed record Platform(
         "SponsorCheck:GitHubToken",
         "https://github.com/sponsors/{0}",
         CredentialRequired: true,
-        "Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org " +
-        "if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT " +
-        "is the only option. The token must be owned by the sponsored account (or an admin of the sponsored " +
-        "org) — otherwise private sponsors are silently missing from the bundled list.");
+        "Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.");
 
     public static readonly Platform OpenCollective = new(
         PlatformKind.OpenCollective,
@@ -62,8 +46,7 @@ public sealed record Platform(
         "SponsorCheck:OpenCollectiveToken",
         "https://opencollective.com/{0}",
         CredentialRequired: false,
-        "Optional. Public collectives are queryable anonymously; a Personal Token " +
-        "(https://opencollective.com/applications, no scopes) gives rate-limit headroom.");
+        "Optional. Public collectives are queryable anonymously; a Personal Token (https://opencollective.com/applications, no scopes) gives rate-limit headroom.");
 
     public static readonly Platform Polar = new(
         PlatformKind.Polar,
@@ -75,9 +58,7 @@ public sealed record Platform(
         "SponsorCheck:PolarToken",
         "https://polar.sh/{0}",
         CredentialRequired: true,
-        "Required. Create an organization access token " +
-        "(https://docs.polar.sh/integrate/authentication/personal-access-token) " +
-        "with scopes subscriptions:read, customers:read, organizations:read.");
+        "Required. Create an organization access token (https://docs.polar.sh/integrate/authentication/personal-access-token) with scopes subscriptions:read, customers:read, organizations:read.");
 
     public static readonly IReadOnlyList<Platform> All = [GitHub, OpenCollective, Polar];
 }

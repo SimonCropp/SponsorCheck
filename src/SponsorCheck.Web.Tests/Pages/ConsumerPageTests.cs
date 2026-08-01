@@ -219,7 +219,7 @@ public class ConsumerPageTests : WebTestContext
 
     sealed class StubNuGetHandler(byte[] nupkg, string version) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancel)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
         {
             var url = request.RequestUri!.ToString();
             if (url.EndsWith("/index.json", StringComparison.Ordinal))

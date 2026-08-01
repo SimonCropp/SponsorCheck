@@ -16,7 +16,7 @@ public class EndToEndTests
     [Before(Class)]
     public static async Task Setup()
     {
-        var installExitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
+        var installExitCode = Program.Main(["install", "chromium"]);
         if (installExitCode != 0)
         {
             throw new($"Playwright Chromium install failed with exit code {installExitCode}.");
@@ -32,8 +32,13 @@ public class EndToEndTests
         builder.Logging.ClearProviders();
         app = builder.Build();
 
-        var contentTypes = new FileExtensionContentTypeProvider();
-        contentTypes.Mappings[".wasm"] = "application/wasm";
+        var contentTypes = new FileExtensionContentTypeProvider
+        {
+            Mappings =
+            {
+                [".wasm"] = "application/wasm"
+            }
+        };
         var files = new PhysicalFileProvider(wwwroot);
 
         app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = files });
