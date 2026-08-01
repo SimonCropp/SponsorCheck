@@ -192,6 +192,22 @@ a.role-card:hover {
 .stepper li.done {
     color: var(--accent);
     border-color: var(--accent);
+    padding: 0;
+}
+
+.stepper li.done .step-link {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    width: 100%;
+    padding: .5rem .75rem;
+    cursor: pointer;
+}
+
+.stepper li.done:hover {
+    color: var(--primary);
+    border-color: var(--primary);
 }
 
 /* step body */

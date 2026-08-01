@@ -42,6 +42,14 @@ public partial class Author
         }
     }
 
+    void GoToStep(int target)
+    {
+        if (target < step)
+        {
+            step = target;
+        }
+    }
+
     void Restart()
     {
         model = new();

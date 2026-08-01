@@ -34,6 +34,27 @@ public class AuthorPageTests : WebTestContext
     }
 
     [Test]
+    public async Task StepperNavigatesBackToCompletedSteps()
+    {
+        var cut = Render<SponsorCheck.Web.Pages.Author>();
+
+        await Assert.That(cut.FindAll(".stepper .step-link").Count).IsEqualTo(0);
+
+        cut.Find("#packageId").Input("MyOssLib");
+        cut.Find("button.primary").Click();           // package -> platforms
+        cut.Find("#enable-GitHub").Change(true);
+        cut.Find("#account-GitHub").Input("acmecorp");
+        cut.Find("button.primary").Click();           // platforms -> mode
+
+        await Assert.That(cut.FindAll(".stepper .step-link").Count).IsEqualTo(2);
+
+        cut.FindAll(".stepper .step-link")[0].Click();
+
+        await Assert.That(cut.FindAll("#packageId").Count).IsEqualTo(1);
+        await Assert.That(cut.FindAll(".stepper .step-link").Count).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task MonorepoShapePreselectsOwnerMode()
     {
         var cut = Render<SponsorCheck.Web.Pages.Author>();

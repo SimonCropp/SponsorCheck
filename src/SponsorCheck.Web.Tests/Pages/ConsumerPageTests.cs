@@ -135,6 +135,20 @@ public class ConsumerPageTests : WebTestContext
     }
 
     [Test]
+    public async Task StepperNavigatesBackToCompletedSteps()
+    {
+        var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        EnterPackage(cut);
+
+        await Assert.That(cut.FindAll(".stepper .step-link").Count).IsEqualTo(1);
+
+        cut.Find(".stepper .step-link").Click();
+
+        await Assert.That(cut.FindAll("#packageId").Count).IsEqualTo(1);
+        await Assert.That(cut.FindAll(".stepper .step-link").Count).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task LookupDrivesOwnerModeAndExemptions()
     {
         var nupkg = TestNupkg.Build(
