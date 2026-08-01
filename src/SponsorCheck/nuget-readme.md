@@ -30,4 +30,6 @@ At least one `<Platform>Account` must be set. Credentials per platform come from
 <PackageReference Include="ThePackage" Version="1.0" SponsorshipLicenseIgnored="true" />
 ```
 
-Verification runs in Release config only.
+Bundling runs at pack time (Release builds); the bundled verifier runs on every consumer build, in every configuration.
+
+Full documentation: https://github.com/SimonCropp/SponsorCheck

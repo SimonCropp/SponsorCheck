@@ -120,6 +120,8 @@ The bundler target is gated on `'$(Configuration)' == 'Release'` (it only runs a
 - Live tests that need credentials use `LiveTokenResolver.ResolveOrSkip(envVar, secretKey, label, extra?)` — env var → user-secrets → `Skip.Test`. Skip messages flip between user-secrets-first (local) and env-var-only (CI) advice based on `BuildServerDetector.Detected`. The bundler's missing-credential errors (`SC102`) flip the same way via `TokenSetupAdvice.MissingTokenMessage`.
 - `src/SponsorCheck/BuildServerDetector.cs` is a verbatim duplicate of `VerifyTests/DiffEngine/src/DiffEngine/BuildServerDetector.cs`. If the upstream changes meaningfully, re-sync this copy rather than editing in place.
 
-## readme is generated
+## readme and docs pages are generated
 
-`readme.md` uses [MarkdownSnippets](https://github.com/SimonCropp/MarkdownSnippets) (via `MarkdownSnippets.MsBuild` referenced from `src/SponsorCheck.Tests`). Snippet anchors look like `<!-- snippet: name --> ... <!-- endSnippet -->` and pull from real fixture files. Edits inside snippet blocks get clobbered on the next test build — edit the source file (e.g. an integration fixture csproj), not the snippet block.
+`readme.md` and the pages under `docs/` use [MarkdownSnippets](https://github.com/SimonCropp/MarkdownSnippets) (via `MarkdownSnippets.MsBuild` referenced from `src/SponsorCheck.Tests`). Snippet anchors look like `<!-- snippet: name --> ... <!-- endSnippet -->` (includes: `<!-- include: name -->`) and pull from real fixture files. Edits inside snippet/include blocks get clobbered on the next test build — edit the source file (e.g. an integration fixture csproj, or `docs/*.include.md`), not the expanded block.
+
+Doc structure: `readme.md` is a deliberately short landing page split by audience — consumers land in `docs/ConsumerUsage.md`, OSS authors in `docs/AuthorSetup.md`. Detailed feature docs belong in those two guides (or `docs/WhyBuildTimeVerification.md` for rationale), not in the readme. Contributor-facing content (project layout, build/test instructions) lives in `contributing.md`.

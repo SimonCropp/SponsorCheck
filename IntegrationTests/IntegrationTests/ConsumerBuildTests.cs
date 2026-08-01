@@ -429,7 +429,7 @@ public class ConsumerBuildTests
     [Test]
     public async Task OwnerAndPerPackage_BothConfigured_MixedFleetBuildsCleanly()
     {
-        // Backs the README "set both during transition" guidance. One project references an owner-mode
+        // Backs the docs/ConsumerUsage.md "set both during transition" guidance. One project references an owner-mode
         // package (ThePackageOwnerMode) and a per-package package (ThePackage), with the sponsor
         // account declared BOTH as a global property (read by the owner-mode package) and as
         // <PackageReference> metadata (read by the per-package package). The two MSBuild sources don't
