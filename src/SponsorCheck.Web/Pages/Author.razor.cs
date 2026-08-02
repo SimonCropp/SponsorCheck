@@ -2,8 +2,16 @@ namespace SponsorCheck.Web.Pages;
 
 public partial class Author
 {
-    readonly string[] steps = ["Package", "Platforms", "Mode & scope", "Options", "Output"];
-    const int OutputStep = 4;
+    readonly string[] steps =
+    [
+        "Package",
+        "Platforms",
+        "Mode & scope",
+        "Options",
+        "Output"
+    ];
+
+    const int outputStep = 4;
 
     AuthorModel model = new();
     int step;
@@ -28,7 +36,7 @@ public partial class Author
 
     void Next()
     {
-        if (step < OutputStep && CanAdvance)
+        if (step < outputStep && CanAdvance)
         {
             step++;
         }

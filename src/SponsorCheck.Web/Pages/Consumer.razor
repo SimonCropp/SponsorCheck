@@ -279,7 +279,7 @@
                 }
                 break;
 
-            case OutputStep:
+            case outputStep:
                 <ConsumerOutputPanel Model="model" />
                 break;
         }
@@ -293,10 +293,10 @@
             }
         </span>
         <span>
-            @if (step < OutputStep)
+            @if (step < outputStep)
             {
                 <button type="button" class="primary" disabled="@(!CanAdvance)" @onclick="Next">
-                    @(step == OutputStep - 1 ? "Generate" : "Next")
+                    @(step == outputStep - 1 ? "Generate" : "Next")
                 </button>
             }
             else

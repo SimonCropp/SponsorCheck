@@ -5,8 +5,12 @@ public partial class Consumer
     [Inject]
     public required PackageLookup PackageLookup { get; set; }
 
-    readonly string[] steps = ["Package", "Situation", "License mode", "Output"];
-    const int OutputStep = 3;
+    readonly string[] steps = [
+        "Package",
+        "Situation",
+        "License mode",
+        "Output"];
+    const int outputStep = 3;
 
     ConsumerModel model = new();
     int step;
@@ -62,10 +66,18 @@ public partial class Consumer
         model.Facts.Exemptions.Count > 0;
 
     /// <summary>Facts narrow the platform list to the ones the author actually accepts.</summary>
-    IEnumerable<Platform> SponsorPlatforms =>
-        model.Facts is { BundlesSponsorCheck: true, Platforms.Count: > 0 } facts
-            ? Platform.All.Where(_ => facts.Platforms.Any(enabled => enabled.Kind == _.Kind))
-            : Platform.All;
+    IEnumerable<Platform> SponsorPlatforms
+    {
+        get
+        {
+            if (model.Facts is {BundlesSponsorCheck: true, Platforms.Count: > 0} facts)
+            {
+                return Platform.All.Where(_ => facts.Platforms.Any(enabled => enabled.Kind == _.Kind));
+            }
+
+            return Platform.All;
+        }
+    }
 
     string? SponsorHint(Platform platform)
     {
@@ -109,7 +121,7 @@ public partial class Consumer
 
     void Next()
     {
-        if (step < OutputStep && CanAdvance)
+        if (step < outputStep && CanAdvance)
         {
             step++;
         }
