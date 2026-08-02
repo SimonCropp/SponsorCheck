@@ -22,7 +22,7 @@ public class CodeBoxTests : WebTestContext
 
         await Assert.That(cut.Find(".copy-button").TextContent).IsEqualTo("Copy");
 
-        cut.Find(".copy-button").Click();
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find(".copy-button"));
 
         await Assert.That(cut.Find(".copy-button").TextContent).IsEqualTo("Copied!");
     }

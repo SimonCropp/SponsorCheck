@@ -224,7 +224,7 @@ public class RepoContractTests
         var codes = new HashSet<string>(StringComparer.Ordinal);
         foreach (var source in sources)
         {
-            foreach (Match match in Regex.Matches(File.ReadAllText(source), @"\bSC\d{3}\b"))
+            foreach (Match match in Regex.Matches(await File.ReadAllTextAsync(source), @"\bSC\d{3}\b"))
             {
                 codes.Add(match.Value);
             }
@@ -232,8 +232,8 @@ public class RepoContractTests
 
         await Assert.That(codes.Count).IsGreaterThan(0);
 
-        var verifierDocs = File.ReadAllText(RepoPaths.RepoFile("docs", "VerifierDiagnosticCodes.md"));
-        var bundlerDocs = File.ReadAllText(RepoPaths.RepoFile("docs", "BundlerDiagnosticCodes.md"));
+        var verifierDocs = await File.ReadAllTextAsync(RepoPaths.RepoFile("docs", "VerifierDiagnosticCodes.md"));
+        var bundlerDocs = await File.ReadAllTextAsync(RepoPaths.RepoFile("docs", "BundlerDiagnosticCodes.md"));
         foreach (var code in codes.OrderBy(_ => _, StringComparer.Ordinal))
         {
             var docs = code.StartsWith("SC1", StringComparison.Ordinal) ? bundlerDocs : verifierDocs;
