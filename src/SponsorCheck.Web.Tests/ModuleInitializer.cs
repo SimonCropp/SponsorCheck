@@ -1,10 +1,12 @@
+using VerifyTests.DiffPlex;
+
 static class ModuleInitializer
 {
     [ModuleInitializer]
     public static void Init()
     {
         VerifyPlaywright.Initialize();
-        VerifyDiffPlex.Initialize();
+        VerifyDiffPlex.Initialize(OutputType.Compact);
         VerifierSettings.InitializePlugins();
 
         // Playwright hands back the page markup as one long line, which makes a snapshot diff

@@ -70,7 +70,7 @@ public class PackageLookupTests
 
         var exception = await Assert.ThrowsAsync<PackageLookupException>(() => lookup.Inspect("Chunked", "1.0.0"));
         await Assert.That(exception!.Message).Contains("could not be inspected in the browser");
-        await Assert.That(exception!.Message).Contains("Answer the questions manually");
+        await Assert.That(exception.Message).Contains("Answer the questions manually");
     }
 
     [Test]
