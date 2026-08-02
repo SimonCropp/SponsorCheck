@@ -1,9 +1,12 @@
 namespace SponsorCheck.Web.Services;
 
 /// <summary>
-/// Pure extraction of <see cref="PackageFacts"/> from a nupkg stream. The file names and formats
-/// mirror what BundleSponsorListTask writes; RepoContractTests pin them against the shipped
-/// targets templates so this parser can't silently rot.
+/// Pure extraction of <see cref="PackageFacts"/> from a nupkg exposed as a
+/// <see cref="RemoteZipArchive"/>. The file names and formats mirror what
+/// BundleSponsorListTask writes; RepoContractTests pin them against the shipped targets
+/// templates so this parser can't silently rot. Only the tiny sidecar files and the
+/// verifier targets are ever downloaded — SponsorHashes.txt is existence-checked from the
+/// central directory alone — so cost is independent of package and sponsor-list size.
 /// </summary>
 public static class NupkgParser
 {
@@ -15,41 +18,49 @@ public static class NupkgParser
     public const string ExemptionsFileName = "SponsorCheck.Exemptions.json";
     public const string OwnerIdElement = "_SponsorCheck_OwnerId";
 
-    public static PackageFacts Parse(string packageId, string version, Stream nupkg)
+    public static async Task<PackageFacts> Parse(string packageId, string version, RemoteZipArchive nupkg)
     {
-        using var archive = new ZipArchive(nupkg, ZipArchiveMode.Read, leaveOpen: true);
-
         // buildTransitive/ is used when the author enabled CheckTransitiveReferences; build/ otherwise.
         var folder = "buildTransitive/";
         var checkTransitive = true;
-        if (archive.GetEntry(folder + HashesFileName) == null)
+        if (nupkg.Find(folder + HashesFileName) == null)
         {
             folder = "build/";
             checkTransitive = false;
-            if (archive.GetEntry(folder + HashesFileName) == null)
+            if (nupkg.Find(folder + HashesFileName) == null)
             {
                 return PackageFacts.WithoutSponsorCheck(packageId, version);
             }
         }
 
-        string? ReadEntry(string name)
+        var sidecars = new[]
         {
-            var entry = archive.GetEntry(folder + name);
-            if (entry == null)
-            {
-                return null;
-            }
+            PackDateFileName,
+            LandingUrlFileName,
+            AuthorAccountsFileName,
+            ExemptionsFileName,
+            SeverityOverridesFileName
+        };
+        var targets = nupkg.Entries
+            .Where(_ => _.FullName.StartsWith(folder, StringComparison.OrdinalIgnoreCase) &&
+                        _.FullName.EndsWith(".targets", StringComparison.OrdinalIgnoreCase) &&
+                        _.FullName.LastIndexOf('/') < folder.Length)
+            .Select(_ => _.FullName)
+            .ToList();
 
-            using var reader = new StreamReader(entry.Open());
-            return reader.ReadToEnd();
-        }
+        // One batched read: the bundler packs these adjacently, so against a range-capable
+        // server this coalesces into a single request. Names absent from the archive are
+        // absent from the result, so no existence checks are needed for optional sidecars.
+        var contents = await nupkg.ReadText([.. sidecars.Select(_ => folder + _), .. targets]);
 
-        var packDate = NullIfBlank(ReadEntry(PackDateFileName));
-        var landingUrl = NullIfBlank(ReadEntry(LandingUrlFileName));
-        var platforms = ParseAuthorAccounts(ReadEntry(AuthorAccountsFileName));
-        var exemptions = ParseExemptions(ReadEntry(ExemptionsFileName));
-        var severities = ParseSeverities(ReadEntry(SeverityOverridesFileName));
-        var ownerId = FindOwnerId(archive, folder);
+        string? Text(string name) => contents.GetValueOrDefault(folder + name);
+
+        var packDate = NullIfBlank(Text(PackDateFileName));
+        var landingUrl = NullIfBlank(Text(LandingUrlFileName));
+        var platforms = ParseAuthorAccounts(Text(AuthorAccountsFileName));
+        var exemptions = ParseExemptions(Text(ExemptionsFileName));
+        var severities = ParseSeverities(Text(SeverityOverridesFileName));
+        var ownerId = FindOwnerId(targets, contents);
 
         return new(
             packageId,
@@ -158,20 +169,12 @@ public static class NupkgParser
         return result;
     }
 
-    static string? FindOwnerId(ZipArchive archive, string folder)
+    static string? FindOwnerId(List<string> targets, IReadOnlyDictionary<string, string> contents)
     {
-        foreach (var entry in archive.Entries)
+        foreach (var name in targets)
         {
-            if (!entry.FullName.StartsWith(folder, StringComparison.OrdinalIgnoreCase) ||
-                !entry.FullName.EndsWith(".targets", StringComparison.OrdinalIgnoreCase) ||
-                entry.FullName.LastIndexOf('/') >= folder.Length)
-            {
-                continue;
-            }
-
-            using var reader = new StreamReader(entry.Open());
-            var content = reader.ReadToEnd();
-            if (!content.Contains("_SponsorCheck_"))
+            if (!contents.TryGetValue(name, out var content) ||
+                !content.Contains("_SponsorCheck_"))
             {
                 continue;
             }

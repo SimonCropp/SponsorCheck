@@ -3,13 +3,25 @@ namespace SponsorCheck.Web.Services;
 public sealed class PackageLookupException(string message) : Exception(message);
 
 /// <summary>
-/// Downloads a package from nuget.org (the v3 flat container serves browsers with CORS enabled)
-/// and extracts <see cref="PackageFacts"/> via <see cref="NupkgParser"/> — entirely client-side.
+/// Inspects a package on nuget.org (the v3 flat container serves browsers with CORS
+/// enabled, Range header included) and extracts <see cref="PackageFacts"/> via
+/// <see cref="NupkgParser"/> — entirely client-side. RemoteZip fetches only the zip
+/// central directory and the SponsorCheck sidecar files, so the cost stays a few hundred
+/// KB regardless of package size. <see cref="MaxNupkgBytes"/> only bounds the fallback
+/// full download taken when a server ignores range requests.
 /// </summary>
 public sealed class PackageLookup(HttpClient http)
 {
     public const long MaxNupkgBytes = 30_000_000;
     const string flatContainer = "https://api.nuget.org/v3-flatcontainer";
+
+    static readonly RemoteZipOptions options = new()
+    {
+        MaxBufferLength = MaxNupkgBytes,
+        // The browser HTTP cache can answer one range request with the cached body of
+        // another; no-store keeps every range request on the network.
+        ConfigureRequest = request => request.SetBrowserRequestCache(BrowserRequestCache.NoStore)
+    };
 
     public async Task<PackageFacts> Inspect(string packageId, string? version)
     {
@@ -18,45 +30,29 @@ public sealed class PackageLookup(HttpClient http)
         var resolved = string.IsNullOrWhiteSpace(version) ? await LatestStableVersion(id, idLower) : version.Trim();
         var versionLower = resolved.ToLowerInvariant();
 
-        using var response = await http.GetAsync(
-            $"{flatContainer}/{idLower}/{versionLower}/{idLower}.{versionLower}.nupkg",
-            HttpCompletionOption.ResponseHeadersRead);
-        if (response.StatusCode == HttpStatusCode.NotFound)
+        try
+        {
+            var nupkg = await RemoteZipArchive.Open(
+                http,
+                $"{flatContainer}/{idLower}/{versionLower}/{idLower}.{versionLower}.nupkg",
+                options);
+            return await NupkgParser.Parse(id, resolved, nupkg);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
         {
             throw new PackageLookupException($"Version {resolved} of '{id}' was not found on nuget.org.");
         }
-
-        if (!response.IsSuccessStatusCode)
+        catch (HttpRequestException exception) when (exception.StatusCode != null)
         {
-            throw new PackageLookupException($"nuget.org returned {(int) response.StatusCode} downloading '{id}' {resolved}.");
+            throw new PackageLookupException($"nuget.org returned {(int) exception.StatusCode} downloading '{id}' {resolved}.");
         }
-
-        if (response.Content.Headers.ContentLength is > MaxNupkgBytes)
+        catch (RemoteZipException exception)
         {
+            // Covers a corrupt archive, and the size cap when a server without range
+            // support forces a full download.
             throw new PackageLookupException(
-                $"'{id}' {resolved} is {response.Content.Headers.ContentLength / 1_000_000} MB — too large to inspect in the browser. Answer the questions manually.");
+                $"'{id}' {resolved} could not be inspected in the browser: {exception.Message} Answer the questions manually.");
         }
-
-        // ZipArchive needs a seekable stream, so buffer the download — bounding the copy so a
-        // response without a Content-Length header can't stream unbounded into browser memory.
-        using var memory = new MemoryStream();
-        await using (var stream = await response.Content.ReadAsStreamAsync())
-        {
-            var buffer = new byte[81920];
-            int read;
-            while ((read = await stream.ReadAsync(buffer)) > 0)
-            {
-                memory.Write(buffer, 0, read);
-                if (memory.Length > MaxNupkgBytes)
-                {
-                    throw new PackageLookupException(
-                        $"'{id}' {resolved} exceeds {MaxNupkgBytes / 1_000_000} MB — too large to inspect in the browser. Answer the questions manually.");
-                }
-            }
-        }
-
-        memory.Position = 0;
-        return NupkgParser.Parse(id, resolved, memory);
     }
 
     async Task<string> LatestStableVersion(string id, string idLower)

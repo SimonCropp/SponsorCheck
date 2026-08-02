@@ -8,12 +8,18 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <BlazorEnableTimeZoneSupport>false</BlazorEnableTimeZoneSupport>
     <UseNativeHttpHandler>true</UseNativeHttpHandler>
+    <!-- RemoteZip bundles the SponsorCheck verifier (owner Papyrine); this repo is first-party.
+         The ignore property satisfies the verifier, and SC023 (its acknowledgment warning) is
+         suppressed the same way the Papyrine repos do. -->
+    <Papyrine_SponsorshipLicenseIgnored>true</Papyrine_SponsorshipLicenseIgnored>
+    <NoWarn>$(NoWarn);SC023</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <TrimmerRootDescriptor Include="ILLink.Descriptors.xml" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <PackageReference Include="RemoteZip" />
   </ItemGroup>
 
   <!-- The wizard's default SponsorCheck version tracks $(Version) from src/Directory.Build.props. -->

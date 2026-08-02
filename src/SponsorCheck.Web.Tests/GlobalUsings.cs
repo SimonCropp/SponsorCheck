@@ -13,6 +13,7 @@ global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.FileProviders;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Playwright;
+global using RemoteZip;
 global using SponsorCheck.Web;
 global using SponsorCheck.Web.Components;
 global using SponsorCheck.Web.Models;

@@ -13,7 +13,7 @@ public class PackageLookupTests
         }
     }
 
-    static PackageLookup Lookup(Handler handler) => new(new(handler));
+    static PackageLookup Lookup(HttpMessageHandler handler) => new(new(handler));
 
     static HttpResponseMessage NotFound() => new(HttpStatusCode.NotFound);
 
@@ -24,7 +24,7 @@ public class PackageLookupTests
     [Test]
     public async Task UnknownPackageReportsNotFound()
     {
-        var lookup = Lookup(new(_ => NotFound()));
+        var lookup = Lookup(new Handler(_ => NotFound()));
 
         var exception = await Assert.ThrowsAsync<PackageLookupException>(() => lookup.Inspect("Nope", null));
         await Assert.That(exception!.Message).Contains("'Nope' was not found on nuget.org");
@@ -33,34 +33,44 @@ public class PackageLookupTests
     [Test]
     public async Task UnknownVersionReportsNotFound()
     {
-        var lookup = Lookup(new(_ => NotFound()));
+        var lookup = Lookup(new Handler(_ => NotFound()));
 
         var exception = await Assert.ThrowsAsync<PackageLookupException>(() => lookup.Inspect("ThePackage", "9.9.9"));
         await Assert.That(exception!.Message).Contains("Version 9.9.9 of 'ThePackage' was not found");
     }
 
     [Test]
-    public async Task OversizeByContentLengthRejectedBeforeDownload()
+    public async Task LargePackageInspectedViaRangeRequests()
     {
-        var content = new ByteArrayContent([1, 2, 3]);
-        content.Headers.ContentLength = PackageLookup.MaxNupkgBytes + 1;
-        var lookup = Lookup(new(_ => new(HttpStatusCode.OK) { Content = content }));
+        // Far bigger than MaxNupkgBytes, yet inspectable: against a range-capable server
+        // only the central directory and the sidecar files are fetched. Content-Range is
+        // hidden the way browser CORS hides it on nuget.org.
+        var nupkg = TestNupkg.Build(paddingBytes: (int) PackageLookup.MaxNupkgBytes + 1);
+        var server = new StubZipServer(nupkg)
+        {
+            ExposeContentRange = false
+        };
+        var lookup = Lookup(server);
 
-        var exception = await Assert.ThrowsAsync<PackageLookupException>(() => lookup.Inspect("Big", "1.0.0"));
-        await Assert.That(exception!.Message).Contains("too large to inspect in the browser");
+        var facts = await lookup.Inspect("Big", "1.0.0");
+
+        await Assert.That(facts.BundlesSponsorCheck).IsTrue();
+        await Assert.That(facts.Platforms[0].Account).IsEqualTo("acmecorp");
+        await Assert.That(server.BytesServed).IsLessThan(300_000);
+        // Tail, then one coalesced read covering every sidecar and the targets file.
+        await Assert.That(server.Requests).Count().IsEqualTo(2);
     }
 
     [Test]
-    public async Task OversizeWithoutContentLengthRejectedDuringDownload()
+    public async Task OversizeWithoutRangeSupportRejected()
     {
-        // A chunked response carries no Content-Length, so the cap must bite mid-copy.
+        // A server that ignores Range forces a full download, which the cap bounds.
         var oversized = new byte[PackageLookup.MaxNupkgBytes + 1];
-        var content = new ByteArrayContent(oversized);
-        content.Headers.ContentLength = null;
-        var lookup = Lookup(new(_ => new(HttpStatusCode.OK) { Content = content }));
+        var lookup = Lookup(new Handler(_ => Bytes(oversized)));
 
         var exception = await Assert.ThrowsAsync<PackageLookupException>(() => lookup.Inspect("Chunked", "1.0.0"));
-        await Assert.That(exception!.Message).Contains("too large to inspect in the browser");
+        await Assert.That(exception!.Message).Contains("could not be inspected in the browser");
+        await Assert.That(exception!.Message).Contains("Answer the questions manually");
     }
 
     [Test]
@@ -81,7 +91,7 @@ public class PackageLookupTests
     [Test]
     public async Task CorruptDownloadSurfacesAsException()
     {
-        var lookup = Lookup(new(_ => Bytes([0x50, 0x4B, 0x00, 0x00, 0xFF])));
+        var lookup = Lookup(new Handler(_ => Bytes([0x50, 0x4B, 0x00, 0x00, 0xFF])));
 
         await Assert.ThrowsAsync<Exception>(() => lookup.Inspect("Corrupt", "1.0.0"));
     }

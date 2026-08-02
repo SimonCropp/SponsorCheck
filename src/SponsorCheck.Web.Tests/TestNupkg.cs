@@ -13,7 +13,8 @@ public static class TestNupkg
         string landingUrl = "",
         IReadOnlyDictionary<string, string>? exemptions = null,
         IReadOnlyDictionary<string, string>? accounts = null,
-        IReadOnlyDictionary<string, string>? severities = null)
+        IReadOnlyDictionary<string, string>? severities = null,
+        int paddingBytes = 0)
     {
         using var memory = new MemoryStream();
         using (var archive = new ZipArchive(memory, ZipArchiveMode.Create, leaveOpen: true))
@@ -47,6 +48,17 @@ public static class TestNupkg
                     : $"\n    <_SponsorCheck_OwnerId>{ownerId}</_SponsorCheck_OwnerId>";
                 Write(folder + $"{packageId}.targets",
                     $"<Project>\n  <PropertyGroup>\n    <_SponsorCheck_ThePackageId>{packageId}</_SponsorCheck_ThePackageId>{ownerProperty}\n  </PropertyGroup>\n</Project>");
+            }
+
+            // Simulates a large package: stored (uncompressed) filler written *after* the
+            // sidecars, so they sit deep in the file rather than at its end. Padding first
+            // would leave them inside the tail RemoteZip already downloaded when opening,
+            // where they are served for free and the ranged read path goes untested.
+            if (paddingBytes > 0)
+            {
+                var padding = archive.CreateEntry("lib/net10.0/padding.bin", CompressionLevel.NoCompression);
+                using var stream = padding.Open();
+                stream.Write(new byte[paddingBytes]);
             }
         }
 

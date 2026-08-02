@@ -2,16 +2,26 @@ namespace SponsorCheck.Web.Tests.Services;
 
 public class NupkgParserTests
 {
-    static PackageFacts Parse(byte[] nupkg)
+    /// <summary>
+    /// Parses via ranged reads against nuget.org-faithful behavior, with Content-Range
+    /// hidden the way browser CORS hides it. These tests cover parsing; the size and
+    /// fallback behavior of the transport is covered by <see cref="PackageLookupTests"/>.
+    /// </summary>
+    static async Task<PackageFacts> Parse(byte[] nupkg)
     {
-        using var stream = new MemoryStream(nupkg);
-        return NupkgParser.Parse("ThePackage", "1.2.3", stream);
+        var server = new StubZipServer(nupkg)
+        {
+            ExposeContentRange = false
+        };
+        using var client = new HttpClient(server);
+        var archive = await RemoteZipArchive.Open(client, "https://example/package.nupkg");
+        return await NupkgParser.Parse("ThePackage", "1.2.3", archive);
     }
 
     [Test]
     public async Task PerPackageDefaults()
     {
-        var facts = Parse(TestNupkg.Build());
+        var facts = await Parse(TestNupkg.Build());
 
         await Assert.That(facts.BundlesSponsorCheck).IsTrue();
         await Assert.That(facts.OwnerMode).IsFalse();
@@ -28,7 +38,7 @@ public class NupkgParserTests
     [Test]
     public async Task OwnerModeTransitive()
     {
-        var facts = Parse(TestNupkg.Build(ownerId: "acme", transitive: true));
+        var facts = await Parse(TestNupkg.Build(ownerId: "acme", transitive: true));
 
         await Assert.That(facts.OwnerMode).IsTrue();
         await Assert.That(facts.OwnerId).IsEqualTo("acme");
@@ -38,7 +48,7 @@ public class NupkgParserTests
     [Test]
     public async Task ExemptionsParsed()
     {
-        var facts = Parse(TestNupkg.Build(exemptions: new Dictionary<string, string>
+        var facts = await Parse(TestNupkg.Build(exemptions: new Dictionary<string, string>
         {
             ["Consulting"] = "Consulting clients are exempt for 6 months.",
             ["SmallRevenue"] = "Under US$10,000 annual gross revenue."
@@ -51,7 +61,7 @@ public class NupkgParserTests
     [Test]
     public async Task SeveritiesAndLandingUrl()
     {
-        var facts = Parse(TestNupkg.Build(
+        var facts = await Parse(TestNupkg.Build(
             landingUrl: "https://acme.example.com/sponsor",
             severities: new Dictionary<string, string> { ["SC005"] = "error", ["SC023"] = "error" }));
 
@@ -63,7 +73,7 @@ public class NupkgParserTests
     [Test]
     public async Task UnknownPlatformSkipped()
     {
-        var facts = Parse(TestNupkg.Build(accounts: new Dictionary<string, string>
+        var facts = await Parse(TestNupkg.Build(accounts: new Dictionary<string, string>
         {
             ["SomeFuturePlatform"] = "whoever",
             ["Polar"] = "acme"
@@ -76,7 +86,7 @@ public class NupkgParserTests
     [Test]
     public async Task NoSponsorCheckFiles()
     {
-        var facts = Parse(TestNupkg.Build(sponsorCheck: false));
+        var facts = await Parse(TestNupkg.Build(sponsorCheck: false));
 
         await Assert.That(facts.BundlesSponsorCheck).IsFalse();
         await Assert.That(facts.Platforms.Count).IsEqualTo(0);
