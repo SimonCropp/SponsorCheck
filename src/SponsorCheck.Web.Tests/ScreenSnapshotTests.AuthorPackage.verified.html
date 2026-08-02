@@ -49,22 +49,22 @@
             <div class="field">
               <label for="packageId">Package id</label>
               <p class="hint">The id of the NuGet package being published (used in the consumer snippets and release notes).</p>
-              <input id="packageId" type="text" placeholder="MyOssLib" style="caret-color: transparent !important;">
+              <input id="packageId" type="text" placeholder="MyOssLib">
             </div>
             <div class="field">
               <label for="packageVersion">Next package version</label>
               <p class="hint">The version that introduces SponsorCheck. Shown in the example snippets.</p>
-              <input id="packageVersion" type="text" placeholder="1.0.0" style="caret-color: transparent !important;">
+              <input id="packageVersion" type="text" placeholder="1.0.0">
             </div>
             <div class="field">
               <label for="scVersion">SponsorCheck version</label>
               <p class="hint">The version of the SponsorCheck dev-dependency to reference. Defaults to the version this wizard was built from.</p>
-              <input id="scVersion" type="text" placeholder="{SponsorCheckVersion}" style="caret-color: transparent !important;">
+              <input id="scVersion" type="text" placeholder="{SponsorCheckVersion}">
             </div>
             <div class="field">
               <label>Repository shape</label>
               <div class="radio-row">
-                <input type="radio" id="shape-single" name="repoShape" style="caret-color: transparent !important;">
+                <input type="radio" id="shape-single" name="repoShape">
                 <label for="shape-single">
                   Single packable project
                   <p class="hint">Versions declared on each
@@ -72,7 +72,7 @@
                 </label>
               </div>
               <div class="radio-row">
-                <input type="radio" id="shape-cpm" name="repoShape" style="caret-color: transparent !important;">
+                <input type="radio" id="shape-cpm" name="repoShape">
                 <label for="shape-cpm">
                   Single packable project, Central Package Management
                   <p class="hint">Versions live in
@@ -81,7 +81,7 @@
                 </label>
               </div>
               <div class="radio-row">
-                <input type="radio" id="shape-monorepo" name="repoShape" style="caret-color: transparent !important;">
+                <input type="radio" id="shape-monorepo" name="repoShape">
                 <label for="shape-monorepo">
                   Multiple packable projects (monorepo, Central Package Management)
                   <p class="hint">Configure once; every packable project bundles independently at its own pack time.</p>

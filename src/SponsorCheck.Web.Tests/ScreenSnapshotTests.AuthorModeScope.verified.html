@@ -51,7 +51,7 @@
           <div class="step-body">
             <h2>Mode &amp; scope</h2>
             <div class="check">
-              <input type="checkbox" id="ownerMode" style="caret-color: transparent !important;">
+              <input type="checkbox" id="ownerMode">
               <label for="ownerMode">
                 Owner mode
                 <p class="hint">For a family of packages covered by one sponsor account. Consumers configure sponsorship once via a global MSBuild property instead of per-package metadata.</p>
@@ -61,10 +61,10 @@
               <label for="ownerId">Owner id</label>
               <p class="hint">An opaque label — give every package in the family the same value (e.g. an org slug). It becomes the consumer-side property prefix, e.g.
                 <code>&lt;acme_GitHubSponsorAccount&gt;</code>.</p>
-              <input id="ownerId" type="text" placeholder="acme" style="caret-color: transparent !important;">
+              <input id="ownerId" type="text" placeholder="acme">
             </div>
             <div class="check">
-              <input type="checkbox" id="transitive" style="caret-color: transparent !important;">
+              <input type="checkbox" id="transitive">
               <label for="transitive">
                 Check transitive references
                 <p class="hint">By default only direct references are verified (<code>build/</code>). Enable to ship the verifier under
