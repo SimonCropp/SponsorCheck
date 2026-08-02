@@ -161,7 +161,8 @@ public class OpenCollectivePlatformTests
         // to 0. The pagination loop must not rely on `offset >= TotalCount` for termination —
         // any positive offset is >= 0, which would silently drop subsequent pages. Termination
         // must come from the page being shorter than the API's `limit` (100).
-        var pageOneNodes = string.Join(",", Enumerable.Range(0, 100).Select(_ => "{\"account\":{\"slug\":\"backer" + _.ToString("D3") + "\"}}"));
+        var pageOneNodes = string.Join(',', Enumerable.Range(0, 100)
+          .Select(_ => "{\"account\":{\"slug\":\"backer" + _.ToString("D3") + "\"}}"));
         var pageOne = $$"""
                         {
                           "data": {

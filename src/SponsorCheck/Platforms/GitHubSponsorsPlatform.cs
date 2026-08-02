@@ -228,22 +228,13 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
                 if (IsClassicPatForbidden(error, out var orgName))
                 {
                     throw new MaintenanceFeeException(
-                        $"GitHub Sponsors: organization '{orgName}' has disabled access via classic personal access tokens. " +
-                        "Fine-grained PATs don't expose a Sponsorships permission, so a classic PAT is the only token type " +
-                        $"that can read private sponsors. Ask an admin of '{orgName}' to re-enable classic-PAT access in the " +
-                        "org's personal-access-token settings, then refresh SponsorCheck:GitHubToken " +
-                        "(or the GitHubToken MSBuild property / env var).");
+                        $"GitHub Sponsors: organization '{orgName}' has disabled access via classic personal access tokens. Fine-grained PATs don't expose a Sponsorships permission, so a classic PAT is the only token type that can read private sponsors. Ask an admin of '{orgName}' to re-enable classic-PAT access in the org's personal-access-token settings, then refresh SponsorCheck:GitHubToken (or the GitHubToken MSBuild property / env var).");
                 }
 
                 if (IsInsufficientScopes(error))
                 {
                     throw new MaintenanceFeeException(
-                        "GitHub Sponsors: the configured token is missing the 'read:user' scope. " +
-                        "SponsorCheck reads per-sponsorship metadata (isOneTimePayment, createdAt, isActive) " +
-                        "from sponsorshipsAsMaintainer, which GitHub gates on 'read:user' even for organization " +
-                        "maintainers. Edit the classic PAT at https://github.com/settings/tokens to add 'read:user' " +
-                        "(keep 'read:org' alongside it if sponsored as an organization), then refresh " +
-                        "SponsorCheck:GitHubToken (or the GitHubToken MSBuild property / env var).");
+                        "GitHub Sponsors: the configured token is missing the 'read:user' scope. SponsorCheck reads per-sponsorship metadata (isOneTimePayment, createdAt, isActive) from sponsorshipsAsMaintainer, which GitHub gates on 'read:user' even for organization maintainers. Edit the classic PAT at https://github.com/settings/tokens to add 'read:user' (keep 'read:org' alongside it if sponsored as an organization), then refresh SponsorCheck:GitHubToken (or the GitHubToken MSBuild property / env var).");
                 }
 
                 fatal.Add(error);

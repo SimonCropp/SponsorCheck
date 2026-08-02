@@ -74,8 +74,7 @@ public static class ConsumerConfigGenerator
                 "Global properties (owner mode)",
                 MsBuildXml.PropertyGroup(properties),
                 "Directory.Build.props (covers every project under it) — or any one consuming project's .csproj.",
-                $"Add the properties below to a <PropertyGroup>. One declaration covers every package from owner '{owner}'; " +
-                "the property names are exact (the owner prefix is baked into the package).");
+                $"Add the properties below to a <PropertyGroup>. One declaration covers every package from owner '{owner}'; the property names are exact (the owner prefix is baked into the package).");
         }
 
         var elementAttributes = new List<(string Name, string Value)> { ("Include", id) };
@@ -127,27 +126,15 @@ public static class ConsumerConfigGenerator
                     {
                         var noMatchCode = CodeFor(placement, "SC007", "SC008", "SC024");
                         return
-                            $"The declared start ({start}) is on or before this version's pack date ({packDate}) — the " +
-                            "boundary is strict, so the attestation does NOT bypass the check. The normal bundled-list " +
-                            $"check applies: the account must have been in the list at pack time, or the build fails with {noMatchCode}. " +
-                            "Re-check the actual start date, or drop SponsorshipStart.";
+                            $"The declared start ({start}) is on or before this version's pack date ({packDate}) — the boundary is strict, so the attestation does NOT bypass the check. The normal bundled-list check applies: the account must have been in the list at pack time, or the build fails with {noMatchCode}. Re-check the actual start date, or drop SponsorshipStart.";
                     }
 
                     return
-                        $"This version was packed on {packDate}, so the attested start ({start}) is after it: the build " +
-                        "passes and logs a high-priority SC017 audit message naming the unverified sponsor. " +
-                        $"A future date fails with {futureCode}. The attestation self-expires: after upgrading to a " +
-                        "version packed later than the start date, the normal bundled-list check applies again and " +
-                        "SponsorshipStart can be dropped.";
+                        $"This version was packed on {packDate}, so the attested start ({start}) is after it: the build passes and logs a high-priority SC017 audit message naming the unverified sponsor. A future date fails with {futureCode}. The attestation self-expires: after upgrading to a version packed later than the start date, the normal bundled-list check applies again and SponsorshipStart can be dropped.";
                 }
 
                 return
-                    $"When {start} is after the package version's pack date, the build passes and logs a high-priority " +
-                    "SC017 audit message naming the unverified sponsor — the declaration is trusted because the bundled " +
-                    "list cannot contain a sponsorship that began after it was frozen. " +
-                    $"A future date fails with {futureCode}. " +
-                    "The attestation self-expires: after upgrading to a version packed later than the start date, the " +
-                    "normal bundled-list check applies again and SponsorshipStart can be dropped.";
+                    $"When {start} is after the package version's pack date, the build passes and logs a high-priority SC017 audit message naming the unverified sponsor — the declaration is trusted because the bundled list cannot contain a sponsorship that began after it was frozen. A future date fails with {futureCode}. The attestation self-expires: after upgrading to a version packed later than the start date, the normal bundled-list check applies again and SponsorshipStart can be dropped.";
             }
 
             case ConsumerLicenseMode.Sponsor:
@@ -157,11 +144,7 @@ public static class ConsumerConfigGenerator
                     ? $" This version was packed on {packedOn} — a sponsorship that began after that date needs the attested start."
                     : "";
                 return
-                    "Passes silently when any declared account was in the bundled sponsor list at the version's pack time. " +
-                    $"If the build still fails with {noMatchCode}, either the account or platform doesn't match what the " +
-                    "author bundled, or the sponsorship began after this version was packed — in that case add " +
-                    "SponsorshipStart=\"yyyy-MM-dd\" (re-run the wizard and answer yes to the started-after question)." +
-                    packedClause;
+                    $"Passes silently when any declared account was in the bundled sponsor list at the version's pack time. If the build still fails with {noMatchCode}, either the account or platform doesn't match what the author bundled, or the sponsorship began after this version was packed — in that case add SponsorshipStart=\"yyyy-MM-dd\" (re-run the wizard and answer yes to the started-after question).{packedClause}";
             }
 
             case ConsumerLicenseMode.License:
@@ -170,9 +153,7 @@ public static class ConsumerConfigGenerator
                 var capCode = CodeFor(placement, "SC035", "SC036", "SC037");
                 var month = model.LicensedUntilMonth.Trim();
                 return
-                    $"Passes silently through the end of {month} (UTC). After that the build fails with {expiredCode} " +
-                    "until the value is renewed — a one-line edit. Values more than one year from the build clock are " +
-                    $"rejected with {capCode}.";
+                    $"Passes silently through the end of {month} (UTC). After that the build fails with {expiredCode} until the value is renewed — a one-line edit. Values more than one year from the build clock are rejected with {capCode}.";
             }
 
             case ConsumerLicenseMode.Exemption:
@@ -184,8 +165,7 @@ public static class ConsumerConfigGenerator
                     if (facts.Exemptions.Count == 0)
                     {
                         return
-                            $"This package defines no exemptions — claiming one fails with {unknownCode}. " +
-                            "Pick one of the other modes.";
+                            $"This package defines no exemptions — claiming one fails with {unknownCode}. Pick one of the other modes.";
                     }
 
                     var match = facts.FindExemption(model.ExemptionName);
@@ -193,20 +173,15 @@ public static class ConsumerConfigGenerator
                     {
                         var names = string.Join(", ", facts.Exemptions.Select(_ => _.Name));
                         return
-                            $"'{model.ExemptionName.Trim()}' is not an exemption this package defines ({names}) — the " +
-                            $"build fails with {unknownCode}, and that error lists the defined names.";
+                            $"'{model.ExemptionName.Trim()}' is not an exemption this package defines ({names}) — the build fails with {unknownCode}, and that error lists the defined names.";
                     }
 
                     return
-                        $"Passes with a {warnCode} warning quoting the publisher's criteria for '{match.Name}': " +
-                        $"\"{match.Message}\" — the build log records the specific carve-out being claimed rather than " +
-                        "a generic breach message.";
+                        $"Passes with a {warnCode} warning quoting the publisher's criteria for '{match.Name}': \"{match.Message}\" — the build log records the specific carve-out being claimed rather than a generic breach message.";
                 }
 
                 return
-                    $"Passes with a {warnCode} warning whose body is the publisher's own criteria text — the build log " +
-                    "records the specific carve-out being claimed rather than a generic breach message. A name the " +
-                    $"publisher did not define fails with {unknownCode}; that error lists the available exemption names.";
+                    $"Passes with a {warnCode} warning whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed rather than a generic breach message. A name the publisher did not define fails with {unknownCode}; that error lists the available exemption names.";
             }
 
             case ConsumerLicenseMode.Ignore:
@@ -216,21 +191,17 @@ public static class ConsumerConfigGenerator
                 if (factSeverity == "error")
                 {
                     return
-                        $"This publisher escalated the opt-out to an error at pack time — the build FAILS with {warnCode} " +
-                        "instead of warning, so SponsorshipLicenseIgnored is not a usable escape hatch for this package. " +
-                        "Pick one of the other modes.";
+                        $"This publisher escalated the opt-out to an error at pack time — the build FAILS with {warnCode} instead of warning, so SponsorshipLicenseIgnored is not a usable escape hatch for this package. Pick one of the other modes.";
                 }
 
                 if (factSeverity == "message")
                 {
                     return
-                        $"Passes with a {warnCode} informational message on every build — this publisher softened the " +
-                        "default breach-of-license warning to a message.";
+                        $"Passes with a {warnCode} informational message on every build — this publisher softened the default breach-of-license warning to a message.";
                 }
 
                 return
-                    $"Passes with a {warnCode} breach-of-license warning on every build. The author may have raised this " +
-                    "diagnostic's severity to error at pack time, in which case the build fails instead of warning.";
+                    $"Passes with a {warnCode} breach-of-license warning on every build. The author may have raised this diagnostic's severity to error at pack time, in which case the build fails instead of warning.";
             }
 
             default:
@@ -250,38 +221,32 @@ public static class ConsumerConfigGenerator
             if (model.EnabledPlatforms.Count() > 1)
             {
                 notes.Add(
-                    "The verifier passes on any single match — declaring accounts for several platforms is one cheap " +
-                    "hash lookup each, and keeps builds green if the author migrates platforms.");
+                    "The verifier passes on any single match — declaring accounts for several platforms is one cheap hash lookup each, and keeps builds green if the author migrates platforms.");
             }
 
             notes.Add(
-                "The bundled list is frozen per package version: versions that pass keep passing even if sponsorship " +
-                "later lapses; a lapse surfaces when upgrading to a version packed after it.");
+                "The bundled list is frozen per package version: versions that pass keep passing even if sponsorship later lapses; a lapse surfaces when upgrading to a version packed after it.");
         }
 
         if (model.Facts is { BundlesSponsorCheck: true, CheckTransitive: true })
         {
             notes.Add(
-                "This package checks transitive references too — projects that pull it in indirectly also verify, and " +
-                "resolve it the same way: with a direct reference declaring a license mode.");
+                "This package checks transitive references too — projects that pull it in indirectly also verify, and resolve it the same way: with a direct reference declaring a license mode.");
         }
 
         switch (placement)
         {
             case Models.Placement.PerPackageProject:
                 notes.Add(
-                    "If the solution adopts Central Package Management later, the metadata moves to the matching " +
-                    "<PackageVersion> in Directory.Packages.props — wrong placement raises SC020, both places raises SC019.");
+                    "If the solution adopts Central Package Management later, the metadata moves to the matching <PackageVersion> in Directory.Packages.props — wrong placement raises SC020, both places raises SC019.");
                 break;
             case Models.Placement.PerPackageCpm:
                 notes.Add(
-                    "Keep the metadata in exactly one place: on the <PackageVersion>. Setting it on the " +
-                    "<PackageReference> as well raises SC019; only on the <PackageReference> raises SC020.");
+                    "Keep the metadata in exactly one place: on the <PackageVersion>. Setting it on the <PackageReference> as well raises SC019; only on the <PackageReference> raises SC020.");
                 break;
             default:
                 notes.Add(
-                    $"The properties cover every package from owner '{owner}' — one declaration for the whole family. " +
-                    "The exact property names are also printed in the SC021 error message.");
+                    $"The properties cover every package from owner '{owner}' — one declaration for the whole family. The exact property names are also printed in the SC021 error message.");
                 break;
         }
 
@@ -325,16 +290,14 @@ public static class ConsumerConfigGenerator
         Line();
         Line($"Generated by the [SponsorCheck setup wizard]({wizardUrl}).");
         Line();
-        Line($"Context: the build references {versioned}, which bundles the [SponsorCheck]({docsBase}) build-time " +
-             "sponsorship verifier, and requires a license-mode declaration on every build.");
+        Line($"Context: the build references {versioned}, which bundles the [SponsorCheck]({docsBase}) build-time sponsorship verifier, and requires a license-mode declaration on every build.");
         Line();
         Line($"- Chosen mode: {ModeDescription(model)}");
         Line($"- Placement: {PlacementDescription(placement, owner)}");
         if (model.Facts is { BundlesSponsorCheck: true } packageFacts)
         {
             var packedClause = packageFacts.PackDate is { } packedOn ? $", packed {packedOn}" : "";
-            Line($"- Package facts (read from the published nupkg): version {packageFacts.Version}{packedClause}, " +
-                 $"transitive checking {(packageFacts.CheckTransitive ? "on" : "off")}");
+            Line($"- Package facts (read from the published nupkg): version {packageFacts.Version}{packedClause}, transitive checking {(packageFacts.CheckTransitive ? "on" : "off")}");
         }
 
         Line();

@@ -254,9 +254,7 @@ public static class AuthorConfigGenerator
 
         Line("## Sponsorship is now checked at build time");
         Line();
-        Line($"{versioned} now bundles [SponsorCheck]({docsBase}) — a build-time check that asks teams " +
-             "using this package to sponsor its ongoing development. SponsorCheck adds **no runtime dependency**; " +
-             "the check runs only during the build.");
+        Line($"{versioned} now bundles [SponsorCheck]({docsBase}) — a build-time check that asks teams using this package to sponsor its ongoing development. SponsorCheck adds **no runtime dependency**; the check runs only during the build.");
         Line();
         Line($"After upgrading, every build looks for one of the options below. {NoLicenseConsequence(model)}");
         Line();
@@ -293,17 +291,13 @@ public static class AuthorConfigGenerator
         }
 
         Line();
-        Line("_Started sponsoring only recently?_ If your sponsorship began after this version was " +
-             "published, the bundled list cannot contain you yet — add `SponsorshipStart=\"yyyy-MM-dd\"` " +
-             "alongside the account to attest to the start date until you upgrade to a later release.");
+        Line("_Started sponsoring only recently?_ If your sponsorship began after this version was published, the bundled list cannot contain you yet — add `SponsorshipStart=\"yyyy-MM-dd\"` alongside the account to attest to the start date until you upgrade to a later release.");
         Line();
 
         // Option — private license
         Line($"#### Option {optionNumber++} — Private license");
         Line();
-        Line("If you have a private (B2B) licensing arrangement, set a time-bounded license. " +
-             "The value is `yyyy-MM` (the last covered month) and is valid through the end of that month (UTC). " +
-             "Values more than one year out are rejected, so renewal is a periodic one-line edit:");
+        Line("If you have a private (B2B) licensing arrangement, set a time-bounded license. The value is `yyyy-MM` (the last covered month) and is valid through the end of that month (UTC). Values more than one year out are rejected, so renewal is a periodic one-line edit:");
         Line();
         Line(MsBuildXml.Fenced(LicenseSnippet(model, id, version)));
         Line();
@@ -313,8 +307,7 @@ public static class AuthorConfigGenerator
         {
             Line($"#### Option {optionNumber++} — Claim an exemption");
             Line();
-            Line("The following exemptions are defined for this package. If one applies, claim it by name — " +
-                 "the build passes with a warning quoting the exemption's criteria (not a breach message):");
+            Line("The following exemptions are defined for this package. If one applies, claim it by name — the build passes with a warning quoting the exemption's criteria (not a breach message):");
             Line();
             foreach (var exemption in model.CompletedExemptions)
             {
@@ -336,9 +329,7 @@ public static class AuthorConfigGenerator
 
         if (model.CheckTransitive)
         {
-            Line("> This package checks **transitive** references too. A project that pulls in " +
-                 $"`{id}` indirectly has no `<PackageReference>` of its own to configure, so add a direct " +
-                 "reference declaring one of the options above.");
+            Line($"> This package checks **transitive** references too. A project that pulls in `{id}` indirectly has no `<PackageReference>` of its own to configure, so add a direct reference declaring one of the options above.");
             Line();
         }
 
@@ -406,24 +397,22 @@ public static class AuthorConfigGenerator
     static string PerPackagePair(string id, string version, string attribute)
     {
         var versionAttribute = version.Length == 0 ? "" : $" Version=\"{MsBuildXml.Escape(version)}\"";
-        var builder = new StringBuilder();
-        builder.AppendLine("<!-- Without Central Package Management: in the consuming .csproj -->");
-        builder.AppendLine($"<PackageReference Include=\"{MsBuildXml.Escape(id)}\"{versionAttribute} {attribute} />");
-        builder.AppendLine();
-        builder.AppendLine("<!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->");
-        builder.Append($"<PackageVersion Include=\"{MsBuildXml.Escape(id)}\"{versionAttribute} {attribute} />");
-        return builder.ToString();
+        return $"""
+                <!-- Without Central Package Management: in the consuming .csproj -->
+                <PackageReference Include="{MsBuildXml.Escape(id)}"{versionAttribute} {attribute} />
+
+                <!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->
+                <PackageVersion Include="{MsBuildXml.Escape(id)}"{versionAttribute} {attribute} />
+                """;
     }
 
-    static string OwnerPropertyGroup(string property)
-    {
-        var builder = new StringBuilder();
-        builder.AppendLine("<!-- Owner mode: set once as a global property, in Directory.Build.props or the consuming .csproj -->");
-        builder.AppendLine("<PropertyGroup>");
-        builder.AppendLine($"  {property}");
-        builder.Append("</PropertyGroup>");
-        return builder.ToString();
-    }
+    static string OwnerPropertyGroup(string property) =>
+        $"""
+         <!-- Owner mode: set once as a global property, in Directory.Build.props or the consuming .csproj -->
+         <PropertyGroup>
+           {property}
+         </PropertyGroup>
+         """;
 
     // ---- wording helpers ----
 
@@ -431,14 +420,10 @@ public static class AuthorConfigGenerator
     {
         if (model.OwnerMode)
         {
-            return "This package uses **owner mode**, so you configure sponsorship **once** as a global MSBuild " +
-                   "property (in `Directory.Build.props` or the consuming project) — it then covers every package " +
-                   "from this author. Pick one of the following.";
+            return "This package uses **owner mode**, so you configure sponsorship **once** as a global MSBuild property (in `Directory.Build.props` or the consuming project) — it then covers every package from this author. Pick one of the following.";
         }
 
-        return "Pick exactly one of the following and add it where the package is referenced " +
-               "(on the `<PackageReference>`, or on the `<PackageVersion>` in `Directory.Packages.props` " +
-               "if you use Central Package Management).";
+        return "Pick exactly one of the following and add it where the package is referenced (on the `<PackageReference>`, or on the `<PackageVersion>` in `Directory.Packages.props` if you use Central Package Management).";
     }
 
     static string NoLicenseConsequence(AuthorModel model)
@@ -459,8 +444,7 @@ public static class AuthorConfigGenerator
         var severity = selection.HasSeverity ? selection.SeverityValue : "warning";
         return severity switch
         {
-            "error" => "The author has configured this to **fail** the build with a breach-of-license error, " +
-                       "so opting out is not a usable escape hatch for this package.",
+            "error" => "The author has configured this to **fail** the build with a breach-of-license error, so opting out is not a usable escape hatch for this package.",
             "message" => "The build stays green and logs an informational breach-of-license message on every build.",
             _ => "The build stays green but logs a breach-of-license warning on every build."
         };
@@ -517,11 +501,9 @@ public static class AuthorConfigGenerator
             RepoShape.SingleProject =>
                 $"Add the following to an <ItemGroup> in the packable library's .csproj (the project producing {id}):",
             RepoShape.SingleProjectCpm =>
-                "Apply each block to the file named in its comment: the <PackageVersion> goes in Directory.Packages.props, " +
-                "the bare <PackageReference> in the packable library's .csproj (inside an <ItemGroup>).",
+                "Apply each block to the file named in its comment: the <PackageVersion> goes in Directory.Packages.props, the bare <PackageReference> in the packable library's .csproj (inside an <ItemGroup>).",
             _ =>
-                "Apply each block to the file named in its comment: Directory.Packages.props, Directory.Build.props, " +
-                "and every packable .csproj (inside an <ItemGroup>)."
+                "Apply each block to the file named in its comment: Directory.Packages.props, Directory.Build.props, and every packable .csproj (inside an <ItemGroup>)."
         };
 
         var builder = new StringBuilder();
@@ -531,9 +513,7 @@ public static class AuthorConfigGenerator
         Line();
         Line($"Generated by the [SponsorCheck setup wizard]({wizardUrl}).");
         Line();
-        Line($"[SponsorCheck]({docsBase}) bundles build-time sponsorship verification into the produced NuGet " +
-             $"package at pack time — consumers of {id} are asked for a license mode on every build. " +
-             "No runtime dependency is added.");
+        Line($"[SponsorCheck]({docsBase}) bundles build-time sponsorship verification into the produced NuGet package at pack time — consumers of {id} are asked for a license mode on every build. No runtime dependency is added.");
         Line();
         Line($"- Platforms: {platforms}");
         Line($"- Owner mode: {(model.OwnerMode ? $"on (owner id '{model.OwnerId.Trim()}')" : "off")}");

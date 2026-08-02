@@ -118,8 +118,10 @@ public static class NupkgParser
 
             foreach (var property in document.RootElement.EnumerateObject())
             {
-                var message = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
-                if (property.Name.Trim().Length > 0 && !string.IsNullOrWhiteSpace(message))
+                var value = property.Value;
+                var message = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+                if (property.Name.Trim().Length > 0 &&
+                    !string.IsNullOrWhiteSpace(message))
                 {
                     result.Add(new(property.Name, message));
                 }

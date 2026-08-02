@@ -36,11 +36,11 @@ public static class TestNupkg
                 Write(folder + "SponsorCheck.PackDate.txt", packDate);
                 Write(folder + "SponsorCheck.LandingUrl.txt", landingUrl);
                 Write(folder + "SponsorCheck.AuthorAccounts.txt",
-                    string.Join("\n", enabledAccounts.Select(_ => $"{_.Key}={_.Value}")));
+                    string.Join('\n', enabledAccounts.Select(_ => $"{_.Key}={_.Value}")));
                 Write(folder + "SponsorCheck.SeverityOverrides.txt",
-                    string.Join("\n", (severities ?? new Dictionary<string, string>()).Select(_ => $"{_.Key}={_.Value}")));
+                    string.Join('\n', (severities ?? new Dictionary<string, string>()).Select(_ => $"{_.Key}={_.Value}")));
                 Write(folder + "SponsorCheck.Exemptions.json",
-                    "{" + string.Join(",", (exemptions ?? new Dictionary<string, string>()).Select(_ => $"\"{_.Key}\": \"{_.Value}\"")) + "}");
+                    "{" + string.Join(',', (exemptions ?? new Dictionary<string, string>()).Select(_ => $"\"{_.Key}\": \"{_.Value}\"")) + "}");
 
                 var ownerProperty = ownerId == null
                     ? ""
