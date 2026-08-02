@@ -260,6 +260,11 @@ a.role-card:hover {
     white-space: nowrap;
 }
 
+.stepper .step-num {
+    font-variant-numeric: tabular-nums;
+    opacity: .75;
+}
+
 .stepper li.active {
     border-color: var(--primary);
     color: var(--primary);

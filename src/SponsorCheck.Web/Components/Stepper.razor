@@ -5,13 +5,13 @@
         @if (index < Active)
         {
             <li class="done">
-                <button type="button" class="step-link" title="Back to @Labels[index]"
-                        @onclick="() => StepSelected.InvokeAsync(index)">@Labels[index]</button>
+                <button type="button" class="step-link" title="Back to step @(index + 1): @Labels[index]"
+                        @onclick="() => StepSelected.InvokeAsync(index)"><span class="step-num">@(index + 1).</span> @Labels[index]</button>
             </li>
         }
         else
         {
-            <li class="@(index == Active ? "active" : "")">@Labels[index]</li>
+            <li class="@(index == Active ? "active" : "")"><span class="step-num">@(index + 1).</span> @Labels[index]</li>
         }
     }
 </ol>
