@@ -34,7 +34,7 @@ A package referenced by the build bundles the SponsorCheck verifier, and the bui
 | --- | --- |
 | Sponsoring the author (or about to) | `GitHubSponsorAccount="<account>"` — or `OpenCollectiveSponsorAccount` / `PolarSponsorAccount` |
 | Private licensing arrangement with the author | `SponsorshipLicensedUntil="yyyy-MM"` (at most 1 year out) |
-| Claiming an exemption the publisher defined (consulting client, small business, ...) | `SponsorshipExemption="<name>"` |
+| Claiming an exemption the publisher defined (consulting client, small business, ...) | `SponsorshipExemption="<name>"` — plus `SponsorshipExemptionUntil="yyyy-MM"` when the publisher time-bounds it |
 | Proceeding unlicensed | `SponsorshipLicenseIgnored="true"` — passes, with a breach-of-license warning on every build |
 
 For example:
@@ -115,7 +115,7 @@ That's the whole setup — pack as normal (Release build) and the produced nupkg
 - [Checking transitive references](docs/AuthorSetup.md#checking-transitive-references)
 - [Packages that ship their own MSBuild targets](docs/AuthorSetup.md#packages-that-ship-their-own-msbuild-targets)
 - [Tuning verifier severity and message text](docs/AuthorSetup.md#tuning-verifier-severity-and-message-text) — soften the default errors, or reword them
-- [Defining exemptions](docs/AuthorSetup.md#defining-exemptions) — named carve-outs for consumers who legitimately don't need to sponsor
+- [Defining exemptions](docs/AuthorSetup.md#defining-exemptions) — named carve-outs for consumers who legitimately don't need to sponsor, optionally [time-bounded](docs/AuthorSetup.md#time-bounding-an-exemption) so a claim that stops applying fails the build instead of lingering
 - [Custom sponsor landing URL](docs/AuthorSetup.md#custom-sponsor-landing-url)
 - [Sponsor list override](docs/AuthorSetup.md#sponsor-list-override-testing--offline-builds) — testing and offline builds
 

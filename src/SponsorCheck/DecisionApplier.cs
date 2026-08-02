@@ -12,7 +12,7 @@ public static class DecisionApplier
         // correctly configured consumer build reads none of the four backing sidecar files. Each is
         // forced with .Value only at the point a branch needs it.
         Lazy<IReadOnlyList<AuthorAccount>> authorAccounts,
-        Lazy<IReadOnlyDictionary<string, string>> exemptionsDefined,
+        Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> exemptionsDefined,
         Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
         Lazy<IReadOnlyDictionary<string, string>> messageOverrides,
         TaskLoggingHelper log,
@@ -98,7 +98,7 @@ public static class DecisionApplier
             }
 
             case LicenseDecision.Exempt exempt:
-                return ApplyExempt(exempt, context, exemptionsDefined, severityOverrides, messageOverrides, log);
+                return ApplyExempt(exempt, context, exemptionsDefined, severityOverrides, messageOverrides, log, utcNow);
 
             case LicenseDecision.Sponsor sponsor:
                 return ApplySponsor(sponsor, sponsorHashListPath, packDatePath, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
@@ -114,14 +114,15 @@ public static class DecisionApplier
     static bool ApplyExempt(
         LicenseDecision.Exempt exempt,
         ConsumerContext context,
-        Lazy<IReadOnlyDictionary<string, string>> exemptionsDefined,
+        Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> exemptionsDefined,
         Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
         Lazy<IReadOnlyDictionary<string, string>> messageOverrides,
-        TaskLoggingHelper log)
+        TaskLoggingHelper log,
+        DateTime utcNow)
     {
         // Lookup is case-insensitive (the loaded dict uses OrdinalIgnoreCase) but the warning
         // body surfaces what the consumer actually typed — that's the audit signal in CI logs.
-        if (!exemptionsDefined.Value.TryGetValue(exempt.ExemptionName, out var publisherMessage))
+        if (!exemptionsDefined.Value.TryGetValue(exempt.ExemptionName, out var definition))
         {
             var (unknownCode, unknownOpener) = context.Mode switch
             {
@@ -140,13 +141,116 @@ public static class DecisionApplier
             return false;
         }
 
+        var maxTermMonths = definition!.MaxTermMonths;
+        // The publisher's cap is measured from the build clock, not from when the consumer wrote
+        // the value, so the ceiling rolls forward with time. That is what makes an already-valid
+        // claim stay valid while still forcing a deliberate re-attestation every {max} months.
+        // Computed once so the month the SC044 check compares against and the month its message
+        // names can't drift apart.
+        var ceilingMonth = maxTermMonths is { } months ? AddMonths(utcNow, months) : ((int, int)?) null;
+        var ceiling = ceilingMonth is { } value ? RenderMonth(value) : null;
+
+        if (string.IsNullOrWhiteSpace(exempt.ExemptionUntilRaw))
+        {
+            // Only a capped exemption demands an end month. An uncapped one may be claimed
+            // open-endedly, exactly as it could before MaxTermMonths existed.
+            if (maxTermMonths is { } required)
+            {
+                var (missingCode, missingOpener) = context.Mode switch
+                {
+                    ConsumerMode.Owner => ("SC040", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemption=\"{exempt.ExemptionName}\" property is set, but the publisher time-bounds this exemption to {MonthsWord(required)}, so {context.OwnerId}_SponsorshipExemptionUntil must be set too."),
+                    ConsumerMode.Cpm => ("SC039", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageVersion> in Directory.Packages.props is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to {MonthsWord(required)}."),
+                    _ => ("SC038", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageReference> is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to {MonthsWord(required)}.")
+                };
+                SponsorCheckLog.Error(
+                    log,
+                    missingCode,
+                    $"""
+                     {missingOpener}
+
+                     {ConsumerMetadataExamples.RenderExemptionUntilFix(context, exempt.ExemptionName, ceiling!)}
+                     """);
+                return false;
+            }
+        }
+        else if (!TryParseYearMonth(exempt.ExemptionUntilRaw!, out var untilYear, out var untilMonth))
+        {
+            var (formatCode, formatOpener) = context.Mode switch
+            {
+                ConsumerMode.Owner => ("SC043", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' property is not in 'yyyy-MM' format."),
+                ConsumerMode.Cpm => ("SC042", $"Package '{exempt.PackageId}': SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format."),
+                _ => ("SC041", $"Package '{exempt.PackageId}': SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' on the <PackageReference> is not in 'yyyy-MM' format.")
+            };
+            SponsorCheckLog.Error(
+                log,
+                formatCode,
+                $"""
+                 {formatOpener}
+
+                 {ConsumerMetadataExamples.RenderExemptionUntilFormatFix(context, exempt.ExemptionName)}
+                 """);
+            return false;
+        }
+        else
+        {
+            // Beyond-ceiling and expired are mutually exclusive (one is ahead of the cap, the
+            // other behind today), so the order between them never changes which code fires.
+            if (maxTermMonths is { } max &&
+                ceilingMonth is { } cap &&
+                IsAfter(untilYear, untilMonth, cap))
+            {
+                var (maxCode, maxOpener) = context.Mode switch
+                {
+                    ConsumerMode.Owner => ("SC046", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' property is more than {MonthsWord(max)} in the future (maximum {ceiling})."),
+                    ConsumerMode.Cpm => ("SC045", $"Package '{exempt.PackageId}': SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' on the <PackageVersion> in Directory.Packages.props is more than {MonthsWord(max)} in the future (maximum {ceiling})."),
+                    _ => ("SC044", $"Package '{exempt.PackageId}': SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' on the <PackageReference> is more than {MonthsWord(max)} in the future (maximum {ceiling}).")
+                };
+                SponsorCheckLog.Error(
+                    log,
+                    maxCode,
+                    $"""
+                     {maxOpener}
+
+                     {ConsumerMetadataExamples.RenderExemptionUntilFix(context, exempt.ExemptionName, ceiling!)}
+                     """);
+                return false;
+            }
+
+            // Same month-granularity expiry as SponsorshipLicensedUntil: the named month is fully
+            // covered, and the first day of the following month is the cutoff.
+            if (IsAfter(utcNow.Year, utcNow.Month, (untilYear, untilMonth)))
+            {
+                var lastDay = new DateTime(untilYear, untilMonth, DateTime.DaysInMonth(untilYear, untilMonth), 0, 0, 0, DateTimeKind.Utc);
+                var (expiredCode, expiredOpener) = context.Mode switch
+                {
+                    ConsumerMode.Owner => ("SC049", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemption=\"{exempt.ExemptionName}\" expired — {context.OwnerId}_SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' (end of month {lastDay:yyyy-MM-dd} UTC)."),
+                    ConsumerMode.Cpm => ("SC048", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageVersion> in Directory.Packages.props expired — SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' (end of month {lastDay:yyyy-MM-dd} UTC)."),
+                    _ => ("SC047", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageReference> expired — SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' (end of month {lastDay:yyyy-MM-dd} UTC).")
+                };
+                SponsorCheckLog.Error(
+                    log,
+                    expiredCode,
+                    $"""
+                     {expiredOpener}
+
+                     {ConsumerMetadataExamples.RenderExemptionUntilRenewal(context, exempt.ExemptionName, ceiling)}
+                     """);
+                return false;
+            }
+        }
+
         // Known name path: the message body IS the publisher's criteria text — no remediation
-        // block, no re-listing of license-mode options. Surfaces the audit trail directly.
+        // block, no re-listing of license-mode options. Surfaces the audit trail directly. When
+        // the claim is time-bounded the end month rides along in the same line, so the CI log
+        // records not just which carve-out was claimed but how long it was claimed for.
+        var bound = string.IsNullOrWhiteSpace(exempt.ExemptionUntilRaw)
+            ? ""
+            : $" until {exempt.ExemptionUntilRaw}";
         var (code, opener) = context.Mode switch
         {
-            ConsumerMode.Owner => ("SC031", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemption=\"{exempt.ExemptionName}\" property is set. Publisher's exemption criteria: {publisherMessage}"),
-            ConsumerMode.Cpm => ("SC030", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" claimed on the <PackageVersion> in Directory.Packages.props. Publisher's exemption criteria: {publisherMessage}"),
-            _ => ("SC029", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" claimed on the <PackageReference>. Publisher's exemption criteria: {publisherMessage}")
+            ConsumerMode.Owner => ("SC031", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemption=\"{exempt.ExemptionName}\" property is set{bound}. Publisher's exemption criteria: {definition.Message}"),
+            ConsumerMode.Cpm => ("SC030", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" claimed on the <PackageVersion> in Directory.Packages.props{bound}. Publisher's exemption criteria: {definition.Message}"),
+            _ => ("SC029", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" claimed on the <PackageReference>{bound}. Publisher's exemption criteria: {definition.Message}")
         };
         return SponsorCheckLog.Emit(
             log,
@@ -406,6 +510,25 @@ public static class DecisionApplier
         month = parsed.Month;
         return true;
     }
+
+    // Month arithmetic on the calendar fields rather than DateTime.AddMonths: a large MaxTermMonths
+    // in a build late in year 9999 would overflow DateTime.MaxValue, and the result here is only
+    // ever compared against another (year, month) pair or formatted, never materialized as a date.
+    static (int Year, int Month) AddMonths(DateTime utcNow, int months)
+    {
+        var total = (utcNow.Year * 12) + (utcNow.Month - 1) + months;
+        return (total / 12, (total % 12) + 1);
+    }
+
+    static bool IsAfter(int year, int month, (int Year, int Month) other) =>
+        year > other.Year ||
+        (year == other.Year && month > other.Month);
+
+    static string RenderMonth((int Year, int Month) month) =>
+        $"{month.Year:0000}-{month.Month:00}";
+
+    static string MonthsWord(int months) =>
+        months == 1 ? "1 month" : $"{months} months";
 
     static bool TryParseDate(string value, out DateTime date) =>
         DateTime.TryParseExact(

@@ -62,8 +62,9 @@ public sealed class AuthorModel
 
     public bool HasExemptions => CompletedExemptions.Count > 0;
 
-    /// <summary>Mirrors the SC106 pack-time validation: no empty names, no empty criteria text, no
-    /// case-insensitive duplicate names. Fully blank rows are ignored (treated as not-yet-filled).</summary>
+    /// <summary>Mirrors the SC106 pack-time validation: no empty names, no empty criteria text, a
+    /// positive whole number of months when a cap is set, and no case-insensitive duplicate names.
+    /// Fully blank rows are ignored (treated as not-yet-filled).</summary>
     public IReadOnlyList<string> ExemptionErrors
     {
         get
@@ -78,6 +79,10 @@ public sealed class AuthorModel
                 else if (entry.Message.Trim().Length == 0)
                 {
                     errors.Add($"Exemption '{entry.Name.Trim()}' needs criteria text (SC106).");
+                }
+                else if (!entry.IsMaxTermMonthsValid)
+                {
+                    errors.Add($"Exemption '{entry.Name.Trim()}': max term '{entry.MaxTermMonths.Trim()}' must be a positive whole number of months (SC106).");
                 }
             }
 

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp" />
+    <!-- Non-numeric MaxTermMonths: the bundler must surface this as SC106 at pack time rather
+         than shipping an exemption that silently requires no end date. -->
+    <SponsorExemption Include="Evaluation" Message="Evaluating teams are exempt." MaxTermMonths="six" />
+  </ItemGroup>
+</Project>

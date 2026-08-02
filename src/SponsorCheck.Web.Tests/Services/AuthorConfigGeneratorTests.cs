@@ -164,4 +164,58 @@ public class AuthorConfigGeneratorTests
         });
         await Verify(Dump(model));
     }
+
+    [Test]
+    public async Task TimeBoundedExemptions()
+    {
+        // A capped exemption has to reach the consumer snippet as a pair — the name alone would
+        // fail their next build with SC038.
+        var model = BaseModel();
+        Enable(model, PlatformKind.GitHub, "acmecorp");
+        model.Exemptions.Add(new()
+        {
+            Name = "Consulting",
+            Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months.",
+            MaxTermMonths = "6"
+        });
+        model.Exemptions.Add(new()
+        {
+            Name = "SmallRevenue",
+            Message = "Consumers under US$10,000 annual gross revenue are exempt."
+        });
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task OwnerModeWithTimeBoundedExemption()
+    {
+        var model = BaseModel();
+        Enable(model, PlatformKind.GitHub, "acmecorp");
+        model.OwnerMode = true;
+        model.OwnerId = "acme";
+        model.Exemptions.Add(new()
+        {
+            Name = "Consulting",
+            Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months.",
+            MaxTermMonths = "6"
+        });
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task InvalidMaxTermMonths_IsReported()
+    {
+        var model = BaseModel();
+        Enable(model, PlatformKind.GitHub, "acmecorp");
+        model.Exemptions.Add(new()
+        {
+            Name = "Consulting",
+            Message = "Consulting carve-out.",
+            MaxTermMonths = "six"
+        });
+        await Assert.That(model.ExemptionErrors).IsNotEmpty();
+        await Assert.That(model.IsComplete).IsFalse();
+        // Invalid rows are excluded from the generated config rather than emitted as a broken item.
+        await Assert.That(model.HasExemptions).IsFalse();
+    }
 }

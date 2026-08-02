@@ -51,6 +51,11 @@ public static class ConsumerConfigGenerator
                 break;
             case ConsumerLicenseMode.Exemption:
                 attributes.Add(("SponsorshipExemption", model.ExemptionName.Trim()));
+                if (model.HasExemptionUntil)
+                {
+                    attributes.Add(("SponsorshipExemptionUntil", model.ExemptionUntilMonth.Trim()));
+                }
+
                 break;
             case ConsumerLicenseMode.Ignore:
                 attributes.Add(("SponsorshipLicenseIgnored", "true"));
@@ -176,8 +181,27 @@ public static class ConsumerConfigGenerator
                             $"'{model.ExemptionName.Trim()}' is not an exemption this package defines ({names}) — the build fails with {unknownCode}, and that error lists the defined names.";
                     }
 
-                    return
+                    var criteria =
                         $"Passes with a {warnCode} warning quoting the publisher's criteria for '{match.Name}': \"{match.Message}\" — the build log records the specific carve-out being claimed rather than a generic breach message.";
+                    if (match.MaxTermMonths is { } months)
+                    {
+                        var missingCode = CodeFor(placement, "SC038", "SC039", "SC040");
+                        var capCode = CodeFor(placement, "SC044", "SC045", "SC046");
+                        var expiredCode = CodeFor(placement, "SC047", "SC048", "SC049");
+                        var until = model.ExemptionUntilMonth.Trim();
+                        var through = until.Length == 0 ? "the declared month" : until;
+                        return
+                            $"{criteria} The publisher time-bounds this exemption to {months} month{(months == 1 ? "" : "s")}, so SponsorshipExemptionUntil is required — omitting it fails with {missingCode}, and a month more than {months} past the build clock fails with {capCode}. It passes through the end of {through} (UTC); after that the build fails with {expiredCode}, which is the point: the claim has to be re-checked rather than left in place.";
+                    }
+
+                    if (model.HasExemptionUntil)
+                    {
+                        var expiredCode = CodeFor(placement, "SC047", "SC048", "SC049");
+                        return
+                            $"{criteria} This exemption is not time-bounded by the publisher, but the end month declared here is still enforced: after {model.ExemptionUntilMonth.Trim()} the build fails with {expiredCode} until the claim is renewed or another mode is chosen.";
+                    }
+
+                    return criteria;
                 }
 
                 return

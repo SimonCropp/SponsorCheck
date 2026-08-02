@@ -413,6 +413,16 @@ select {
     max-width: none;
 }
 
+.exemption-row input.exemption-max-term {
+    max-width: 150px;
+}
+
+.exemptions-hint {
+    color: var(--muted);
+    font-size: .88rem;
+    margin: .5rem 0 0;
+}
+
 .validation-error {
     color: #d1242f;
     font-size: .88rem;

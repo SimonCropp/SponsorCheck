@@ -1,0 +1,11 @@
+﻿{
+  Warnings: [
+    {
+      Code: SC029,
+      Message:
+Exemption claimed. Package 'MyOssLib': SponsorshipExemption="Consulting" claimed on the <PackageReference> until 2026-11. Publisher's exemption criteria: Consulting carve-out.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029
+    }
+  ]
+}

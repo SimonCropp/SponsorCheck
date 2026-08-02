@@ -65,6 +65,13 @@ public partial class Consumer
         model.Facts is not { BundlesSponsorCheck: true } ||
         model.Facts.Exemptions.Count > 0;
 
+    /// <summary>Flags a time-bounded exemption in the package summary, so the cap is visible while
+    /// choosing a mode rather than only after picking the name.</summary>
+    static string ExemptionLabel(PackageExemption exemption) =>
+        exemption.MaxTermMonths is { } months
+            ? $"{exemption.Name} (max {months}mo)"
+            : exemption.Name;
+
     /// <summary>Facts narrow the platform list to the ones the author actually accepts.</summary>
     IEnumerable<Platform> SponsorPlatforms
     {

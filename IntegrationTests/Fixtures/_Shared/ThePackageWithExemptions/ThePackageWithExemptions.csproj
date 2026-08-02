@@ -12,5 +12,8 @@
                       Message="Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work." />
     <SponsorExemption Include="SmallRevenue"
                       Message="Consumers under US$10,000 annual gross revenue are exempt." />
+    <SponsorExemption Include="Evaluation"
+                      Message="Teams evaluating the package before committing to a sponsorship are exempt while the evaluation is under way."
+                      MaxTermMonths="3" />
   </ItemGroup>
 </Project>

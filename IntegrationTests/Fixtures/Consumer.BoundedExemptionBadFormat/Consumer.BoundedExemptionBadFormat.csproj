@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- A full date rather than the yyyy-MM month the verifier expects: SC041. -->
+    <PackageReference
+      Include="ThePackageWithExemptions"
+      Version="1.0.0"
+      SponsorshipExemption="Evaluation"
+      SponsorshipExemptionUntil="2027-02-01" />
+  </ItemGroup>
+</Project>

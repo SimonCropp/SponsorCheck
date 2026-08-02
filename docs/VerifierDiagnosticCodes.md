@@ -1,6 +1,6 @@
 # Verifier diagnostic codes
 
-Codes in the `SC0xx` range are emitted by the verifier in consumer projects. Pairs are interleaved by mode: **odd-numbered codes** fire when the consumer is **not** using Central Package Management (metadata lives on `<PackageReference>` in the consumer csproj); **even-numbered codes** fire when the consumer **is** using CPM (metadata lives on `<PackageVersion>` in `Directory.Packages.props`). Sibling = `code ± 1` — SC001/SC002, SC003/SC004, SC011/SC012, and so on. The trailing SC017–SC020 codes are unpaired (audit message, install-integrity check, and the two placement errors). Codes added from SC029 onward drop the interleaving and run as consecutive triples instead — non-CPM, CPM, owner mode — so SC029/SC030/SC031, SC032/SC033/SC034, and SC035/SC036/SC037 each cover one scenario across all three placements.
+Codes in the `SC0xx` range are emitted by the verifier in consumer projects. Pairs are interleaved by mode: **odd-numbered codes** fire when the consumer is **not** using Central Package Management (metadata lives on `<PackageReference>` in the consumer csproj); **even-numbered codes** fire when the consumer **is** using CPM (metadata lives on `<PackageVersion>` in `Directory.Packages.props`). Sibling = `code ± 1` — SC001/SC002, SC003/SC004, SC011/SC012, and so on. The trailing SC017–SC020 codes are unpaired (audit message, install-integrity check, and the two placement errors). Codes added from SC029 onward drop the interleaving and run as consecutive triples instead — non-CPM, CPM, owner mode — so SC029/SC030/SC031, SC032/SC033/SC034, SC035/SC036/SC037, and each triple through SC049 cover one scenario across all three placements.
 
 **Owner mode (SC021–SC028).** When the OSS author opts a package into *owner mode* (`SponsorOwner="<id>"` at pack time), the consumer configures sponsorship **once**, via global MSBuild **properties** (in `Directory.Build.props` or the consuming project), rather than per-package metadata. Because there is a single property source — no `<PackageReference>`/`<PackageVersion>` split — each scenario needs only one code, so SC021–SC028 are **unpaired** owner-mode counterparts of the per-package family: SC021↔SC001/SC002 (no config), SC022↔SC003/SC004 (conflicting modes), SC023↔SC005/SC006 (ignored), SC024↔SC007/SC008 (invalid account), SC025↔SC009/SC010 (expired), SC026↔SC011/SC012 (bad license date), SC027↔SC013/SC014 (bad SponsorshipStart), SC028↔SC015/SC016 (future SponsorshipStart). The placement-agnostic SC017 (attestation) and SC018 (missing hash file) are reused as-is; SC019/SC020 do not apply (no items to misplace).
 
@@ -18,8 +18,19 @@ flowchart TD
     Which -->|Ignored| SC005[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>SC005 Warning<br/>In breach of license</a>]
 
     Which -->|Publisher-defined exemption| KnownName{Name matches<br/>a publisher<br/>exemption?}
-    KnownName -->|Yes| SC029[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>SC029 Warning<br/>Publisher's criteria text</a>]
     KnownName -->|No| SC032[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032'>SC032 Error<br/>Unknown exemption name</a>]
+    KnownName -->|Yes| HasUntil{Exemption<br/>Until set?}
+    HasUntil -->|No| Capped{Publisher set<br/>MaxTermMonths?}
+    Capped -->|Yes| SC038[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc038'>SC038 Error<br/>End date required</a>]
+    Capped -->|No| SC029
+    HasUntil -->|Yes| UntilYM{Valid<br/>yyyy-MM?}
+    UntilYM -->|No| SC041[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc041'>SC041 Error<br/>Invalid date format</a>]
+    UntilYM -->|Yes| UntilCap{Beyond<br/>MaxTermMonths?}
+    UntilCap -->|Yes| SC044[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc044'>SC044 Error<br/>Beyond the publisher's cap</a>]
+    UntilCap -->|No| UntilExpired{End of month<br/>in the past?}
+    UntilExpired -->|Yes| SC047[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc047'>SC047 Error<br/>Exemption expired</a>]
+    UntilExpired -->|No| SC029
+    SC029[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>SC029 Warning<br/>Publisher's criteria text</a>]
 
     Which -->|Supplied sponsor account| HasStart{Sponsorship<br/>Start set?}
     HasStart -->|Yes| Future{Start in<br/>future?}
@@ -41,7 +52,7 @@ flowchart TD
     Expired -->|No| PassLicense([Build passes])
 ```
 
-> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), [SC029](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029)→[SC030](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030), [SC032](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032)→[SC033](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033), [SC035](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc035)→[SC036](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc036), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent for the original modes (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028)) plus [SC031](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031)/[SC034](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034) for the exemption branch and [SC037](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc037) for the one-year cap; [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared. The exemption branch only fires when the publisher defined `<SponsorExemption>` items at pack time — packages without any exemptions never reach `KnownName`.
+> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), [SC029](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029)→[SC030](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030), [SC032](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032)→[SC033](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033), [SC035](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc035)→[SC036](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc036), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent for the original modes (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028)) plus the third code of each SC029-onward triple for the exemption branch ([SC031](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031), [SC034](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034), [SC040](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc040), [SC043](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc043), [SC046](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc046), [SC049](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc049)) and [SC037](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc037) for the one-year cap; [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared. The exemption branch only fires when the publisher defined `<SponsorExemption>` items at pack time — packages without any exemptions never reach `KnownName`. The `MaxTermMonths` sub-branch only fires for exemptions the publisher time-bounded; an uncapped one goes straight from `KnownName` to `SC029`, unless the consumer bound it themselves, in which case `UntilExpired` still applies.
 <!-- endInclude -->
 
 ### SC001
@@ -818,3 +829,214 @@ flowchart TD
     <{OwnerId}_SponsorshipLicensedUntil>{maxMonth}</{OwnerId}_SponsorshipLicensedUntil>
   ```
 - **Example opener:** `Package 'MyOssLib': acme_SponsorshipLicensedUntil='2030-01' property is more than 1 year in the future (maximum 2027-05).`
+
+
+### SC038
+
+- **Name:** Exemption end date required
+- **Level**: Error
+- **Meaning:** The consumer claimed an exemption on the `<PackageReference>` that the publisher **time-bounds** (`MaxTermMonths` was set on the `<SponsorExemption>` at pack time), but did not supply `SponsorshipExemptionUntil`. A time-bounded exemption exists so a carve-out that stops applying — the consulting engagement ended, the revenue threshold was crossed — fails the build rather than riding along unnoticed, which is only possible if the claim carries an end month. Not overrideable. CPM equivalent: [SC039](#sc039). Owner-mode equivalent: [SC040](#sc040).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipExemption="{name}" on the <PackageReference> is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to {n} months.
+
+  Set the SponsorshipExemptionUntil attribute to {maxMonth} or earlier in:
+
+    {csprojPath}
+
+  Example format:
+
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{name}" SponsorshipExemptionUntil="{maxMonth}" />
+  ```
+
+  `{maxMonth}` is the ceiling measured from the build clock, so it rolls forward with time — an already-declared month stays valid, but each renewal is capped afresh.
+- **Example:**
+
+  ```
+  Package 'Papyrine': SponsorshipExemption="Consulting" on the <PackageReference> is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to 6 months.
+
+  Set the SponsorshipExemptionUntil attribute to 2026-11 or earlier in:
+
+    /work/MyApp/MyApp.csproj
+
+  Example format:
+
+    <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="Consulting" SponsorshipExemptionUntil="2026-11" />
+  ```
+
+
+### SC039
+
+- **Name:** Exemption end date required
+- **Level**: Error
+- **Meaning:** CPM equivalent of [SC038](#sc038): the claim lives on the `<PackageVersion>` in `Directory.Packages.props` and is missing `SponsorshipExemptionUntil`.
+- **Syntax:** `Package '{PackageId}': SponsorshipExemption="{name}" on the <PackageVersion> in Directory.Packages.props is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to {n} months.` (body shape matches SC038 with the props file path.)
+- **Example opener:** `Package 'Papyrine': SponsorshipExemption="Consulting" on the <PackageVersion> in Directory.Packages.props is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to 6 months.`
+
+
+### SC040
+
+- **Name:** Exemption end date required
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC038](#sc038)/[SC039](#sc039): the `{OwnerId}_SponsorshipExemption` property names a time-bounded exemption but `{OwnerId}_SponsorshipExemptionUntil` is unset.
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': {OwnerId}_SponsorshipExemption="{name}" property is set, but the publisher time-bounds this exemption to {n} months, so {OwnerId}_SponsorshipExemptionUntil must be set too.
+
+  Set the {OwnerId}_SponsorshipExemptionUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
+
+  Example format:
+
+    <{OwnerId}_SponsorshipExemption>{name}</{OwnerId}_SponsorshipExemption>
+    <{OwnerId}_SponsorshipExemptionUntil>{maxMonth}</{OwnerId}_SponsorshipExemptionUntil>
+  ```
+- **Example opener:** `Package 'Papyrine': papyrine_SponsorshipExemption="Consulting" property is set, but the publisher time-bounds this exemption to 6 months, so papyrine_SponsorshipExemptionUntil must be set too.`
+
+
+### SC041
+
+- **Name:** Invalid exemption end date format
+- **Level**: Error
+- **Meaning:** `SponsorshipExemptionUntil` on the `<PackageReference>` is not a `yyyy-MM` month. The format matches [SponsorshipLicensedUntil](#sc011) — month granularity, so a claim covers whole months and a build never breaks partway through one. Fires whether or not the publisher set `MaxTermMonths`: an unparseable value is a configuration bug either way. Not overrideable. CPM equivalent: [SC042](#sc042). Owner-mode equivalent: [SC043](#sc043).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipExemptionUntil='{value}' on the <PackageReference> is not in 'yyyy-MM' format.
+
+  Fix the SponsorshipExemptionUntil attribute in:
+
+    {csprojPath}
+
+  Example format:
+
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{name}" SponsorshipExemptionUntil="yyyy-MM" />
+  ```
+- **Example opener:** `Package 'Papyrine': SponsorshipExemptionUntil='2027-02-01' on the <PackageReference> is not in 'yyyy-MM' format.`
+
+
+### SC042
+
+- **Name:** Invalid exemption end date format
+- **Level**: Error
+- **Meaning:** CPM equivalent of [SC041](#sc041).
+- **Syntax:** Same structure as SC041 with `<PackageVersion> in Directory.Packages.props` substituted for `<PackageReference>`.
+- **Example opener:** `Package 'Papyrine': SponsorshipExemptionUntil='2027-02-01' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.`
+
+
+### SC043
+
+- **Name:** Invalid exemption end date format
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC041](#sc041)/[SC042](#sc042).
+- **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemptionUntil='{value}' property is not in 'yyyy-MM' format.` (body uses the owner-mode property remediation block.)
+- **Example opener:** `Package 'Papyrine': papyrine_SponsorshipExemptionUntil='later' property is not in 'yyyy-MM' format.`
+
+
+### SC044
+
+- **Name:** Exemption end date too far in the future
+- **Level**: Error
+- **Meaning:** `SponsorshipExemptionUntil` on the `<PackageReference>` is dated further out than the publisher's `MaxTermMonths` allows. Without the ceiling a consumer could satisfy [SC038](#sc038) with `9999-12` and turn the required end date into a formality. The ceiling is measured from the build clock and is inclusive: with `MaxTermMonths="6"` and a build in 2026-05, `2026-11` is the last accepted value and `2026-12` fails. Because it moves with the clock, an already-valid claim keeps passing until it expires — it is each *renewal* that is capped. Only fires for a capped exemption; an uncapped one has no ceiling to exceed. Not overrideable. CPM equivalent: [SC045](#sc045). Owner-mode equivalent: [SC046](#sc046).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipExemptionUntil='{value}' on the <PackageReference> is more than {n} months in the future (maximum {maxMonth}).
+
+  Set the SponsorshipExemptionUntil attribute to {maxMonth} or earlier in:
+
+    {csprojPath}
+
+  Example format:
+
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{name}" SponsorshipExemptionUntil="{maxMonth}" />
+  ```
+- **Example:**
+
+  ```
+  Package 'Papyrine': SponsorshipExemptionUntil='2026-12' on the <PackageReference> is more than 6 months in the future (maximum 2026-11).
+
+  Set the SponsorshipExemptionUntil attribute to 2026-11 or earlier in:
+
+    /work/MyApp/MyApp.csproj
+
+  Example format:
+
+    <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="Consulting" SponsorshipExemptionUntil="2026-11" />
+  ```
+
+
+### SC045
+
+- **Name:** Exemption end date too far in the future
+- **Level**: Error
+- **Meaning:** CPM equivalent of [SC044](#sc044).
+- **Syntax:** Same structure as SC044 with `<PackageVersion> in Directory.Packages.props` substituted for `<PackageReference>`.
+- **Example opener:** `Package 'Papyrine': SponsorshipExemptionUntil='2026-12' on the <PackageVersion> in Directory.Packages.props is more than 6 months in the future (maximum 2026-11).`
+
+
+### SC046
+
+- **Name:** Exemption end date too far in the future
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC044](#sc044)/[SC045](#sc045).
+- **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemptionUntil='{value}' property is more than {n} months in the future (maximum {maxMonth}).` (body uses the owner-mode property remediation block.)
+- **Example opener:** `Package 'Papyrine': papyrine_SponsorshipExemptionUntil='2026-12' property is more than 6 months in the future (maximum 2026-11).`
+
+
+### SC047
+
+- **Name:** Exemption expired
+- **Level**: Error
+- **Meaning:** The exemption claimed on the `<PackageReference>` carried a `SponsorshipExemptionUntil` month that has now passed. This is the forcing function the whole mechanism exists for: the build fails until someone confirms the carve-out still applies and renews the date, or switches to another license mode. Expiry is decided at month granularity, matching [SC009](#sc009) — the named month is fully covered through its final instant, and the first day of the next month is the cutoff. Fires for a consumer-supplied end month whether or not the publisher required one, so a voluntary self-imposed bound is enforced too. Not overrideable. CPM equivalent: [SC048](#sc048). Owner-mode equivalent: [SC049](#sc049).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipExemption="{name}" on the <PackageReference> expired — SponsorshipExemptionUntil='{value}' (end of month {lastDay} UTC).
+
+  Confirm the exemption still applies, then set the SponsorshipExemptionUntil attribute to {maxMonth} or earlier in:
+
+    {csprojPath}
+
+  Otherwise switch to another license mode.
+
+  Example format:
+
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{name}" SponsorshipExemptionUntil="{maxMonth}" />
+  ```
+
+  When the publisher did not set `MaxTermMonths` there is no ceiling to name, so the `to {maxMonth} or earlier` clause is omitted and the example renders the literal `yyyy-MM` placeholder.
+- **Example:**
+
+  ```
+  Package 'Papyrine': SponsorshipExemption="Consulting" on the <PackageReference> expired — SponsorshipExemptionUntil='2026-04' (end of month 2026-04-30 UTC).
+
+  Confirm the exemption still applies, then set the SponsorshipExemptionUntil attribute to 2026-11 or earlier in:
+
+    /work/MyApp/MyApp.csproj
+
+  Otherwise switch to another license mode.
+
+  Example format:
+
+    <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="Consulting" SponsorshipExemptionUntil="2026-11" />
+  ```
+
+
+### SC048
+
+- **Name:** Exemption expired
+- **Level**: Error
+- **Meaning:** CPM equivalent of [SC047](#sc047).
+- **Syntax:** Same structure as SC047 with `<PackageVersion> in Directory.Packages.props` substituted for `<PackageReference>`.
+- **Example opener:** `Package 'Papyrine': SponsorshipExemption="Consulting" on the <PackageVersion> in Directory.Packages.props expired — SponsorshipExemptionUntil='2026-04' (end of month 2026-04-30 UTC).`
+
+
+### SC049
+
+- **Name:** Exemption expired
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC047](#sc047)/[SC048](#sc048).
+- **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemption="{name}" expired — {OwnerId}_SponsorshipExemptionUntil='{value}' (end of month {lastDay} UTC).` (body uses the owner-mode property remediation block.)
+- **Example opener:** `Package 'Papyrine': papyrine_SponsorshipExemption="Consulting" expired — papyrine_SponsorshipExemptionUntil='2026-04' (end of month 2026-04-30 UTC).`

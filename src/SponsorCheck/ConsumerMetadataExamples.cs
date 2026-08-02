@@ -12,7 +12,7 @@ public static class ConsumerMetadataExamples
     public static string RenderLicenseModeOptions(
         ConsumerContext context,
         IReadOnlyList<AuthorAccount> authorAccounts,
-        IReadOnlyDictionary<string, string>? exemptionsDefined = null,
+        IReadOnlyDictionary<string, ExemptionDefinition>? exemptionsDefined = null,
         bool includeIgnoreOption = true,
         bool includeExemptionOption = true)
     {
@@ -47,10 +47,14 @@ public static class ConsumerMetadataExamples
         // re-offer the option that fired the warning.
         if (includeExemptionOption && exemptionsDefined is { Count: > 0 })
         {
-            var firstName = exemptionsDefined.Keys.First();
+            var first = exemptionsDefined.First();
             lines.Add("");
             lines.Add("Option — Claim a publisher-defined exemption (replace the name with one offered by the publisher):");
-            lines.Add($"  {RenderItem(context, ("SponsorshipExemption", firstName))}");
+            // A capped exemption is only claimable with an end month, so the example has to show
+            // both attributes — pasting the name alone would just trade this error for SC038.
+            lines.Add(first.Value.MaxTermMonths is null
+                ? $"  {RenderItem(context, ("SponsorshipExemption", first.Key))}"
+                : $"  {RenderExemptionUntilExample(context, first.Key, null)}");
         }
 
         // Omitted when the warning being rendered is itself the "license ignored" warning —
@@ -78,7 +82,7 @@ public static class ConsumerMetadataExamples
     // to talk to the publisher instead of guessing names.
     public static string RenderAvailableExemptions(
         ConsumerContext context,
-        IReadOnlyDictionary<string, string> exemptionsDefined)
+        IReadOnlyDictionary<string, ExemptionDefinition> exemptionsDefined)
     {
         if (exemptionsDefined.Count == 0)
         {
@@ -88,17 +92,25 @@ public static class ConsumerMetadataExamples
         var lines = new List<string> { "Available exemptions:" };
         foreach (var pair in exemptionsDefined)
         {
-            lines.Add($"  - {pair.Key}: {pair.Value}");
+            // The cap is part of choosing between the names, not a detail to discover later —
+            // a consumer picking a time-bounded exemption needs to know it comes with an end date.
+            var bound = pair.Value.MaxTermMonths is { } months
+                ? $" [time-bounded: SponsorshipExemptionUntil required, at most {months} month{(months == 1 ? "" : "s")} out]"
+                : "";
+            lines.Add($"  - {pair.Key}: {pair.Value.Message}{bound}");
         }
 
-        var firstName = exemptionsDefined.Keys.First();
+        var first = exemptionsDefined.First();
+        var example = first.Value.MaxTermMonths is null
+            ? RenderItem(context, ("SponsorshipExemption", first.Key))
+            : RenderExemptionUntilExample(context, first.Key, null);
         if (context.IsOwner)
         {
             lines.Add("");
             lines.Add($"Claim one by setting the {context.OwnerId}_SponsorshipExemption property in Directory.Build.props or the consuming project.");
             lines.Add("");
             lines.Add("Example format:");
-            lines.Add($"  {RenderItem(context, ("SponsorshipExemption", firstName))}");
+            lines.Add($"  {example}");
             return string.Join(newline, lines);
         }
 
@@ -107,9 +119,91 @@ public static class ConsumerMetadataExamples
         lines.Add($"  {context.TargetFilePath}");
         lines.Add("");
         lines.Add("Example format:");
-        lines.Add($"  {RenderItem(context, ("SponsorshipExemption", firstName))}");
+        lines.Add($"  {example}");
         return string.Join(newline, lines);
     }
+
+    // Body of SC038/SC039/SC040 (a capped exemption claimed without an end month) and of
+    // SC044/SC045/SC046 (an end month past the publisher's ceiling). Both are fixed the same
+    // way — put a month no later than the ceiling on the claim — so they share one block, and
+    // like RenderLicensedUntilMaxFix the example renders the real ceiling rather than a
+    // yyyy-MM placeholder so it is directly pasteable.
+    public static string RenderExemptionUntilFix(ConsumerContext context, string exemptionName, string maxMonth) =>
+        context.IsOwner
+            ? $"""
+               Set the {context.OwnerId}_SponsorshipExemptionUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
+
+               Example format:
+
+                 {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
+               """
+            : $"""
+               Set the SponsorshipExemptionUntil attribute to {maxMonth} or earlier in:
+
+                 {context.TargetFilePath}
+
+               Example format:
+
+                 {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
+               """;
+
+    // Body of SC041/SC042/SC043. The value isn't a month at all, so there is nothing to compare
+    // against a ceiling — the example shows the shape.
+    public static string RenderExemptionUntilFormatFix(ConsumerContext context, string exemptionName) =>
+        context.IsOwner
+            ? $"""
+               Fix the {context.OwnerId}_SponsorshipExemptionUntil property in Directory.Build.props or the consuming project.
+
+               Example format:
+
+                 {RenderExemptionUntilExample(context, exemptionName, null)}
+               """
+            : $"""
+               Fix the SponsorshipExemptionUntil attribute in:
+
+                 {context.TargetFilePath}
+
+               Example format:
+
+                 {RenderExemptionUntilExample(context, exemptionName, null)}
+               """;
+
+    // Body of SC047/SC048/SC049. The lead line is deliberately not "extend it" — an expired bound
+    // is the prompt to re-check whether the carve-out still applies, which is the entire reason
+    // the publisher time-bounded it. maxMonth is null when the consumer bounded an uncapped
+    // exemption of their own accord, so there is no ceiling to name.
+    public static string RenderExemptionUntilRenewal(ConsumerContext context, string exemptionName, string? maxMonth)
+    {
+        var ceiling = maxMonth is null ? "" : $" to {maxMonth} or earlier";
+        return context.IsOwner
+            ? $"""
+               Confirm the exemption still applies, then set the {context.OwnerId}_SponsorshipExemptionUntil property{ceiling} in Directory.Build.props or the consuming project. Otherwise switch to another license mode.
+
+               Example format:
+
+                 {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
+               """
+            : $"""
+               Confirm the exemption still applies, then set the SponsorshipExemptionUntil attribute{ceiling} in:
+
+                 {context.TargetFilePath}
+
+               Otherwise switch to another license mode.
+
+               Example format:
+
+                 {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
+               """;
+    }
+
+    // The copy-pasteable snippet shared by every SponsorshipExemptionUntil block: the claimed
+    // exemption plus its end month. A null maxMonth means there is no ceiling to paste (an
+    // uncapped exemption, or a value that never parsed), so the literal placeholder stands in.
+    static string RenderExemptionUntilExample(ConsumerContext context, string exemptionName, string? maxMonth) =>
+        RenderItem(
+            context,
+            ("SponsorshipExemption", exemptionName),
+            ("SponsorshipExemptionUntil", maxMonth ?? "yyyy-MM"));
 
     public static string RenderSponsorshipStartHint(
         ConsumerContext context,

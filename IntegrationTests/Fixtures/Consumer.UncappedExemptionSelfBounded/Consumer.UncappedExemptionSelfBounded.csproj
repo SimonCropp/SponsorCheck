@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Consulting carries no MaxTermMonths, so no end month is demanded — but one supplied
+         voluntarily is still enforced, and this one has lapsed: SC047. -->
+    <PackageReference
+      Include="ThePackageWithExemptions"
+      Version="1.0.0"
+      SponsorshipExemption="Consulting"
+      SponsorshipExemptionUntil="2020-01" />
+  </ItemGroup>
+</Project>

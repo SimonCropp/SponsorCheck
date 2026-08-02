@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Under CPM both halves of the claim live on the PackageVersion; splitting them across
+         the PackageReference would raise SC020. Current month for the same reason as
+         Consumer.BoundedExemption — a literal would eventually expire. -->
+    <PackageVersion Include="ThePackageWithExemptions" Version="1.0.0"
+                    SponsorshipExemption="Evaluation"
+                    SponsorshipExemptionUntil="$([System.DateTime]::UtcNow.ToString('yyyy-MM'))" />
+  </ItemGroup>
+</Project>

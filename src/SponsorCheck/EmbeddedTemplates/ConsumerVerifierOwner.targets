@@ -84,6 +84,7 @@ __SC_INNER_IMPORT__
         IgnoredFromRef="$(__SC_OWNER_PREFIX__SponsorshipLicenseIgnored)"
         LicensedUntilFromRef="$(__SC_OWNER_PREFIX__SponsorshipLicensedUntil)"
         SponsorshipExemptionFromRef="$(__SC_OWNER_PREFIX__SponsorshipExemption)"
+        SponsorshipExemptionUntilFromRef="$(__SC_OWNER_PREFIX__SponsorshipExemptionUntil)"
         SponsorshipStartFromRef="$(__SC_OWNER_PREFIX__SponsorshipStart)"
         GitHubFromRef="$(__SC_OWNER_PREFIX__GitHubSponsorAccount)"
         OpenCollectiveFromRef="$(__SC_OWNER_PREFIX__OpenCollectiveSponsorAccount)"

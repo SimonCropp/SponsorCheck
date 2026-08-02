@@ -251,15 +251,29 @@ Many publishers have legitimate scenarios where a consumer doesn't need to spons
                       Message="Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work." />
     <SponsorExemption Include="SmallRevenue"
                       Message="Consumers under US$10,000 annual gross revenue are exempt." />
+    <SponsorExemption Include="Evaluation"
+                      Message="Teams evaluating the package before committing to a sponsorship are exempt while the evaluation is under way."
+                      MaxTermMonths="3" />
   </ItemGroup>
 </Project>
 ```
-<sup><a href='/IntegrationTests/Fixtures/_Shared/ThePackageWithExemptions/ThePackageWithExemptions.csproj#L1-L16' title='Snippet source file'>snippet source</a> | <a href='#snippet-ThePackageWithExemptions.csproj' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/IntegrationTests/Fixtures/_Shared/ThePackageWithExemptions/ThePackageWithExemptions.csproj#L1-L19' title='Snippet source file'>snippet source</a> | <a href='#snippet-ThePackageWithExemptions.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `Include=` is the exemption name consumers will claim; `Message=` is the criteria text that becomes the warning body. The bundler validates each item at pack time — empty name, empty message, or duplicate names (case-insensitive) fail with [SC106](BundlerDiagnosticCodes.md#sc106). The exemption set is baked into the produced nupkg under `build/SponsorCheck.Exemptions.json`, so consumers can't add new names or change the criteria text.
 
 Exemption warnings ([SC029](VerifierDiagnosticCodes.md#sc029) / [SC030](VerifierDiagnosticCodes.md#sc030) / [SC031](VerifierDiagnosticCodes.md#sc031)) are **not** overrideable via `*MessageOverride` — the publisher's `Message` *is* the override. To change the warning text, edit the `Message` and repack.
+
+
+### Time-bounding an exemption
+
+Most exemptions describe a situation that ends: the consulting engagement wraps up, the evaluation concludes, the business grows past the revenue threshold. Nothing prompts a consumer to revisit a claim they made once, so an exemption declared in good faith quietly outlives the thing that justified it.
+
+The optional `MaxTermMonths` metadatum makes a claim expire. Set it and the consumer must also declare `SponsorshipExemptionUntil="yyyy-MM"` — dated no more than that many months past their build clock — or the build fails with [SC038](VerifierDiagnosticCodes.md#sc038). Once that month ends, the build fails with [SC047](VerifierDiagnosticCodes.md#sc047) until they either renew the date (having re-checked that the exemption still applies) or move to another license mode. The `Evaluation` item in the snippet above is capped at three months.
+
+The ceiling is measured from the build clock, so it rolls forward: a claim that was valid when written stays valid until it expires, and it is each *renewal* that gets re-capped. A value beyond the ceiling fails with [SC044](VerifierDiagnosticCodes.md#sc044) — without that, `9999-12` would satisfy the requirement and defeat it in the same line. `MaxTermMonths` must be a positive whole number; anything else fails the pack with [SC106](BundlerDiagnosticCodes.md#sc106) rather than silently degrading to an uncapped exemption.
+
+Set the term from how long the underlying situation plausibly lasts, rather than from how often a re-confirmation seems desirable — a consumer re-attesting monthly to something that changes yearly stops reading the criteria. Leave `MaxTermMonths` unset for exemptions that genuinely don't expire (a permanent carve-out for a partner org, say); consumers can still bound those voluntarily, and the end date is enforced when they do.
 
 
 ## Custom sponsor landing URL

@@ -110,7 +110,12 @@ flowchart TD
     LExp -->|"Yes"| SC009([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009'>Time-bounded license expired #40;SC009#41;<br/>renewal forcing function</a>])
 
     Exempt["Claim a publisher-defined exemption<br/>SponsorshipExemption=Name<br/>only available if publisher defined any"] --> EKnown{"Name matches<br/>publisher's list?"}
-    EKnown -->|"Yes"| SC029([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>Passes, but warns on every build #40;SC029#41;<br/>durable marker quoting publisher's criteria text<br/>not a breach - audit-trail for a sanctioned carve-out</a>])
+    EKnown -->|"Yes"| EBound{"Publisher time-bounds it?<br/>MaxTermMonths"}
+    EBound -->|"No"| SC029
+    EBound -->|"Yes"| EExp{"SponsorshipExemptionUntil<br/>set, in range, unexpired?"}
+    EExp -->|"Yes"| SC029
+    EExp -->|"No"| SC038([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc038'>Missing, over-long, or lapsed end date<br/>#40;SC038 / SC044 / SC047#41;<br/>re-attestation forcing function</a>])
+    SC029([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>Passes, but warns on every build #40;SC029#41;<br/>durable marker quoting publisher's criteria text<br/>not a breach - audit-trail for a sanctioned carve-out</a>])
     EKnown -->|"No"| SC032([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032'>Unknown exemption name #40;SC032#41;<br/>fails safe, lists available names</a>])
 
     Ignore["SponsorshipLicenseIgnored=true<br/>cost: one free line, cheaper than sponsoring"] --> SC005([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005'>Passes, but warns on every build #40;SC005#41;<br/>durable breach-of-license marker</a>])
@@ -121,6 +126,8 @@ flowchart TD
 The honor-system `SponsorshipStart` path passes without any sponsorship lookup — it only checks that the attested date is not in the future and is strictly later than the package's pack date (so the bundled list *could not* contain the account). It logs an `SC017` audit message, but only in the consumer's own build log; the author never sees it. It is necessary for honest recent joiners, and it is also a stealthier free-ride path — both are true, and the doc does not pretend otherwise.
 
 The publisher-defined exemption path also passes with a recurring marker, but unlike `SponsorshipLicenseIgnored` the marker is the publisher's own criteria text rather than a generic "in breach" warning — so a consumer who legitimately qualifies (e.g. a consulting client under a 6-month carve-out, or a sub-$10k-revenue business) is not mislabeled. Each exemption name must be declared by the publisher at pack time, so the consumer cannot invent one; an unknown name fails with [SC032](VerifierDiagnosticCodes.md#sc032), and the error body lists what the publisher does offer.
+
+That leaves a subtler failure mode than invention: a claim that was honest when written and silently stops being so. The consulting engagement ends, the business grows past the revenue threshold, and nothing in the build ever asks again — the exemption becomes a permanent opt-out acquired one line at a time, in good faith. A publisher who sets `MaxTermMonths` on the exemption forces the claim to carry an end month capped at that distance, and the build fails once it passes ([SC047](VerifierDiagnosticCodes.md#sc047)). The mechanism can't tell whether the criteria still hold — nothing build-time can — but it converts an indefinite claim into a periodic decision made by a person, which is the same forcing function `SponsorshipLicensedUntil` applies to a private license.
 
 The terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer emits the `+1` sibling of each; an owner-mode consumer emits the `SC02x`/`SC03x` equivalent. See [Verifier diagnostic codes](VerifierDiagnosticCodes.md).
 

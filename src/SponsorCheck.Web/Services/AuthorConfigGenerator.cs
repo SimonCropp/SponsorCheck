@@ -90,8 +90,23 @@ public static class AuthorConfigGenerator
             '\n',
             model.CompletedExemptions.Select(_ => MsBuildXml.SelfClosingElement(
                 "SponsorExemption",
-                [("Include", _.Name.Trim()), ("Message", _.Message.Trim())],
+                ExemptionAttributes(_),
                 inlineCount: 1)));
+
+    static IReadOnlyList<(string Name, string Value)> ExemptionAttributes(ExemptionEntry entry)
+    {
+        var attributes = new List<(string, string)>
+        {
+            ("Include", entry.Name.Trim()),
+            ("Message", entry.Message.Trim())
+        };
+        if (entry.ParsedMaxTermMonths is { } months)
+        {
+            attributes.Add(("MaxTermMonths", months.ToString(CultureInfo.InvariantCulture)));
+        }
+
+        return attributes;
+    }
 
     static string SecretsId(AuthorModel model)
     {
@@ -311,12 +326,20 @@ public static class AuthorConfigGenerator
             Line();
             foreach (var exemption in model.CompletedExemptions)
             {
-                Line($"- `{exemption.Name.Trim()}` — {exemption.Message.Trim()}");
+                var bound = exemption.ParsedMaxTermMonths is { } months
+                    ? $" **Time-bounded:** also set `SponsorshipExemptionUntil` (`yyyy-MM`), no more than {months} month{(months == 1 ? "" : "s")} ahead of the build date."
+                    : "";
+                Line($"- `{exemption.Name.Trim()}` — {exemption.Message.Trim()}{bound}");
             }
 
             Line();
             Line(MsBuildXml.Fenced(ExemptionSnippet(model, id, version)));
             Line();
+            if (model.CompletedExemptions.Any(_ => _.ParsedMaxTermMonths is not null))
+            {
+                Line("A time-bounded exemption stops applying at the end of its `SponsorshipExemptionUntil` month and the build then fails, so the claim has to be reviewed and renewed rather than left in place indefinitely.");
+                Line();
+            }
         }
 
         // Option — opt out
@@ -372,14 +395,31 @@ public static class AuthorConfigGenerator
 
     static string ExemptionSnippet(AuthorModel model, string id, string version)
     {
-        var name = model.CompletedExemptions[0].Name.Trim();
+        var exemption = model.CompletedExemptions[0];
+        var name = exemption.Name.Trim();
+        // A capped exemption is only claimable with an end month, so the snippet has to show both —
+        // pasting the name alone would fail with SC038 on the consumer's next build.
+        var bounded = exemption.ParsedMaxTermMonths is not null;
         if (model.OwnerMode)
         {
             var property = OwnerPrefixed(model, "SponsorshipExemption");
-            return OwnerPropertyGroup($"<{property}>{MsBuildXml.Escape(name)}</{property}>");
+            var element = $"<{property}>{MsBuildXml.Escape(name)}</{property}>";
+            if (bounded)
+            {
+                var untilProperty = OwnerPrefixed(model, "SponsorshipExemptionUntil");
+                element = $"{element}\n  <{untilProperty}>yyyy-MM</{untilProperty}>";
+            }
+
+            return OwnerPropertyGroup(element);
         }
 
-        return PerPackagePair(id, version, $"SponsorshipExemption=\"{MsBuildXml.Escape(name)}\"");
+        var attribute = $"SponsorshipExemption=\"{MsBuildXml.Escape(name)}\"";
+        if (bounded)
+        {
+            attribute = $"{attribute} SponsorshipExemptionUntil=\"yyyy-MM\"";
+        }
+
+        return PerPackagePair(id, version, attribute);
     }
 
     static string IgnoreSnippet(AuthorModel model, string id, string version)
@@ -475,7 +515,7 @@ public static class AuthorConfigGenerator
         Line("- [ ] Add the release-notes markdown to the changelog / release description of the version that adds SponsorCheck.");
         if (model.HasExemptions)
         {
-            Line("- [ ] Exemption names and criteria are baked in at pack time — editing them requires a repack.");
+            Line("- [ ] Exemption names, criteria, and max terms are baked in at pack time — editing them requires a repack.");
         }
 
         Line($"- [ ] Full author documentation: {authorDocs}");
@@ -520,7 +560,10 @@ public static class AuthorConfigGenerator
         Line($"- Transitive checking: {(model.CheckTransitive ? "on" : "off")}");
         if (model.HasExemptions)
         {
-            Line($"- Exemptions: {string.Join(", ", model.CompletedExemptions.Select(_ => _.Name.Trim()))}");
+            var names = model.CompletedExemptions.Select(_ => _.ParsedMaxTermMonths is { } months
+                ? $"{_.Name.Trim()} (max {months}mo)"
+                : _.Name.Trim());
+            Line($"- Exemptions: {string.Join(", ", names)}");
         }
 
         Line();

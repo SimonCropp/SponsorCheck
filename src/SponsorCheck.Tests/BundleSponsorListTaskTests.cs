@@ -938,10 +938,15 @@ public class BundleSponsorListTaskTests
         await Assert.That(lines.Length).IsEqualTo(2); // dedup
     }
 
-    static ITaskItem MakeExemption(string name, string message)
+    static ITaskItem MakeExemption(string name, string message, string maxTermMonths = "")
     {
         var item = new Microsoft.Build.Utilities.TaskItem(name);
         item.SetMetadata("Message", message);
+        if (maxTermMonths.Length > 0)
+        {
+            item.SetMetadata("MaxTermMonths", maxTermMonths);
+        }
+
         return item;
     }
 
@@ -975,8 +980,8 @@ public class BundleSponsorListTaskTests
 
         await Assert.That(task.Execute()).IsTrue();
         var parsed = SponsorshipExemptionsFile.Read(task.OutputExemptionsPath);
-        await Assert.That(parsed["Consulting"]).Contains("consulting work");
-        await Assert.That(parsed["SmallRevenue"]).Contains("US$10,000");
+        await Assert.That(parsed["Consulting"].Message).Contains("consulting work");
+        await Assert.That(parsed["SmallRevenue"].Message).Contains("US$10,000");
     }
 
     [Test]
@@ -1101,5 +1106,75 @@ public class BundleSponsorListTaskTests
         await Assert.That(task.Execute()).IsFalse();
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC106");
         await Assert.That(engine.Errors[0].Message).Contains("duplicate definition");
+    }
+
+    [Test]
+    public async Task Exemptions_MaxTermMonths_WrittenToSidecar()
+    {
+        using var dir = new TempDirectory();
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = BuildTemplate(dir),
+            ThePackageId = "MyOssLib",
+            OverrideListPath = WriteOverride(dir, "[]"),
+            SponsorExemptions =
+            [
+                MakeExemption("Consulting", "Consulting carve-out.", "6"),
+                MakeExemption("SmallRevenue", "Consumers under US$10,000 annual gross revenue are exempt.")
+            ],
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var parsed = SponsorshipExemptionsFile.Read(task.OutputExemptionsPath);
+        await Assert.That(parsed["Consulting"].MaxTermMonths).IsEqualTo(6);
+        // Unset stays unset — the cap is opt-in per exemption, not per package.
+        await Assert.That(parsed["SmallRevenue"].MaxTermMonths).IsNull();
+    }
+
+    [Test]
+    [Arguments("0")]
+    [Arguments("-1")]
+    [Arguments("six")]
+    [Arguments("6.5")]
+    [Arguments("+6")]
+    [Arguments("1e2")]
+    public async Task Exemptions_InvalidMaxTermMonths_FailsWithSC106(string value)
+    {
+        // The cap is baked into every consumer build, so a typo has to fail the author's pack
+        // rather than silently degrade to an uncapped exemption.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = engine,
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = BuildTemplate(dir),
+            ThePackageId = "MyOssLib",
+            OverrideListPath = WriteOverride(dir, "[]"),
+            SponsorExemptions = [MakeExemption("Consulting", "Consulting carve-out.", value)],
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC106");
+        await Assert.That(engine.Errors[0].Message).Contains("Consulting");
+        await Assert.That(engine.Errors[0].Message).Contains("MaxTermMonths");
     }
 }

@@ -1,0 +1,18 @@
+﻿{
+  Errors: [
+    {
+      Code: SC043,
+      Message:
+Invalid exemption end date format. Package 'MyOssLib': acme_SponsorshipExemptionUntil='later' property is not in 'yyyy-MM' format.
+
+Fix the acme_SponsorshipExemptionUntil property in Directory.Build.props or the consuming project.
+
+Example format:
+
+  <acme_SponsorshipExemption>Consulting</acme_SponsorshipExemption>
+  <acme_SponsorshipExemptionUntil>yyyy-MM</acme_SponsorshipExemptionUntil>
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc043
+    }
+  ]
+}

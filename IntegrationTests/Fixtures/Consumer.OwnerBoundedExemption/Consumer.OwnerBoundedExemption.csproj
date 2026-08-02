@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Owner mode: both halves of the claim are owner-prefixed global properties.
+         Current month for the same reason as Consumer.BoundedExemption. -->
+    <acme_SponsorshipExemption>Evaluation</acme_SponsorshipExemption>
+    <acme_SponsorshipExemptionUntil>$([System.DateTime]::UtcNow.ToString('yyyy-MM'))</acme_SponsorshipExemptionUntil>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerModeWithExemptions" Version="1.0.0" />
+  </ItemGroup>
+</Project>

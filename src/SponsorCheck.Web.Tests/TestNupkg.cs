@@ -12,6 +12,7 @@ public static class TestNupkg
         string packDate = "2026-01-15",
         string landingUrl = "",
         IReadOnlyDictionary<string, string>? exemptions = null,
+        IReadOnlyDictionary<string, (string Message, int? MaxTermMonths)>? boundedExemptions = null,
         IReadOnlyDictionary<string, string>? accounts = null,
         IReadOnlyDictionary<string, string>? severities = null,
         int paddingBytes = 0)
@@ -40,8 +41,15 @@ public static class TestNupkg
                     string.Join('\n', enabledAccounts.Select(_ => $"{_.Key}={_.Value}")));
                 Write(folder + "SponsorCheck.SeverityOverrides.txt",
                     string.Join('\n', (severities ?? new Dictionary<string, string>()).Select(_ => $"{_.Key}={_.Value}")));
-                Write(folder + "SponsorCheck.Exemptions.json",
-                    "{" + string.Join(',', (exemptions ?? new Dictionary<string, string>()).Select(_ => $"\"{_.Key}\": \"{_.Value}\"")) + "}");
+                // `exemptions` writes the bare-string shape packages published before MaxTermMonths
+                // carry; `boundedExemptions` writes the object shape the current bundler emits.
+                // Both are live on nuget.org, so both need coverage in the parser.
+                var exemptionEntries = boundedExemptions != null
+                    ? boundedExemptions.Select(_ => _.Value.MaxTermMonths is { } months
+                        ? $"\"{_.Key}\": {{ \"message\": \"{_.Value.Message}\", \"maxTermMonths\": {months} }}"
+                        : $"\"{_.Key}\": {{ \"message\": \"{_.Value.Message}\" }}")
+                    : (exemptions ?? new Dictionary<string, string>()).Select(_ => $"\"{_.Key}\": \"{_.Value}\"");
+                Write(folder + "SponsorCheck.Exemptions.json", "{" + string.Join(',', exemptionEntries) + "}");
 
                 var ownerProperty = ownerId == null
                     ? ""
