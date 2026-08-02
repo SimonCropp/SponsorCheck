@@ -74,7 +74,7 @@ public class ConsumerPageTests : WebTestContext
 
         await Assert.That(cut.FindAll("#cpm-yes").Count).IsEqualTo(1);
 
-        await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#style-owner"), true);
+        await cut.Find("#style-owner").ChangeAsync(true);
 
         await Assert.That(cut.FindAll("#cpm-yes").Count).IsEqualTo(0);
         await Assert.That(cut.FindAll("#ownerId").Count).IsEqualTo(1);
@@ -87,14 +87,14 @@ public class ConsumerPageTests : WebTestContext
         EnterPackage(cut);
 
         // situation -> license mode
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
 
         // sponsor
-        await EventHandlerDispatchExtensions.ClickAsync(cut.FindAll("button.mode-card")[0]);
-        await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#sponsor-GitHub"), true);
+        await cut.FindAll("button.mode-card")[0].ClickAsync();
+        await cut.Find("#sponsor-GitHub").ChangeAsync(true);
         await cut.Find("#sponsor-account-GitHub").InputAsync("alice");
         // license mode -> output
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
 
         await Assert.That(cut.Markup).Contains("PackageReference (consuming .csproj)");
         await Assert.That(cut.Markup).Contains("GitHubSponsorAccount");
@@ -107,16 +107,16 @@ public class ConsumerPageTests : WebTestContext
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
         EnterPackage(cut);
 
-        await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#style-owner"), true);
+        await cut.Find("#style-owner").ChangeAsync(true);
         await cut.Find("#ownerId").InputAsync("acme");
         // situation -> license mode
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
 
         // private license
-        await EventHandlerDispatchExtensions.ClickAsync(cut.FindAll("button.mode-card")[1]);
+        await cut.FindAll("button.mode-card")[1].ClickAsync();
         await cut.Find("#licensedUntil").InputAsync("2027-06");
         // license mode -> output
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
 
         await Assert.That(cut.Markup).Contains("acme_SponsorshipLicensedUntil");
     }
@@ -128,16 +128,16 @@ public class ConsumerPageTests : WebTestContext
         EnterPackage(cut);
 
         // situation -> license mode
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
 
         await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsTrue();
 
         // sponsor
-        await EventHandlerDispatchExtensions.ClickAsync(cut.FindAll("button.mode-card")[0]);
+        await cut.FindAll("button.mode-card")[0].ClickAsync();
 
         await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsTrue();
 
-        await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#sponsor-GitHub"), true);
+        await cut.Find("#sponsor-GitHub").ChangeAsync(true);
         await cut.Find("#sponsor-account-GitHub").InputAsync("alice");
 
         await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsFalse();
@@ -151,7 +151,7 @@ public class ConsumerPageTests : WebTestContext
 
         await Assert.That(cut.FindAll(".stepper .step-link").Count).IsEqualTo(1);
 
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find(".stepper .step-link"));
+        await cut.Find(".stepper .step-link").ClickAsync();
 
         await Assert.That(cut.FindAll("#packageId").Count).IsEqualTo(1);
         await Assert.That(cut.FindAll(".stepper .step-link").Count).IsEqualTo(0);
@@ -168,22 +168,22 @@ public class ConsumerPageTests : WebTestContext
 
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
         await cut.Find("#packageId").InputAsync("ThePackage");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.lookup"));
+        await cut.Find("button.lookup").ClickAsync();
         await cut.WaitForStateAsync(() => cut.Markup.Contains("Read from ThePackage 1.2.3"));
 
         await Assert.That(cut.Markup).Contains("Owner mode — configured once via 'acme_…' properties");
         await Assert.That(cut.Markup).Contains("Publisher-defined exemptions: Consulting");
 
         // package -> situation
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
 
         await Assert.That(cut.Markup).Contains("owner id 'acme'");
         await Assert.That(cut.FindAll("#style-owner").Count).IsEqualTo(0);
 
         // situation -> license mode
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
         // exemption
-        await EventHandlerDispatchExtensions.ClickAsync(cut.FindAll("button.mode-card")[2]);
+        await cut.FindAll("button.mode-card")[2].ClickAsync();
 
         var options = cut.FindAll("#exemptionName option");
         await Assert.That(options.Count).IsEqualTo(2);
@@ -198,7 +198,7 @@ public class ConsumerPageTests : WebTestContext
 
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
         await cut.Find("#packageId").InputAsync("ThePackage");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.lookup"));
+        await cut.Find("button.lookup").ClickAsync();
         await cut.WaitForStateAsync(() => cut.Markup.Contains("Read from ThePackage 1.2.3"));
 
         await cut.Find("#packageId").InputAsync("OtherPackage");
@@ -206,7 +206,7 @@ public class ConsumerPageTests : WebTestContext
         await Assert.That(cut.Markup).DoesNotContain("Read from ThePackage");
 
         // package -> situation, manual questions again
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
 
         await Assert.That(cut.FindAll("#style-owner").Count).IsEqualTo(1);
     }
@@ -217,13 +217,13 @@ public class ConsumerPageTests : WebTestContext
         // WebTestContext's default HttpClient throws on any request (no network).
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
         await cut.Find("#packageId").InputAsync("ThePackage");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.lookup"));
+        await cut.Find("button.lookup").ClickAsync();
         await cut.WaitForStateAsync(() => cut.Markup.Contains("Lookup failed"));
 
         await Assert.That(cut.Find("button.lookup").HasAttribute("disabled")).IsFalse();
 
         // package -> situation
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
 
         await Assert.That(cut.FindAll("#scCode").Count).IsEqualTo(1);
     }
@@ -236,11 +236,11 @@ public class ConsumerPageTests : WebTestContext
 
         var cut = Render<SponsorCheck.Web.Pages.Consumer>();
         await cut.Find("#packageId").InputAsync("ThePackage");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.lookup"));
+        await cut.Find("button.lookup").ClickAsync();
         await cut.WaitForStateAsync(() => cut.Markup.Contains("No SponsorCheck files found"));
 
         // package -> situation
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        await cut.Find("button.primary").ClickAsync();
 
         await Assert.That(cut.FindAll("#scCode").Count).IsEqualTo(1);
         await Assert.That(cut.FindAll("#style-owner").Count).IsEqualTo(1);

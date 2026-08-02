@@ -31,7 +31,7 @@ public class ConsumerOutputPanelTests : WebTestContext
     {
         var cut = Render<ConsumerOutputPanel>(_ => _.Add(_ => _.Model, SponsorModel()));
 
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.copy-markdown"));
+        await cut.Find("button.copy-markdown").ClickAsync();
 
         var invocation = JSInterop.Invocations.Single(_ => _.Identifier == "sponsorCheck.copyToClipboard");
         var copied = (string) invocation.Arguments[0]!;
