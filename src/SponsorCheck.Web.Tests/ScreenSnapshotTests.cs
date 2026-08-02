@@ -73,7 +73,8 @@ public class ScreenSnapshotTests
         var page = await ConsumerSituationScreen();
         await page.ClickAsync("button.primary");
         await page.WaitForSelectorAsync(".mode-cards");
-        await page.ClickAsync("button.mode-card >> nth=0");   // sponsor
+        // sponsor
+        await page.ClickAsync("button.mode-card >> nth=0");
         await page.CheckAsync("#sponsor-GitHub");
         await page.FillAsync("#sponsor-account-GitHub", "alice");
         await page.WaitForSelectorAsync("#startedAfter");

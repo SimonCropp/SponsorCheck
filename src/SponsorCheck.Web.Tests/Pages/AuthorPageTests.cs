@@ -20,13 +20,17 @@ public class AuthorPageTests : WebTestContext
         var cut = Render<SponsorCheck.Web.Pages.Author>();
 
         await cut.Find("#packageId").InputAsync("MyOssLib");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // package -> platforms
+        // package -> platforms
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
 
         await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#enable-GitHub"), true);
         await cut.Find("#account-GitHub").InputAsync("acmecorp");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // platforms -> mode
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // mode -> options
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // options -> output
+        // platforms -> mode
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        // mode -> options
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        // options -> output
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
 
         await Assert.That(cut.Markup).Contains("Tell your consumers");
         await Assert.That(cut.FindAll(".code-box").Count).IsEqualTo(4);
@@ -41,10 +45,12 @@ public class AuthorPageTests : WebTestContext
         await Assert.That(cut.FindAll(".stepper .step-link").Count).IsEqualTo(0);
 
         await cut.Find("#packageId").InputAsync("MyOssLib");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // package -> platforms
+        // package -> platforms
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
         await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#enable-GitHub"), true);
         await cut.Find("#account-GitHub").InputAsync("acmecorp");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // platforms -> mode
+        // platforms -> mode
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
 
         await Assert.That(cut.FindAll(".stepper .step-link").Count).IsEqualTo(2);
 
@@ -61,11 +67,13 @@ public class AuthorPageTests : WebTestContext
 
         await cut.Find("#packageId").InputAsync("MyOssLib");
         await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#shape-monorepo"), true);
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // package -> platforms
+        // package -> platforms
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
 
         await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#enable-GitHub"), true);
         await cut.Find("#account-GitHub").InputAsync("acmecorp");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // platforms -> mode
+        // platforms -> mode
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
 
         await Assert.That(cut.Find("#ownerMode").HasAttribute("checked")).IsTrue();
     }
@@ -76,10 +84,12 @@ public class AuthorPageTests : WebTestContext
         var cut = Render<SponsorCheck.Web.Pages.Author>();
 
         await cut.Find("#packageId").InputAsync("MyOssLib");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // package -> platforms
+        // package -> platforms
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
         await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#enable-GitHub"), true);
         await cut.Find("#account-GitHub").InputAsync("acmecorp");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // platforms -> mode
+        // platforms -> mode
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
 
         await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#ownerMode"), true);
         await cut.Find("#ownerId").InputAsync("acme-corp");
@@ -99,11 +109,14 @@ public class AuthorPageTests : WebTestContext
         var cut = Render<SponsorCheck.Web.Pages.Author>();
 
         await cut.Find("#packageId").InputAsync("MyOssLib");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // package -> platforms
+        // package -> platforms
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
         await EventHandlerDispatchExtensions.ChangeAsync(cut.Find("#enable-GitHub"), true);
         await cut.Find("#account-GitHub").InputAsync("acmecorp");
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // platforms -> mode
-        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));           // mode -> options
+        // platforms -> mode
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
+        // mode -> options
+        await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.primary"));
 
         await EventHandlerDispatchExtensions.ClickAsync(cut.Find("button.add-exemption"));
         await cut.Find("input.exemption-name").InputAsync("Consulting");

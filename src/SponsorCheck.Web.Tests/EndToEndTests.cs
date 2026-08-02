@@ -40,12 +40,16 @@ public class EndToEndTests
         await page.WaitForSelectorAsync("#packageId");
 
         await page.FillAsync("#packageId", "MyOssLib");
-        await page.ClickAsync("button.primary");          // package -> platforms
+        // package -> platforms
+        await page.ClickAsync("button.primary");
         await page.CheckAsync("#enable-GitHub");
         await page.FillAsync("#account-GitHub", "acmecorp");
-        await page.ClickAsync("button.primary");          // platforms -> mode
-        await page.ClickAsync("button.primary");          // mode -> options
-        await page.ClickAsync("button.primary");          // options -> output
+        // platforms -> mode
+        await page.ClickAsync("button.primary");
+        // mode -> options
+        await page.ClickAsync("button.primary");
+        // options -> output
+        await page.ClickAsync("button.primary");
 
         await page.WaitForSelectorAsync(".code-box");
         var body = await page.TextContentAsync("body");
@@ -64,17 +68,21 @@ public class EndToEndTests
         await page.WaitForSelectorAsync("#packageId");
 
         await page.FillAsync("#packageId", "ThePackage");
-        await page.ClickAsync("button.primary");          // package -> situation (no lookup: offline path)
+        // package -> situation (no lookup: offline path)
+        await page.ClickAsync("button.primary");
         await page.WaitForSelectorAsync("#scCode");
         await page.FillAsync("#scCode", "SC021");
         await page.WaitForSelectorAsync("#ownerId");
         await page.FillAsync("#ownerId", "acme");
-        await page.ClickAsync("button.primary");          // situation -> license mode
+        // situation -> license mode
+        await page.ClickAsync("button.primary");
 
-        await page.ClickAsync("button.mode-card >> nth=0");   // sponsor
+        // sponsor
+        await page.ClickAsync("button.mode-card >> nth=0");
         await page.CheckAsync("#sponsor-GitHub");
         await page.FillAsync("#sponsor-account-GitHub", "alice");
-        await page.ClickAsync("button.primary");          // license mode -> output
+        // license mode -> output
+        await page.ClickAsync("button.primary");
 
         await page.WaitForSelectorAsync(".code-box");
         var body = await page.TextContentAsync("body");
