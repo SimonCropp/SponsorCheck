@@ -34,7 +34,7 @@ static class ModuleInitializer
 
         // The author flow surfaces the current SponsorCheck version (generated from $(Version)) in
         // placeholders; scrub it so html screen snapshots survive version bumps.
-        VerifierSettings.AddScrubber("html", _ => _.Replace(WizardDefaults.SponsorCheckVersion, "{SponsorCheckVersion}"));
+        VerifierSettings.ScrubReplace("html", WizardDefaults.SponsorCheckVersion, "{SponsorCheckVersion}");
     }
 
     const string marker = "<!--!-->";
