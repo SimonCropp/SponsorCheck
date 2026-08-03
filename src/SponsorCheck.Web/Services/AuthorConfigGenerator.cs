@@ -17,10 +17,10 @@ public sealed record AuthorOutput(
 /// </summary>
 public static class AuthorConfigGenerator
 {
-    const string docsBase = "https://github.com/SimonCropp/SponsorCheck";
-    const string authorDocs = docsBase + "/blob/main/docs/AuthorSetup.md";
-    const string bundlerDocs = docsBase + "/blob/main/docs/BundlerDiagnosticCodes.md";
-    const string verifierDocs = docsBase + "/blob/main/docs/VerifierDiagnosticCodes.md";
+    const string docsBase = DocLinks.Base;
+    const string authorDocs = DocLinks.AuthorSetup;
+    const string bundlerDocs = DocLinks.BundlerCodes;
+    const string verifierDocs = DocLinks.VerifierCodes;
     const string wizardUrl = "https://simoncropp.github.io/SponsorCheck/author";
 
     public static AuthorOutput Generate(AuthorModel model)

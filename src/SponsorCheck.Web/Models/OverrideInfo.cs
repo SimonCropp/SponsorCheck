@@ -16,6 +16,9 @@ public sealed record OverrideInfo(
     public string SeverityMetadata => $"{Stem}SeverityOverride";
     public string MessageMetadata => $"{Stem}MessageOverride";
 
+    /// <summary>The sibling codes, split out so the ui can link each to its docs section.</summary>
+    public IReadOnlyList<string> CodeList => Codes.Split('/');
+
     public static readonly OverrideInfo NoLicenseSpecified = new(
         OverrideKind.NoLicenseSpecified, "No license specified", "NoLicenseSpecified", "error", "SC001/SC002/SC021");
 

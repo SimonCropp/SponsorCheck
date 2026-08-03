@@ -8,9 +8,9 @@ namespace SponsorCheck.Web.Services;
 /// </summary>
 public static class ConsumerConfigGenerator
 {
-    const string docsBase = "https://github.com/SimonCropp/SponsorCheck";
-    const string consumerDocs = docsBase + "/blob/main/docs/ConsumerUsage.md";
-    const string verifierDocs = docsBase + "/blob/main/docs/VerifierDiagnosticCodes.md";
+    const string docsBase = DocLinks.Base;
+    const string consumerDocs = DocLinks.ConsumerUsage;
+    const string verifierDocs = DocLinks.VerifierCodes;
     const string wizardUrl = "https://simoncropp.github.io/SponsorCheck/consumer";
 
     public static ConsumerOutput Generate(ConsumerModel model)

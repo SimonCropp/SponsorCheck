@@ -241,4 +241,37 @@ public class RepoContractTests
             await Assert.That(docs).Contains($"### {code}").Because($"the wizard mentions {code}, so the docs must define it");
         }
     }
+
+    [Test]
+    public async Task DocLinkAnchorsResolveToHeadings()
+    {
+        var links = typeof(DocLinks)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Select(_ => (string) _.GetRawConstantValue()!)
+            .Concat(OverrideInfo.All.SelectMany(_ => _.CodeList).Select(DocLinks.VerifierCode))
+            .Where(_ => _.Contains('#'))
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(_ => _, StringComparer.Ordinal);
+
+        foreach (var link in links)
+        {
+            var split = link.Split('#');
+            var file = Path.GetFileName(split[0]);
+            var markdown = await File.ReadAllTextAsync(RepoPaths.RepoFile("docs", file));
+            var anchors = Regex.Matches(markdown, "^#+ (.+)$", RegexOptions.Multiline)
+                .Select(_ => GitHubAnchor(_.Groups[1].Value));
+            await Assert.That(anchors).Contains(split[1]).Because($"{link} must point at a real heading");
+        }
+    }
+
+    /// <summary>
+    /// GitHub's heading slug: lowercase, markdown links flattened to their text, punctuation dropped,
+    /// spaces to dashes.
+    /// </summary>
+    static string GitHubAnchor(string heading)
+    {
+        var text = Regex.Replace(heading.Trim(), @"\[([^\]]*)\]\([^)]*\)", "$1").ToLowerInvariant();
+        text = Regex.Replace(text, @"[^\w\- ]", "");
+        return text.Replace(' ', '-');
+    }
 }

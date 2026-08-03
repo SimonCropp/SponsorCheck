@@ -134,12 +134,22 @@
 
             case 3:
                 <h2>Options <span class="optional-tag">all optional</span></h2>
-                <p class="hint">Tune the severity and message of the verifier diagnostics consumers see, define exemptions, or point all sponsor links at one custom page. Leave as-is to use the defaults.</p>
+                <p class="hint">Tune the <a href="@DocLinks.SeverityOverrides" target="_blank">severity and message</a> of the verifier diagnostics consumers see, define <a href="@DocLinks.Exemptions" target="_blank">exemptions</a>, or point all sponsor links at one <a href="@DocLinks.LandingUrl" target="_blank">custom page</a>. Leave as-is to use the defaults.</p>
                 @foreach (var info in OverrideInfo.All)
                 {
                     var selection = model.Selection(info.Kind);
                     <div class="override-row">
-                        <label>@info.DisplayName <span class="optional-tag">@info.Codes · default @info.DefaultSeverity</span></label>
+                        <label>
+                            @info.DisplayName
+                            <span class="optional-tag">
+                                @for (var i = 0; i < info.CodeList.Count; i++)
+                                {
+                                    var scCode = info.CodeList[i];
+                                    @(i == 0 ? "" : "/")<a href="@DocLinks.VerifierCode(scCode)" target="_blank">@scCode</a>
+                                }
+                                · default @info.DefaultSeverity
+                            </span>
+                        </label>
                         <div class="controls">
                             <select @bind="selection.Severity">
                                 <option value="@SeverityOverride.Default">Default (@info.DefaultSeverity)</option>
@@ -153,12 +163,12 @@
                     </div>
                 }
                 <div class="field" style="margin-top:1.25rem">
-                    <label>Exemptions</label>
+                    <label>Exemptions <a class="docs-link" href="@DocLinks.Exemptions" target="_blank">docs</a></label>
                     <p class="hint">Named carve-outs for consumers who legitimately don't need to sponsor (consulting clients, small businesses, …). Consumers claim one by name; the build warning quotes the criteria text verbatim.</p>
                     <ExemptionsEditor Model="model" Changed="StateHasChanged" />
                 </div>
                 <div class="field" style="margin-top:1rem">
-                    <label for="landingUrl">Custom sponsor landing URL</label>
+                    <label for="landingUrl">Custom sponsor landing URL <a class="docs-link" href="@DocLinks.LandingUrl" target="_blank">docs</a></label>
                     <p class="hint">When set, every sponsor link in the verifier messages points here instead of the platform pages.</p>
                     <input id="landingUrl" type="url" placeholder="https://example.com/sponsor"
                            @bind="model.LandingUrl" @bind:event="oninput" />

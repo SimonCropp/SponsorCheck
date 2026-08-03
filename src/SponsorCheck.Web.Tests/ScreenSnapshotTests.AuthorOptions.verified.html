@@ -54,10 +54,16 @@
             <h2>Options
               <span class="optional-tag">all optional</span>
             </h2>
-            <p class="hint">Tune the severity and message of the verifier diagnostics consumers see, define exemptions, or point all sponsor links at one custom page. Leave as-is to use the defaults.</p>
+            <p class="hint">Tune the
+              <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md#tuning-verifier-severity-and-message-text" target="_blank">severity and message</a>
+              of the verifier diagnostics consumers see, define
+              <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md#defining-exemptions" target="_blank">exemptions</a>, or point all sponsor links at one
+              <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md#custom-sponsor-landing-url" target="_blank">custom page</a>. Leave as-is to use the defaults.</p>
             <div class="override-row">
               <label>No license specified
-                <span class="optional-tag">SC001/SC002/SC021 · default error</span>
+                <span class="optional-tag">
+                  <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc001" target="_blank">SC001</a>/<a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc002" target="_blank">SC002</a>/<a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021" target="_blank">SC021</a>
+                  · default error</span>
               </label>
               <div class="controls">
                 <select>
@@ -71,7 +77,9 @@
             </div>
             <div class="override-row">
               <label>License ignored
-                <span class="optional-tag">SC005/SC006/SC023 · default warning</span>
+                <span class="optional-tag">
+                  <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005" target="_blank">SC005</a>/<a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006" target="_blank">SC006</a>/<a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023" target="_blank">SC023</a>
+                  · default warning</span>
               </label>
               <div class="controls">
                 <select>
@@ -85,7 +93,9 @@
             </div>
             <div class="override-row">
               <label>Sponsor account not in list
-                <span class="optional-tag">SC007/SC008/SC024 · default error</span>
+                <span class="optional-tag">
+                  <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007" target="_blank">SC007</a>/<a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008" target="_blank">SC008</a>/<a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024" target="_blank">SC024</a>
+                  · default error</span>
               </label>
               <div class="controls">
                 <select>
@@ -99,7 +109,9 @@
             </div>
             <div class="override-row">
               <label>License expired
-                <span class="optional-tag">SC009/SC010/SC025 · default error</span>
+                <span class="optional-tag">
+                  <a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009" target="_blank">SC009</a>/<a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc010" target="_blank">SC010</a>/<a href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025" target="_blank">SC025</a>
+                  · default error</span>
               </label>
               <div class="controls">
                 <select>
@@ -112,7 +124,9 @@
               </div>
             </div>
             <div class="field" style="margin-top:1.25rem">
-              <label>Exemptions</label>
+              <label>Exemptions
+                <a class="docs-link" href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md#defining-exemptions" target="_blank">docs</a>
+              </label>
               <p class="hint">Named carve-outs for consumers who legitimately don't need to sponsor (consulting clients, small businesses, …). Consumers claim one by name; the build warning quotes the criteria text verbatim.</p>
               <div class="exemptions-editor">
                 <div class="exemption-row">
@@ -129,7 +143,9 @@
               </div>
             </div>
             <div class="field" style="margin-top:1rem">
-              <label for="landingUrl">Custom sponsor landing URL</label>
+              <label for="landingUrl">Custom sponsor landing URL
+                <a class="docs-link" href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md#custom-sponsor-landing-url" target="_blank">docs</a>
+              </label>
               <p class="hint">When set, every sponsor link in the verifier messages points here instead of the platform pages.</p>
               <input id="landingUrl" type="url" placeholder="https://example.com/sponsor">
             </div>
