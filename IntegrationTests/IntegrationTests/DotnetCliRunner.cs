@@ -52,4 +52,35 @@ public static class DotnetCliRunner
         await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
         return new CliResult(process.ExitCode, await stdoutTask.ConfigureAwait(false), await stderrTask.ConfigureAwait(false));
     }
+
+    /// Runs a single target via `dotnet msbuild` — no restore, no build, no configuration.
+    /// For evaluation-only checks against a hand-written project, where the pack/build switches
+    /// <see cref="Run"/> always passes (--configuration, --verbosity minimal) aren't valid.
+    public static async Task<CliResult> RunMsBuild(
+        string projectPath,
+        string target,
+        CancellationToken cancellation = default)
+    {
+        var psi = new ProcessStartInfo("dotnet")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = Path.GetDirectoryName(Path.GetFullPath(projectPath))!
+        };
+        psi.Environment["DOTNET_NOLOGO"] = "true";
+        psi.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "true";
+        psi.ArgumentList.Add("msbuild");
+        psi.ArgumentList.Add(projectPath);
+        psi.ArgumentList.Add($"-target:{target}");
+        psi.ArgumentList.Add("-nologo");
+        psi.ArgumentList.Add("-verbosity:minimal");
+
+        using var process = Process.Start(psi)!;
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
+        return new CliResult(process.ExitCode, await stdoutTask.ConfigureAwait(false), await stderrTask.ConfigureAwait(false));
+    }
 }

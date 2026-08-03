@@ -432,6 +432,40 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task Exemptions_HiddenFromSolutionExplorer()
+    {
+        // <SponsorExemption Include="SmallRevenue" ... /> names an exemption — the Include is not a
+        // file path. Solution Explorer renders every project item as a file node, so without a
+        // Visible=false default the exemption names show up in the tree as missing files. The
+        // default is an ItemDefinitionGroup in build/SponsorCheck.targets, which NuGet imports at
+        // the *bottom* of the project; item definitions are evaluated in an earlier pass than
+        // items, so it still reaches exemptions declared in the csproj body above the import.
+        // An author who sets Visible explicitly keeps their value.
+        var workDir = TestEnvironment.MakeWorkDir();
+        var targets = Path.Combine(TestEnvironment.RepoRoot, "src", "SponsorCheck", "build", "SponsorCheck.targets");
+        var project = Path.Combine(workDir, "exemptions.proj");
+        await File.WriteAllTextAsync(
+            project,
+            $"""
+             <Project>
+               <ItemGroup>
+                 <SponsorExemption Include="SmallRevenue" Message="Consumers under US$10,000 annual gross revenue are exempt." />
+                 <SponsorExemption Include="Explicit" Message="Author opted this one back into the tree." Visible="true" />
+               </ItemGroup>
+               <Import Project="{targets}" />
+               <Target Name="Show">
+                 <Message Importance="high" Text="@(SponsorExemption->'%(Identity)=%(Visible)')" />
+               </Target>
+             </Project>
+             """);
+
+        var result = await DotnetCliRunner.RunMsBuild(project, "Show");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SmallRevenue=false");
+        await Assert.That(result.Combined).Contains("Explicit=true");
+    }
+
+    [Test]
     public async Task Exemptions_InvalidDefinition_FailsPackWithSC106()
     {
         // ThePackageBadExemption declares <SponsorExemption Include="Consulting" Message="" />

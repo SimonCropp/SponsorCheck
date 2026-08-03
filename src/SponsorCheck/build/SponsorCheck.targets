@@ -11,6 +11,22 @@
   <UsingTask TaskName="BundleSponsorListTask"
              AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
 
+  <!-- <SponsorExemption Include="SmallRevenue" ... /> puts a *name* in Include, not a file path.
+       Solution Explorer treats every project item as a file, so without this the exemption names
+       show up in the tree as missing files (yellow-warning nodes). Visible="false" is the item-type
+       agnostic opt-out both project systems honour; declaring it as a default here means authors
+       don't have to repeat it on every exemption.
+
+       Item definitions are evaluated in an earlier pass than items, so this applies to exemptions
+       declared in the author's csproj body even though NuGet imports this file at the *bottom* of
+       the project. An author who sets Visible explicitly still wins — item definitions are defaults.
+       Regression coverage: AuthorPackTests.Exemptions_HiddenFromSolutionExplorer. -->
+  <ItemDefinitionGroup>
+    <SponsorExemption>
+      <Visible>false</Visible>
+    </SponsorExemption>
+  </ItemDefinitionGroup>
+
   <!-- Pull-request detection. On PR CI the platform credential (e.g. GitHubToken) is normally not
        exposed to the build, so bundling the sponsor list would fail with SC102 — and a PR build
        never publishes the package it produces, so the verifier it would carry is throwaway anyway.
