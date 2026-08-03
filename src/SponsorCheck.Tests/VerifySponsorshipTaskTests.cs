@@ -18,10 +18,16 @@ public class VerifySponsorshipTaskTests
         return path;
     }
 
-    static string WriteExemptions(TempDirectory dir, params (string name, string message)[] entries)
+    static string WriteExemptions(TempDirectory dir, params (string name, string message)[] entries) =>
+        WriteBoundedExemptions(dir, [.. entries.Select(_ => (_.name, _.message, (int?) null))]);
+
+    static string WriteBoundedExemptions(TempDirectory dir, params (string name, string message, int? maxTermMonths)[] entries)
     {
         var path = Path.Combine(dir, "Exemptions.json");
-        var dict = entries.ToDictionary(_ => _.name, _ => _.message, StringComparer.OrdinalIgnoreCase);
+        var dict = entries.ToDictionary(
+            _ => _.name,
+            _ => new ExemptionDefinition(_.message, _.maxTermMonths),
+            StringComparer.OrdinalIgnoreCase);
         SponsorshipExemptionsFile.Write(path, dict);
         return path;
     }
@@ -40,6 +46,7 @@ public class VerifySponsorshipTaskTests
             null,
             licensedUntil,
             null,
+            null,
             new Dictionary<string, string?>
             {
                 ["GitHubSponsors"] = null,
@@ -52,7 +59,7 @@ public class VerifySponsorshipTaskTests
     // Empty lazy sidecars for direct DecisionApplier.Apply calls. They mirror the Lazy wrapping
     // VerifySponsorshipTask does; forcing .Value just yields an empty collection (no file read).
     static readonly Lazy<IReadOnlyList<AuthorAccount>> noAuthorAccounts = new(() => []);
-    static readonly Lazy<IReadOnlyDictionary<string, string>> noExemptions = new(() => new Dictionary<string, string>());
+    static readonly Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> noExemptions = new(() => new Dictionary<string, ExemptionDefinition>());
     static readonly Lazy<IReadOnlyDictionary<string, Severity>> noSeverityOverrides = new(() => new Dictionary<string, Severity>());
     static readonly Lazy<IReadOnlyDictionary<string, string>> noMessageOverrides = new(() => new Dictionary<string, string>());
 
@@ -1066,6 +1073,7 @@ public class VerifySponsorshipTaskTests
             null,
             "2026-05",
             null,
+            null,
             new Dictionary<string, string?>
             {
                 ["GitHubSponsors"] = null,
@@ -1090,6 +1098,7 @@ public class VerifySponsorshipTaskTests
         var decision = LicenseModeResolver.Resolve(
             null,
             "2026-05",
+            null,
             null,
             new Dictionary<string, string?>
             {
@@ -1116,6 +1125,7 @@ public class VerifySponsorshipTaskTests
         var decision = LicenseModeResolver.Resolve(
             null,
             "2026-05",
+            null,
             null,
             new Dictionary<string, string?>
             {
@@ -1254,6 +1264,7 @@ public class VerifySponsorshipTaskTests
             null,
             "9999-11",
             null,
+            null,
             new Dictionary<string, string?>
             {
                 ["GitHubSponsors"] = null,
@@ -1284,6 +1295,7 @@ public class VerifySponsorshipTaskTests
             null,
             null,
             null,
+            null,
             new Dictionary<string, string?>
             {
                 ["GitHubSponsors"] = "alice",
@@ -1293,7 +1305,7 @@ public class VerifySponsorshipTaskTests
             null,
             "MyOssLib");
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), Poison<IReadOnlyList<AuthorAccount>>(), Poison<IReadOnlyDictionary<string, string>>(), Poison<IReadOnlyDictionary<string, Severity>>(), Poison<IReadOnlyDictionary<string, string>>(), new TaskLoggingHelperFor(engine), DateTime.UtcNow);
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), Poison<IReadOnlyList<AuthorAccount>>(), Poison<IReadOnlyDictionary<string, ExemptionDefinition>>(), Poison<IReadOnlyDictionary<string, Severity>>(), Poison<IReadOnlyDictionary<string, string>>(), new TaskLoggingHelperFor(engine), DateTime.UtcNow);
         await Assert.That(ok).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
     }
@@ -1308,7 +1320,7 @@ public class VerifySponsorshipTaskTests
         var path = WriteHashes(dir, ("GitHubSponsors", "alice"));
         var decision = LicensedDecision("2026-12");
         var engine = new StubBuildEngine();
-        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), Poison<IReadOnlyList<AuthorAccount>>(), Poison<IReadOnlyDictionary<string, string>>(), Poison<IReadOnlyDictionary<string, Severity>>(), Poison<IReadOnlyDictionary<string, string>>(), new TaskLoggingHelperFor(engine), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        var ok = DecisionApplier.Apply(decision, path, "", NonCpmContext(), Poison<IReadOnlyList<AuthorAccount>>(), Poison<IReadOnlyDictionary<string, ExemptionDefinition>>(), Poison<IReadOnlyDictionary<string, Severity>>(), Poison<IReadOnlyDictionary<string, string>>(), new TaskLoggingHelperFor(engine), new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
         await Assert.That(ok).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
     }
@@ -2315,6 +2327,327 @@ public class VerifySponsorshipTaskTests
         await Assert.That(message).Contains("\"consulting\"");
         await Assert.That(message).Contains("Consulting carve-out.");
         await Verify(engine);
+    }
+
+    // --- Time-bounded exemptions (MaxTermMonths / SponsorshipExemptionUntil) ---
+    //
+    // These run through DecisionApplier rather than the task so the build clock is fixed: every
+    // code below is decided against utcNow, and a rendered ceiling month baked into a snapshot
+    // would otherwise change every month. May 2026 + a 6 month cap puts the ceiling at 2026-11.
+
+    static readonly DateTime clock = new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc);
+
+    static Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> Exemptions(params (string name, string message, int? maxTermMonths)[] entries) =>
+        new(() => (IReadOnlyDictionary<string, ExemptionDefinition>) entries.ToDictionary(
+            _ => _.name,
+            _ => new ExemptionDefinition(_.message, _.maxTermMonths),
+            StringComparer.OrdinalIgnoreCase));
+
+    static LicenseDecision ExemptDecision(string name, string? until = null) =>
+        LicenseModeResolver.Resolve(
+            null,
+            null,
+            name,
+            until,
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = null,
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            null,
+            "MyOssLib");
+
+    static bool ApplyExemption(
+        StubBuildEngine engine,
+        LicenseDecision decision,
+        Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> exemptions,
+        ConsumerContext? context = null,
+        DateTime? utcNow = null) =>
+        DecisionApplier.Apply(
+            decision,
+            "",
+            "",
+            context ?? NonCpmContext(),
+            noAuthorAccounts,
+            exemptions,
+            noSeverityOverrides,
+            noMessageOverrides,
+            new TaskLoggingHelperFor(engine),
+            utcNow ?? clock);
+
+    [Test]
+    public async Task BoundedExemption_WithinCap_PassesAndSC029NamesTheEndMonth()
+    {
+        // The end month rides along in the warning: the CI audit trail should record not just
+        // which carve-out was claimed but how long it was claimed for.
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(
+            engine,
+            ExemptDecision("Consulting", "2026-11"),
+            Exemptions(("Consulting", "Consulting carve-out.", 6)));
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC029");
+        await Assert.That(engine.Warnings[0].Message!).Contains("until 2026-11");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_ExactlyAtCap_Passes()
+    {
+        // The ceiling is inclusive — 6 months from May 2026 is November 2026, and that value stands.
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-11"), Exemptions(("Consulting", "text", 6)));
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task BoundedExemption_OneMonthPastCap_FailsWithSC044()
+    {
+        // Mirror of the boundary above: the next month over is the first rejected value.
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-12"), Exemptions(("Consulting", "Consulting carve-out.", 6)));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC044");
+        await Assert.That(engine.Errors[0].Message!).Contains("maximum 2026-11");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_CapCrossesYearBoundary()
+    {
+        // The ceiling is month arithmetic, not "same month next year" — November 2026 + 6 lands in
+        // May 2027, so a value inside that window has to pass and the one past it has to fail.
+        var november = new DateTime(2026, 11, 15, 0, 0, 0, DateTimeKind.Utc);
+        var definition = Exemptions(("Consulting", "text", 6));
+        var inside = new StubBuildEngine();
+        await Assert.That(ApplyExemption(inside, ExemptDecision("Consulting", "2027-05"), definition, utcNow: november)).IsTrue();
+
+        var outside = new StubBuildEngine();
+        await Assert.That(ApplyExemption(outside, ExemptDecision("Consulting", "2027-06"), definition, utcNow: november)).IsFalse();
+        await Assert.That(outside.Errors[0].Message!).Contains("maximum 2027-05");
+    }
+
+    [Test]
+    public async Task BoundedExemption_MissingUntil_FailsWithSC038()
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting"), Exemptions(("Consulting", "Consulting carve-out.", 6)));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC038");
+        await Assert.That(engine.Errors[0].Message!).Contains("6 months");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_MissingUntil_Cpm_FailsWithSC039()
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting"), Exemptions(("Consulting", "Consulting carve-out.", 6)), CpmContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC039");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_MissingUntil_Owner_FailsWithSC040()
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting"), Exemptions(("Consulting", "Consulting carve-out.", 6)), OwnerContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC040");
+        await Assert.That(engine.Errors[0].Message!).Contains("acme_SponsorshipExemptionUntil");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_SingleMonthCap_RendersSingular()
+    {
+        var engine = new StubBuildEngine();
+        ApplyExemption(engine, ExemptDecision("Consulting"), Exemptions(("Consulting", "text", 1)));
+        await Assert.That(engine.Errors[0].Message!).Contains("to 1 month.");
+        await Assert.That(engine.Errors[0].Message!).DoesNotContain("1 months");
+    }
+
+    [Test]
+    [Arguments("2026")]
+    [Arguments("2026-13")]
+    [Arguments("2026-11-01")]
+    [Arguments("next year")]
+    public async Task BoundedExemption_BadUntilFormat_FailsWithSC041(string value)
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", value), Exemptions(("Consulting", "Consulting carve-out.", 6)));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC041");
+        await Assert.That(engine.Errors[0].Message!).Contains("yyyy-MM");
+    }
+
+    [Test]
+    public async Task BoundedExemption_BadUntilFormat_Cpm_FailsWithSC042()
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "later"), Exemptions(("Consulting", "Consulting carve-out.", 6)), CpmContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC042");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_BadUntilFormat_Owner_FailsWithSC043()
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "later"), Exemptions(("Consulting", "Consulting carve-out.", 6)), OwnerContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC043");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_PastCap_Cpm_FailsWithSC045()
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-12"), Exemptions(("Consulting", "Consulting carve-out.", 6)), CpmContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC045");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_PastCap_Owner_FailsWithSC046()
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-12"), Exemptions(("Consulting", "Consulting carve-out.", 6)), OwnerContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC046");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_Expired_FailsWithSC047()
+    {
+        // The forcing function the cap exists for: a claim nobody revisited stops the build.
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-04"), Exemptions(("Consulting", "Consulting carve-out.", 6)));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC047");
+        await Assert.That(engine.Errors[0].Message!).Contains("2026-04-30");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_Expired_Cpm_FailsWithSC048()
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-04"), Exemptions(("Consulting", "Consulting carve-out.", 6)), CpmContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC048");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_Expired_Owner_FailsWithSC049()
+    {
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-04"), Exemptions(("Consulting", "Consulting carve-out.", 6)), OwnerContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC049");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_LastInstantOfNamedMonth_Passes()
+    {
+        // Month granularity, same as SponsorshipLicensedUntil: the named month is fully covered
+        // right up to its final tick, and the first day of the next month is the cutoff.
+        var lastTick = new DateTime(2026, 5, 31, 23, 59, 59, DateTimeKind.Utc);
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-05"), Exemptions(("Consulting", "text", 6)), utcNow: lastTick);
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task BoundedExemption_FirstInstantOfNextMonth_FailsWithSC047()
+    {
+        var firstTick = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-05"), Exemptions(("Consulting", "text", 6)), utcNow: firstTick);
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC047");
+    }
+
+    [Test]
+    public async Task UncappedExemption_WithoutUntil_StillPasses()
+    {
+        // Regression guard on the pre-MaxTermMonths contract: an exemption the publisher did not
+        // cap is claimable exactly as before, with no end month demanded.
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting"), Exemptions(("Consulting", "Consulting carve-out.", null)));
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC029");
+        await Assert.That(engine.Warnings[0].Message!).DoesNotContain("until");
+    }
+
+    [Test]
+    public async Task UncappedExemption_ConsumerSuppliedUntil_IsHonoured()
+    {
+        // A consumer may bound an uncapped exemption of their own accord. Nothing forces it, but
+        // once written it means what it says — including expiring.
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2026-04"), Exemptions(("Consulting", "Consulting carve-out.", null)));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC047");
+        // No publisher ceiling to name, so the remediation block can't offer a specific month.
+        await Assert.That(engine.Errors[0].Message!).Contains("yyyy-MM");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task UncappedExemption_DistantUntil_HasNoCeiling()
+    {
+        // Without a publisher cap there is nothing to exceed — SC044 can only fire for a capped
+        // exemption, so a far-future self-imposed bound is simply a bound that hasn't lapsed.
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("Consulting", "2099-12"), Exemptions(("Consulting", "text", null)));
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task BoundedExemption_UnknownName_StillFailsWithSC032()
+    {
+        // Name resolution comes first: an unknown name can't be checked against a cap that only
+        // the publisher's definition carries.
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(engine, ExemptDecision("MadeUpName", "2026-11"), Exemptions(("Consulting", "Consulting carve-out.", 6)));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC032");
+        // The list of available exemptions flags which of them come with an end-date requirement.
+        await Assert.That(engine.Errors[0].Message!).Contains("time-bounded");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task BoundedExemption_MaxTermMonthsAtCalendarExtreme_DoesNotOverflow()
+    {
+        // AddMonths on a DateTime would throw here; the ceiling is computed on calendar fields so
+        // a build at the end of representable time still renders a message instead of crashing.
+        var engine = new StubBuildEngine();
+        var ok = ApplyExemption(
+            engine,
+            ExemptDecision("Consulting"),
+            Exemptions(("Consulting", "text", 240)),
+            utcNow: new(9999, 12, 15, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC038");
+        await Assert.That(engine.Errors[0].Message!).Contains("10019-12");
     }
 
     [Test]

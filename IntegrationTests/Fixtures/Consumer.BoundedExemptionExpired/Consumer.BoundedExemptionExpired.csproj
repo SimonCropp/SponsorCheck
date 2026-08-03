@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- A claim nobody revisited: the end month is long past, so the build fails with SC047
+         until the exemption is re-checked and renewed. Deliberately a literal far in the past
+         so it stays expired no matter when the suite runs. -->
+    <PackageReference
+      Include="ThePackageWithExemptions"
+      Version="1.0.0"
+      SponsorshipExemption="Evaluation"
+      SponsorshipExemptionUntil="2020-01" />
+  </ItemGroup>
+</Project>

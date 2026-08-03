@@ -1,0 +1,21 @@
+﻿{
+  Errors: [
+    {
+      Code: SC048,
+      Message:
+Exemption expired. Package 'MyOssLib': SponsorshipExemption="Consulting" on the <PackageVersion> in Directory.Packages.props expired — SponsorshipExemptionUntil='2026-04' (end of month 2026-04-30 UTC).
+
+Confirm the exemption still applies, then set the SponsorshipExemptionUntil attribute to 2026-11 or earlier in:
+
+  C:/Consumer/Directory.Packages.props
+
+Otherwise switch to another license mode.
+
+Example format:
+
+  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipExemption="Consulting" SponsorshipExemptionUntil="2026-11" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc048
+    }
+  ]
+}

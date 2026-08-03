@@ -118,9 +118,14 @@
                 <div class="exemption-row">
                   <input type="text" class="exemption-name" placeholder="Name (e.g. Consulting)">
                   <input type="text" class="exemption-message" placeholder="Criteria text shown in the consumer's build warning">
+                  <input type="text" class="exemption-max-term" placeholder="Max months">
                   <button type="button">Remove</button>
                 </div>
                 <button type="button" class="add-exemption">Add exemption</button>
+                <p class="exemptions-hint">
+                  Leave max months blank for an open-ended exemption. Set it and the consumer must also declare
+                  <code>SponsorshipExemptionUntil</code>, dated no further out than that — so a claim they stop         qualifying for fails the build instead of riding along unnoticed.
+                </p>
               </div>
             </div>
             <div class="field" style="margin-top:1rem">

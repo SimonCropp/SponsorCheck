@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The end date the requirement would be trivially satisfiable with if it were uncapped.
+         Evaluation allows 3 months, so this fails with SC044. -->
+    <PackageReference
+      Include="ThePackageWithExemptions"
+      Version="1.0.0"
+      SponsorshipExemption="Evaluation"
+      SponsorshipExemptionUntil="9999-12" />
+  </ItemGroup>
+</Project>

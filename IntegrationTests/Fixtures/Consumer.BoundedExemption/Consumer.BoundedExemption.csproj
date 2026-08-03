@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Evaluation is declared with MaxTermMonths="3", so the claim must carry an end month.
+         The verifier compares that month against the build clock, so a literal here would
+         eventually expire and turn this into a permanently red test — the current month is
+         always inside the cap and never expired. Consumers write a real yyyy-MM literal. -->
+    <PackageReference
+      Include="ThePackageWithExemptions"
+      Version="1.0.0"
+      SponsorshipExemption="Evaluation"
+      SponsorshipExemptionUntil="$([System.DateTime]::UtcNow.ToString('yyyy-MM'))" />
+  </ItemGroup>
+</Project>

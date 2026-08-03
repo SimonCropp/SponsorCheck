@@ -1,0 +1,18 @@
+﻿{
+  Errors: [
+    {
+      Code: SC046,
+      Message:
+Exemption end date too far in the future. Package 'MyOssLib': acme_SponsorshipExemptionUntil='2026-12' property is more than 6 months in the future (maximum 2026-11).
+
+Set the acme_SponsorshipExemptionUntil property to 2026-11 or earlier in Directory.Build.props or the consuming project.
+
+Example format:
+
+  <acme_SponsorshipExemption>Consulting</acme_SponsorshipExemption>
+  <acme_SponsorshipExemptionUntil>2026-11</acme_SponsorshipExemptionUntil>
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc046
+    }
+  ]
+}

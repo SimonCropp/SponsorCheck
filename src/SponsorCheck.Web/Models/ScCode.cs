@@ -3,7 +3,7 @@ namespace SponsorCheck.Web.Models;
 /// <summary>
 /// Pure classifier for consumer-entered SC codes. The code families deterministically encode the
 /// configuration placement: SC001–SC016 interleave non-CPM (odd) with CPM (even); SC021–SC028 are
-/// owner mode; SC029 onward run as non-CPM/CPM/owner triples. See docs/VerifierDiagnosticCodes.md.
+/// owner mode; SC029–SC049 run as non-CPM/CPM/owner triples. See docs/VerifierDiagnosticCodes.md.
 /// </summary>
 public static class ScCode
 {
@@ -30,7 +30,7 @@ public static class ScCode
             20 => new(true, Placement.PerPackageCpm, false,
                 "SC020 names the misplaced attributes and the file they belong in — the output below targets that file."),
             >= 21 and <= 28 => new(true, Placement.OwnerMode, false, null),
-            >= 29 and <= 37 => new(
+            >= 29 and <= 49 => new(
                 true,
                 ((number - 29) % 3) switch
                 {

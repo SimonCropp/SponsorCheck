@@ -26,6 +26,8 @@ public sealed class VerifySponsorshipTask :
     public string LicensedUntilFromVer { get; set; } = "";
     public string SponsorshipExemptionFromRef { get; set; } = "";
     public string SponsorshipExemptionFromVer { get; set; } = "";
+    public string SponsorshipExemptionUntilFromRef { get; set; } = "";
+    public string SponsorshipExemptionUntilFromVer { get; set; } = "";
     public string SponsorshipStartFromRef { get; set; } = "";
     public string SponsorshipStartFromVer { get; set; } = "";
     public string GitHubFromRef { get; set; } = "";
@@ -53,6 +55,7 @@ public sealed class VerifySponsorshipTask :
             var ignored = PackageMetadataMerger.Merge("SponsorshipLicenseIgnored", IgnoredFromRef, IgnoredFromVer);
             var licensedUntil = PackageMetadataMerger.Merge("SponsorshipLicensedUntil", LicensedUntilFromRef, LicensedUntilFromVer);
             var exemption = PackageMetadataMerger.Merge("SponsorshipExemption", SponsorshipExemptionFromRef, SponsorshipExemptionFromVer);
+            var exemptionUntil = PackageMetadataMerger.Merge("SponsorshipExemptionUntil", SponsorshipExemptionUntilFromRef, SponsorshipExemptionUntilFromVer);
             var sponsorshipStart = PackageMetadataMerger.Merge("SponsorshipStart", SponsorshipStartFromRef, SponsorshipStartFromVer);
             var sponsors = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
             {
@@ -61,14 +64,14 @@ public sealed class VerifySponsorshipTask :
                 ["Polar"] = PackageMetadataMerger.Merge("PolarSponsorAccount", PolarFromRef, PolarFromVer)
             };
 
-            var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, exemption, sponsors, sponsorshipStart, ThePackageId);
+            var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, exemption, exemptionUntil, sponsors, sponsorshipStart, ThePackageId);
             // These four sidecar files back only diagnostic rendering (and the exemption lookup), so
             // wrap each read in Lazy — a passing build (sponsor matches, or license valid) returns from
             // DecisionApplier without forcing any of them and reads only the pack date and hash list.
             // The landing-url read folds into the author-accounts lazy since it only shapes those URLs.
             var authorAccounts = new Lazy<IReadOnlyList<AuthorAccount>>(
                 () => ResolveAuthorAccounts(AuthorAccountsPath, ReadLandingUrl(LandingUrlPath)));
-            var exemptionsDefined = new Lazy<IReadOnlyDictionary<string, string>>(
+            var exemptionsDefined = new Lazy<IReadOnlyDictionary<string, ExemptionDefinition>>(
                 () => SponsorshipExemptionsFile.Read(ExemptionsPath));
             var severityOverrides = new Lazy<IReadOnlyDictionary<string, Severity>>(
                 () => SeverityOverrideFile.Read(SeverityOverridesPath));
@@ -118,6 +121,7 @@ public sealed class VerifySponsorshipTask :
             ("SponsorshipLicenseIgnored", IgnoredFromRef, IgnoredFromVer),
             ("SponsorshipLicensedUntil", LicensedUntilFromRef, LicensedUntilFromVer),
             ("SponsorshipExemption", SponsorshipExemptionFromRef, SponsorshipExemptionFromVer),
+            ("SponsorshipExemptionUntil", SponsorshipExemptionUntilFromRef, SponsorshipExemptionUntilFromVer),
             ("SponsorshipStart", SponsorshipStartFromRef, SponsorshipStartFromVer),
             ("GitHubSponsorAccount", GitHubFromRef, GitHubFromVer),
             ("OpenCollectiveSponsorAccount", OpenCollectiveFromRef, OpenCollectiveFromVer),

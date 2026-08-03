@@ -1,0 +1,20 @@
+﻿{
+  Errors: [
+    {
+      Code: SC032,
+      Message:
+Unknown exemption. Package 'MyOssLib': SponsorshipExemption="MadeUpName" on the <PackageReference> does not name a known exemption.
+
+Available exemptions:
+  - Consulting: Consulting carve-out. [time-bounded: SponsorshipExemptionUntil required, at most 6 months out]
+
+Claim one in:
+  C:/Consumer/MyApp.csproj
+
+Example format:
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipExemption="Consulting" SponsorshipExemptionUntil="yyyy-MM" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032
+    }
+  ]
+}

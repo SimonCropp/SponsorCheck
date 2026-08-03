@@ -48,6 +48,8 @@ public class NupkgParserTests
     [Test]
     public async Task ExemptionsParsed()
     {
+        // The bare-string shape: what nupkgs packed before MaxTermMonths existed carry, and still
+        // the majority of what is on nuget.org.
         var facts = await Parse(TestNupkg.Build(exemptions: new Dictionary<string, string>
         {
             ["Consulting"] = "Consulting clients are exempt for 6 months.",
@@ -56,6 +58,22 @@ public class NupkgParserTests
 
         await Assert.That(facts.Exemptions.Count).IsEqualTo(2);
         await Assert.That(facts.FindExemption("consulting")!.Message).IsEqualTo("Consulting clients are exempt for 6 months.");
+        await Assert.That(facts.FindExemption("consulting")!.MaxTermMonths).IsNull();
+    }
+
+    [Test]
+    public async Task BoundedExemptionsParsed()
+    {
+        var facts = await Parse(TestNupkg.Build(boundedExemptions: new Dictionary<string, (string, int?)>
+        {
+            ["Consulting"] = ("Consulting clients are exempt for 6 months.", 6),
+            ["SmallRevenue"] = ("Under US$10,000 annual gross revenue.", null)
+        }));
+
+        await Assert.That(facts.Exemptions.Count).IsEqualTo(2);
+        await Assert.That(facts.FindExemption("consulting")!.MaxTermMonths).IsEqualTo(6);
+        await Assert.That(facts.FindExemption("consulting")!.Message).IsEqualTo("Consulting clients are exempt for 6 months.");
+        await Assert.That(facts.FindExemption("smallrevenue")!.MaxTermMonths).IsNull();
     }
 
     [Test]

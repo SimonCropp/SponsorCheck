@@ -48,7 +48,7 @@
                                 <ul>
                                     <li>@(facts.OwnerMode ? $"Owner mode — configured once via '{facts.OwnerId}_…' properties" : "Per-package configuration")</li>
                                     <li>Sponsorship platforms: @string.Join(", ", facts.Platforms.Select(_ => Platform.All.First(known => known.Kind == _.Kind).DisplayName))</li>
-                                    <li>@(facts.Exemptions.Count > 0 ? $"Publisher-defined exemptions: {string.Join(", ", facts.Exemptions.Select(_ => _.Name))}" : "No publisher-defined exemptions")</li>
+                                    <li>@(facts.Exemptions.Count > 0 ? $"Publisher-defined exemptions: {string.Join(", ", facts.Exemptions.Select(ExemptionLabel))}" : "No publisher-defined exemptions")</li>
                                     @if (facts.PackDate is { } packDate)
                                     {
                                         <li>Packed on @packDate</li>
@@ -257,6 +257,38 @@
                                        @bind="model.ExemptionName" @bind:event="oninput" />
                             }
                         </div>
+                        @if (model.ExemptionName.Trim().Length > 0)
+                        {
+                            <div class="field">
+                                <label for="exemptionUntil">Exemption until (last covered month)</label>
+                                @if (model.ClaimedExemption?.MaxTermMonths is { } maxTermMonths)
+                                {
+                                    <p class="hint">
+                                        Required: the publisher time-bounds this exemption to @maxTermMonths month@(maxTermMonths == 1 ? "" : "s").
+                                        Format yyyy-MM, no more than @maxTermMonths month@(maxTermMonths == 1 ? "" : "s") past the build date.
+                                        The build fails once that month ends, so the claim gets re-checked instead of outliving whatever made it apply.
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="hint">
+                                        Optional — this publisher does not require an end date. Setting one still binds:
+                                        the build fails after that month until the claim is renewed. Format yyyy-MM.
+                                    </p>
+                                }
+
+                                <input id="exemptionUntil" type="text" placeholder="yyyy-MM"
+                                       @bind="model.ExemptionUntilMonth" @bind:event="oninput" />
+                                @if (model.HasExemptionUntil && !model.IsExemptionUntilValid)
+                                {
+                                    <p class="validation-error">Use the format yyyy-MM, e.g. 2027-02.</p>
+                                }
+                                else if (model.IsExemptionUntilRequired && !model.HasExemptionUntil)
+                                {
+                                    <p class="validation-error">This exemption is time-bounded — an end month is required.</p>
+                                }
+                            </div>
+                        }
                         break;
 
                     case ConsumerLicenseMode.Ignore:

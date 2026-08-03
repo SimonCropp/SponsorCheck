@@ -4,6 +4,7 @@ public static class LicenseModeResolver
         string? ignored,
         string? licensedUntil,
         string? exemption,
+        string? exemptionUntil,
         IReadOnlyDictionary<string, string?> sponsorAccountsByPlatform,
         string? sponsorshipStart,
         string packageId)
@@ -27,6 +28,9 @@ public static class LicenseModeResolver
             modes.Add("SponsorshipLicensedUntil");
         }
 
+        // SponsorshipExemptionUntil deliberately does not count as a mode of its own — it bounds an
+        // exemption claim the same way SponsorshipStart qualifies a sponsor claim. Set on its own it
+        // selects nothing, so the consumer still gets the MissingConfig diagnostic.
         var hasExemption = !string.IsNullOrWhiteSpace(exemption);
         if (hasExemption)
         {
@@ -56,7 +60,8 @@ public static class LicenseModeResolver
 
         if (hasExemption)
         {
-            return new LicenseDecision.Exempt(packageId, exemption!.Trim());
+            var untilNormalized = string.IsNullOrWhiteSpace(exemptionUntil) ? null : exemptionUntil!.Trim();
+            return new LicenseDecision.Exempt(packageId, exemption!.Trim(), untilNormalized);
         }
 
         if (nonEmptySponsors.Count > 0)

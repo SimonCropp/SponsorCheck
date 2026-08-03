@@ -391,6 +391,32 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task Exemptions_MaxTermMonths_BundledIntoNupkg()
+    {
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageWithExemptions");
+        var nupkg = Directory.GetFiles(feed, "ThePackageWithExemptions.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/SponsorCheck.Exemptions.json")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+        // The cap has to survive into the nupkg — it is the only place the verifier can learn it.
+        await Assert.That(content).Contains("\"maxTermMonths\": 3");
+        // Uncapped exemptions carry no cap key at all rather than an explicit null.
+        var uncapped = content[content.IndexOf("\"Consulting\"", StringComparison.Ordinal)..content.IndexOf("\"Evaluation\"", StringComparison.Ordinal)];
+        await Assert.That(uncapped).DoesNotContain("maxTermMonths");
+    }
+
+    [Test]
+    public async Task Exemptions_InvalidMaxTermMonths_FailsPackWithSC106()
+    {
+        var result = await ThePackageBuilder.TryPack("ThePackageBadMaxTermMonths");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC106");
+        await Assert.That(result.Combined).Contains("MaxTermMonths");
+    }
+
+    [Test]
     public async Task Exemptions_EmptyJsonOnPackageWithoutExemptions()
     {
         // The sidecar is always written (for deterministic packaging) — empty object when

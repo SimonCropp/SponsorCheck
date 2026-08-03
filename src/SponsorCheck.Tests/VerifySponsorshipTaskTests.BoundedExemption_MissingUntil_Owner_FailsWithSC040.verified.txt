@@ -1,0 +1,18 @@
+﻿{
+  Errors: [
+    {
+      Code: SC040,
+      Message:
+Exemption end date required. Package 'MyOssLib': acme_SponsorshipExemption="Consulting" property is set, but the publisher time-bounds this exemption to 6 months, so acme_SponsorshipExemptionUntil must be set too.
+
+Set the acme_SponsorshipExemptionUntil property to 2026-11 or earlier in Directory.Build.props or the consuming project.
+
+Example format:
+
+  <acme_SponsorshipExemption>Consulting</acme_SponsorshipExemption>
+  <acme_SponsorshipExemptionUntil>2026-11</acme_SponsorshipExemptionUntil>
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc040
+    }
+  ]
+}

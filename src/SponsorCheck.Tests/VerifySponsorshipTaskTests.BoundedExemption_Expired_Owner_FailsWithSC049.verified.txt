@@ -1,0 +1,18 @@
+﻿{
+  Errors: [
+    {
+      Code: SC049,
+      Message:
+Exemption expired. Package 'MyOssLib': acme_SponsorshipExemption="Consulting" expired — acme_SponsorshipExemptionUntil='2026-04' (end of month 2026-04-30 UTC).
+
+Confirm the exemption still applies, then set the acme_SponsorshipExemptionUntil property to 2026-11 or earlier in Directory.Build.props or the consuming project. Otherwise switch to another license mode.
+
+Example format:
+
+  <acme_SponsorshipExemption>Consulting</acme_SponsorshipExemption>
+  <acme_SponsorshipExemptionUntil>2026-11</acme_SponsorshipExemptionUntil>
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc049
+    }
+  ]
+}

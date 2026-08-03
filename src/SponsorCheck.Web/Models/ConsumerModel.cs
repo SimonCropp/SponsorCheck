@@ -27,6 +27,7 @@ public sealed class ConsumerModel
     public string SponsorshipStart { get; set; } = "";
     public string LicensedUntilMonth { get; set; } = "";
     public string ExemptionName { get; set; } = "";
+    public string ExemptionUntilMonth { get; set; } = "";
 
     public Placement Placement =>
         OwnerMode
@@ -50,6 +51,21 @@ public sealed class ConsumerModel
 
     public bool IsSponsorshipStartValid =>
         DateTime.TryParseExact(SponsorshipStart.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+
+    public bool HasExemptionUntil => !string.IsNullOrWhiteSpace(ExemptionUntilMonth);
+
+    public bool IsExemptionUntilValid =>
+        DateTime.TryParseExact(ExemptionUntilMonth.Trim(), "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+
+    /// <summary>The inspected package's definition of the claimed exemption, when the package was
+    /// looked up and the name matches one it defines.</summary>
+    public PackageExemption? ClaimedExemption =>
+        Facts is { BundlesSponsorCheck: true } facts ? facts.FindExemption(ExemptionName) : null;
+
+    /// <summary>An end month is mandatory only when the publisher capped the claimed exemption. It
+    /// stays optional otherwise — a consumer may self-bound an uncapped exemption, and a package the
+    /// wizard could not inspect can't be assumed either way.</summary>
+    public bool IsExemptionUntilRequired => ClaimedExemption?.MaxTermMonths is not null;
 
     /// <summary>Applies nupkg-derived facts: owner mode and owner id come from the package itself.
     /// Facts always win over earlier manual answers — they are what the verifier will actually do.</summary>
@@ -86,7 +102,10 @@ public sealed class ConsumerModel
     {
         ConsumerLicenseMode.Sponsor => HasPlatform && (!StartedAfterRelease || IsSponsorshipStartValid),
         ConsumerLicenseMode.License => IsLicensedUntilValid,
-        ConsumerLicenseMode.Exemption => !string.IsNullOrWhiteSpace(ExemptionName),
+        ConsumerLicenseMode.Exemption =>
+            !string.IsNullOrWhiteSpace(ExemptionName) &&
+            (!IsExemptionUntilRequired || HasExemptionUntil) &&
+            (!HasExemptionUntil || IsExemptionUntilValid),
         ConsumerLicenseMode.Ignore => true,
         _ => false
     };

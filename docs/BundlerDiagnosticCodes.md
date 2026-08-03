@@ -64,6 +64,7 @@ Every emitted message is prefixed with the code's short **Name** (e.g. `Platform
 
 - **Name:** Invalid exemption definition
 - **Level**: Error
-- **Meaning:** A `<SponsorExemption>` item declared next to the SponsorCheck reference is invalid. Each item must have a non-empty `Include=` (the exemption name) and a non-empty `Message=` metadatum (the criteria text consumers will see when claiming the exemption). Duplicate names (case-insensitive) are also rejected.
-- **Syntax:** `SponsorExemption '{name}': {reason}` (where `{reason}` is one of `Message metadata is empty`, `duplicate definition`, or `an item has an empty Name (Include attribute)`).
+- **Meaning:** A `<SponsorExemption>` item declared next to the SponsorCheck reference is invalid. Each item must have a non-empty `Include=` (the exemption name) and a non-empty `Message=` metadatum (the criteria text consumers will see when claiming the exemption). Duplicate names (case-insensitive) are also rejected. The optional `MaxTermMonths=` metadatum, when present, must be a positive whole number — no sign, no decimal point, no exponent. It is rejected at pack time rather than ignored because the value is baked into every consumer's build, so a typo would otherwise silently ship an exemption with no end date required.
+- **Syntax:** `SponsorExemption '{name}': {reason}` (where `{reason}` is one of `Message metadata is empty`, `duplicate definition`, `MaxTermMonths='{value}' is not a positive whole number of months`, or `an item has an empty Name (Include attribute)`).
 - **Example:** `SponsorExemption 'Consulting': Message metadata is empty.`
+- **Example:** `SponsorExemption 'Consulting': MaxTermMonths='six' is not a positive whole number of months.`

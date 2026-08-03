@@ -14,6 +14,7 @@ public class RepoContractTests
         "SponsorshipLicensedUntil",
         "SponsorshipLicenseIgnored",
         "SponsorshipExemption",
+        "SponsorshipExemptionUntil",
         "SponsorshipStart"
     ];
 

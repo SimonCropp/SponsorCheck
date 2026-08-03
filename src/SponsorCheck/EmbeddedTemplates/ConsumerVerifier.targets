@@ -68,6 +68,8 @@ __SC_INNER_IMPORT__
       <_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipLicensedUntil)')</_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromVer>
       <_SponsorCheck___SC_PACKAGE_ID___ExemptionFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipExemption)')</_SponsorCheck___SC_PACKAGE_ID___ExemptionFromRef>
       <_SponsorCheck___SC_PACKAGE_ID___ExemptionFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipExemption)')</_SponsorCheck___SC_PACKAGE_ID___ExemptionFromVer>
+      <_SponsorCheck___SC_PACKAGE_ID___ExemptionUntilFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipExemptionUntil)')</_SponsorCheck___SC_PACKAGE_ID___ExemptionUntilFromRef>
+      <_SponsorCheck___SC_PACKAGE_ID___ExemptionUntilFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipExemptionUntil)')</_SponsorCheck___SC_PACKAGE_ID___ExemptionUntilFromVer>
       <_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipStart)')</_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromRef>
       <_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipStart)')</_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromVer>
       <_SponsorCheck___SC_PACKAGE_ID___GitHubFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(GitHubSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___GitHubFromRef>
@@ -99,6 +101,8 @@ __SC_INNER_IMPORT__
         LicensedUntilFromVer="$(_SponsorCheck___SC_PACKAGE_ID___LicensedUntilFromVer)"
         SponsorshipExemptionFromRef="$(_SponsorCheck___SC_PACKAGE_ID___ExemptionFromRef)"
         SponsorshipExemptionFromVer="$(_SponsorCheck___SC_PACKAGE_ID___ExemptionFromVer)"
+        SponsorshipExemptionUntilFromRef="$(_SponsorCheck___SC_PACKAGE_ID___ExemptionUntilFromRef)"
+        SponsorshipExemptionUntilFromVer="$(_SponsorCheck___SC_PACKAGE_ID___ExemptionUntilFromVer)"
         SponsorshipStartFromRef="$(_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromRef)"
         SponsorshipStartFromVer="$(_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromVer)"
         GitHubFromRef="$(_SponsorCheck___SC_PACKAGE_ID___GitHubFromRef)"

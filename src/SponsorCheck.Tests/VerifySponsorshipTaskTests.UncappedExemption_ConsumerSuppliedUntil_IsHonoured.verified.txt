@@ -1,0 +1,21 @@
+﻿{
+  Errors: [
+    {
+      Code: SC047,
+      Message:
+Exemption expired. Package 'MyOssLib': SponsorshipExemption="Consulting" on the <PackageReference> expired — SponsorshipExemptionUntil='2026-04' (end of month 2026-04-30 UTC).
+
+Confirm the exemption still applies, then set the SponsorshipExemptionUntil attribute in:
+
+  C:/Consumer/MyApp.csproj
+
+Otherwise switch to another license mode.
+
+Example format:
+
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipExemption="Consulting" SponsorshipExemptionUntil="yyyy-MM" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc047
+    }
+  ]
+}

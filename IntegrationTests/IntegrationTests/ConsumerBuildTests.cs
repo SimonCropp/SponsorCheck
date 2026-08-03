@@ -541,6 +541,89 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task BoundedExemption_WithUntil_BuildsWithSC029Warning()
+    {
+        var result = await BuildFixture("Consumer.BoundedExemption", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC029");
+        // The end month rides along in the warning, so the CI log records the term as well as the claim.
+        await Assert.That(result.Combined).Contains("until");
+        await Assert.That(result.Combined).Contains("Teams evaluating the package");
+    }
+
+    [Test]
+    public async Task BoundedExemption_MissingUntil_FailsWithSC038()
+    {
+        var result = await BuildFixture("Consumer.BoundedExemptionNoUntil", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC038");
+        await Assert.That(result.Combined).Contains("3 months");
+    }
+
+    [Test]
+    public async Task BoundedExemption_Expired_FailsWithSC047()
+    {
+        // The point of the whole mechanism: a claim nobody revisited stops the build.
+        var result = await BuildFixture("Consumer.BoundedExemptionExpired", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC047");
+        await Assert.That(result.Combined).Contains("2020-01-31");
+    }
+
+    [Test]
+    public async Task BoundedExemption_BeyondCap_FailsWithSC044()
+    {
+        var result = await BuildFixture("Consumer.BoundedExemptionBeyondCap", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC044");
+    }
+
+    [Test]
+    public async Task BoundedExemption_BadUntilFormat_FailsWithSC041()
+    {
+        var result = await BuildFixture("Consumer.BoundedExemptionBadFormat", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC041");
+    }
+
+    [Test]
+    public async Task CpmBoundedExemption_WithUntil_BuildsWithSC030Warning()
+    {
+        var result = await BuildFixture("Consumer.CpmBoundedExemption", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC030");
+        await Assert.That(result.Combined).Contains("Teams evaluating the package");
+    }
+
+    [Test]
+    public async Task OwnerModeBoundedExemption_WithUntil_BuildsWithSC031Warning()
+    {
+        var result = await BuildFixture("Consumer.OwnerBoundedExemption", authorFixture: "ThePackageOwnerModeWithExemptions");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC031");
+        await Assert.That(result.Combined).Contains("Teams evaluating the package");
+    }
+
+    [Test]
+    public async Task OwnerModeBoundedExemption_MissingUntil_FailsWithSC040()
+    {
+        var result = await BuildFixture("Consumer.OwnerBoundedExemptionNoUntil", authorFixture: "ThePackageOwnerModeWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC040");
+        await Assert.That(result.Combined).Contains("acme_SponsorshipExemptionUntil");
+    }
+
+    [Test]
+    public async Task UncappedExemption_SelfImposedUntilExpired_FailsWithSC047()
+    {
+        // Consulting has no MaxTermMonths, so nothing forced an end month — but the one the
+        // consumer wrote is still binding.
+        var result = await BuildFixture("Consumer.UncappedExemptionSelfBounded", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC047");
+    }
+
+    [Test]
     public async Task NoConfig_ExemptionsAvailable_SC001ListsExemptionOption()
     {
         var result = await BuildFixture("Consumer.NoConfigWithExemptionsAvailable", authorFixture: "ThePackageWithExemptions");

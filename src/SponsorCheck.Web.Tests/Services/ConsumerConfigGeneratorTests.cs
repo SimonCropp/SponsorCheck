@@ -211,6 +211,56 @@ public class ConsumerConfigGeneratorTests
     }
 
     [Test]
+    public async Task FactsBoundedExemptionSelected()
+    {
+        var model = BaseModel(Placement.PerPackageProject);
+        model.Mode = ConsumerLicenseMode.Exemption;
+        model.ExemptionName = "Consulting";
+        model.ExemptionUntilMonth = "2027-02";
+        model.Facts = Facts(exemptions: [new("Consulting", "Consulting clients are exempt for 6 months.", 6)]);
+        await Assert.That(model.IsExemptionUntilRequired).IsTrue();
+        await Assert.That(model.ModeComplete).IsTrue();
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task FactsBoundedExemptionMissingUntil_IsIncomplete()
+    {
+        // The wizard has to block on the missing end month rather than emit a snippet the
+        // consumer's next build rejects with SC038.
+        var model = BaseModel(Placement.PerPackageProject);
+        model.Mode = ConsumerLicenseMode.Exemption;
+        model.ExemptionName = "Consulting";
+        model.Facts = Facts(exemptions: [new("Consulting", "Consulting clients are exempt for 6 months.", 6)]);
+        await Assert.That(model.IsExemptionUntilRequired).IsTrue();
+        await Assert.That(model.ModeComplete).IsFalse();
+    }
+
+    [Test]
+    public async Task FactsUncappedExemptionWithSelfImposedUntil()
+    {
+        var model = BaseModel(Placement.PerPackageCpm);
+        model.Mode = ConsumerLicenseMode.Exemption;
+        model.ExemptionName = "Consulting";
+        model.ExemptionUntilMonth = "2027-02";
+        model.Facts = Facts(exemptions: [new("Consulting", "Consulting clients are exempt for 6 months.")]);
+        await Assert.That(model.IsExemptionUntilRequired).IsFalse();
+        await Assert.That(model.ModeComplete).IsTrue();
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task OwnerBoundedExemption()
+    {
+        var model = BaseModel(Placement.OwnerMode);
+        model.Mode = ConsumerLicenseMode.Exemption;
+        model.ExemptionName = "Consulting";
+        model.ExemptionUntilMonth = "2027-02";
+        model.Facts = Facts(exemptions: [new("Consulting", "Consulting clients are exempt for 6 months.", 6)]);
+        await Verify(Dump(model));
+    }
+
+    [Test]
     public async Task FactsExemptionUnknown()
     {
         var model = BaseModel(Placement.PerPackageProject);

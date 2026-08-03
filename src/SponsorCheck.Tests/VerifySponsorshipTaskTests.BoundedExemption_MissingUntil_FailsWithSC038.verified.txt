@@ -1,0 +1,19 @@
+﻿{
+  Errors: [
+    {
+      Code: SC038,
+      Message:
+Exemption end date required. Package 'MyOssLib': SponsorshipExemption="Consulting" on the <PackageReference> is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to 6 months.
+
+Set the SponsorshipExemptionUntil attribute to 2026-11 or earlier in:
+
+  C:/Consumer/MyApp.csproj
+
+Example format:
+
+  <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipExemption="Consulting" SponsorshipExemptionUntil="2026-11" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc038
+    }
+  ]
+}

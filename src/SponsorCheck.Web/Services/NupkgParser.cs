@@ -129,13 +129,49 @@ public static class NupkgParser
 
             foreach (var property in document.RootElement.EnumerateObject())
             {
-                var value = property.Value;
-                var message = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-                if (property.Name.Trim().Length > 0 &&
-                    !string.IsNullOrWhiteSpace(message))
+                if (property.Name.Trim().Length == 0)
                 {
-                    result.Add(new(property.Name, message));
+                    continue;
                 }
+
+                // Two shapes: the object form the current bundler writes, and a bare message string,
+                // which is what packages published before MaxTermMonths existed carry. Both are live
+                // on nuget.org, so both have to read.
+                var value = property.Value;
+                if (value.ValueKind == JsonValueKind.String)
+                {
+                    var bare = value.GetString();
+                    if (!string.IsNullOrWhiteSpace(bare))
+                    {
+                        result.Add(new(property.Name, bare!));
+                    }
+
+                    continue;
+                }
+
+                if (value.ValueKind != JsonValueKind.Object ||
+                    !value.TryGetProperty("message", out var messageElement) ||
+                    messageElement.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+
+                var message = messageElement.GetString();
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    continue;
+                }
+
+                int? maxTermMonths = null;
+                if (value.TryGetProperty("maxTermMonths", out var monthsElement) &&
+                    monthsElement.ValueKind == JsonValueKind.Number &&
+                    monthsElement.TryGetInt32(out var months) &&
+                    months > 0)
+                {
+                    maxTermMonths = months;
+                }
+
+                result.Add(new(property.Name, message!, maxTermMonths));
             }
         }
         catch (JsonException)

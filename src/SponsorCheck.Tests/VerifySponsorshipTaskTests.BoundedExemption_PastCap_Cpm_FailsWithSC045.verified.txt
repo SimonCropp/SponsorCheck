@@ -1,0 +1,19 @@
+﻿{
+  Errors: [
+    {
+      Code: SC045,
+      Message:
+Exemption end date too far in the future. Package 'MyOssLib': SponsorshipExemptionUntil='2026-12' on the <PackageVersion> in Directory.Packages.props is more than 6 months in the future (maximum 2026-11).
+
+Set the SponsorshipExemptionUntil attribute to 2026-11 or earlier in:
+
+  C:/Consumer/Directory.Packages.props
+
+Example format:
+
+  <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipExemption="Consulting" SponsorshipExemptionUntil="2026-11" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc045
+    }
+  ]
+}

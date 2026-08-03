@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Owner-mode claim of a time-bounded exemption with no end month: SC040. -->
+    <acme_SponsorshipExemption>Evaluation</acme_SponsorshipExemption>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerModeWithExemptions" Version="1.0.0" />
+  </ItemGroup>
+</Project>

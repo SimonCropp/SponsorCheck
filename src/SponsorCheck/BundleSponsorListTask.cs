@@ -61,7 +61,8 @@ public sealed class BundleSponsorListTask :
 
     // Publisher-defined exempt scenarios. Each item's ItemSpec is the exemption name (e.g.
     // "Consulting") and the required Message metadata is the criteria text that becomes the
-    // body of the consumer-side warning (SC029/SC030/SC031) when claimed.
+    // body of the consumer-side warning (SC029/SC030/SC031) when claimed. Optional MaxTermMonths
+    // metadata makes the claim time-bounded — see ExemptionDefinition.
     public ITaskItem[] SponsorExemptions { get; set; } = [];
 
     public string OverridePackDate { get; set; } = "";
@@ -249,11 +250,12 @@ public sealed class BundleSponsorListTask :
         return true;
     }
 
-    // Validate @(SponsorExemption) items: non-empty Name (ItemSpec), non-empty Message, no
-    // duplicate names. Names are compared case-insensitively because the verifier's lookup is
-    // case-insensitive too. The result preserves the author's original casing — the publisher
-    // chose how their exemption name should appear in any documentation that references it.
-    bool TryResolveExemptions(out Dictionary<string, string> result)
+    // Validate @(SponsorExemption) items: non-empty Name (ItemSpec), non-empty Message, a positive
+    // integer MaxTermMonths when supplied, and no duplicate names. Names are compared
+    // case-insensitively because the verifier's lookup is case-insensitive too. The result
+    // preserves the author's original casing — the publisher chose how their exemption name
+    // should appear in any documentation that references it.
+    bool TryResolveExemptions(out Dictionary<string, ExemptionDefinition> result)
     {
         result = new(StringComparer.OrdinalIgnoreCase);
         foreach (var item in SponsorExemptions)
@@ -278,7 +280,27 @@ public sealed class BundleSponsorListTask :
                 return false;
             }
 
-            result[name] = message;
+            // NumberStyles.None so "+6", " 6 " (already trimmed), "6.0" and hex are all rejected —
+            // the value is baked into every consumer's build, so a typo should fail the author's
+            // pack rather than silently round to something else.
+            int? maxTermMonths = null;
+            var rawMaxTermMonths = (item.GetMetadata("MaxTermMonths") ?? "").Trim();
+            if (rawMaxTermMonths.Length > 0)
+            {
+                if (!int.TryParse(rawMaxTermMonths, NumberStyles.None, CultureInfo.InvariantCulture, out var months) ||
+                    months < 1)
+                {
+                    SponsorCheckLog.Error(
+                        Log,
+                        "SC106",
+                        $"SponsorExemption '{name}': MaxTermMonths='{rawMaxTermMonths}' is not a positive whole number of months.");
+                    return false;
+                }
+
+                maxTermMonths = months;
+            }
+
+            result[name] = new(message, maxTermMonths);
         }
 
         return true;
