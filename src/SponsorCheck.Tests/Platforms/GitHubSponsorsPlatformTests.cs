@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 
 public class GitHubSponsorsPlatformTests
@@ -378,6 +379,182 @@ public class GitHubSponsorsPlatformTests
             IsActive: false,
             CreatedAt: createdAt);
         await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, createdAt + GitHubSponsorsPlatform.OneTimeWindow)).IsTrue();
+    }
+
+    [Test]
+    public async Task Unauthorized_ThrowsInvalidCredentialRatherThanGenericPlatformError()
+    {
+        // A 401 used to surface as a raw "GitHub GraphQL HTTP 401: {...}" under the SC100 catch-all,
+        // which reads like a transient platform fault and invites a pointless re-run. It is always a
+        // dead stored credential, so it gets its own type (SC107) and never echoes the response body.
+        using var client = new HttpClient(new StatusHandler(HttpStatusCode.Unauthorized, """{"message":"Bad credentials"}"""));
+        var platform = new GitHubSponsorsPlatform(client);
+        var log = new TaskLoggingHelperFor(new StubBuildEngine());
+
+        InvalidCredentialException? thrown = null;
+        try
+        {
+            await platform.FetchSponsorAccounts("SimonCropp", $"ghp_{new string('x', 36)}", log, Cancel.None);
+        }
+        catch (InvalidCredentialException exception)
+        {
+            thrown = exception;
+        }
+
+        await Assert.That(thrown).IsNotNull();
+        await Assert.That(thrown!.Message).Contains("HTTP 401");
+        await Assert.That(thrown.Message).DoesNotContain("xxxx");
+    }
+
+    [Test]
+    public async Task CredentialRejected_ClassicPat_PointsAtTheStoredValueNotPermissions()
+    {
+        var message = GitHubSponsorsPlatform.CredentialRejectedMessage($"ghp_{new string('x', 36)}");
+        await Assert.That(message).Contains("ghp_…, 40 chars");
+        await Assert.That(message).Contains("deleted or regenerated");
+        // The failure this replaces sent the author hunting through SSO and org settings.
+        await Assert.That(message).Contains("not a scope, SSO, or org-policy failure");
+    }
+
+    [Test]
+    public async Task CredentialRejected_FineGrainedPat_SaysItCannotWorkAtAll()
+    {
+        // Fine-grained PATs expose no Sponsorships permission, so no amount of re-issuing helps —
+        // the author has to switch token type, which a bare 401 gives no hint of.
+        var message = GitHubSponsorsPlatform.CredentialRejectedMessage($"github_pat_{new string('x', 22)}_{new string('y', 59)}");
+        await Assert.That(message).Contains("github_pat_…");
+        await Assert.That(message).Contains("no Sponsorships permission");
+    }
+
+    [Test]
+    public async Task CredentialRejected_ActionsToken_NamesTheActionsMistake()
+    {
+        var message = GitHubSponsorsPlatform.CredentialRejectedMessage($"ghs_{new string('x', 36)}");
+        await Assert.That(message).Contains("secrets.GITHUB_TOKEN");
+    }
+
+    [Test]
+    public async Task CredentialRejected_UnrecognizedValue_FlagsTruncationOrPlaceholder()
+    {
+        var message = GitHubSponsorsPlatform.CredentialRejectedMessage("not-a-token");
+        await Assert.That(message).Contains("no recognized prefix");
+        await Assert.That(message).Contains("truncated");
+    }
+
+    [Test]
+    [Arguments(429)]
+    [Arguments(403)]
+    public async Task RateLimitExhausted_ThrowsRateLimited(int status)
+    {
+        // GitHub reports a spent primary budget as 429, or as 403 with the remaining counter at zero.
+        var reset = new DateTimeOffset(DateTime.UtcNow.AddMinutes(23), TimeSpan.Zero)
+            .ToUnixTimeSeconds()
+            .ToString(CultureInfo.InvariantCulture);
+        using var client = new HttpClient(
+            new StatusHandler(
+                (HttpStatusCode) status,
+                """{"message":"API rate limit exceeded"}""",
+                [("x-ratelimit-remaining", "0"), ("x-ratelimit-reset", reset)]));
+        var platform = new GitHubSponsorsPlatform(client);
+        var log = new TaskLoggingHelperFor(new StubBuildEngine());
+
+        RateLimitedException? thrown = null;
+        try
+        {
+            await platform.FetchSponsorAccounts("SimonCropp", $"ghp_{new string('x', 36)}", log, Cancel.None);
+        }
+        catch (RateLimitedException exception)
+        {
+            thrown = exception;
+        }
+
+        await Assert.That(thrown).IsNotNull();
+        await Assert.That(thrown!.Message).Contains("The limit resets at");
+        await Assert.That(thrown.Message).Contains("re-running the build after the reset");
+    }
+
+    [Test]
+    public async Task Forbidden_WithoutRateLimitHeaders_StaysOnTheGenericPath()
+    {
+        // A bare 403 is a permission failure, not a spent budget. Misclassifying it would tell the
+        // author to wait for a reset that never arrives.
+        using var client = new HttpClient(
+            new StatusHandler(HttpStatusCode.Forbidden, """{"message":"Resource not accessible"}"""));
+        var platform = new GitHubSponsorsPlatform(client);
+        var log = new TaskLoggingHelperFor(new StubBuildEngine());
+
+        MaintenanceFeeException? thrown = null;
+        try
+        {
+            await platform.FetchSponsorAccounts("SimonCropp", $"ghp_{new string('x', 36)}", log, Cancel.None);
+        }
+        catch (MaintenanceFeeException exception)
+        {
+            thrown = exception;
+        }
+
+        await Assert.That(thrown).IsNotNull();
+        await Assert.That(thrown is RateLimitedException).IsFalse();
+        await Assert.That(thrown!.Message).Contains("HTTP 403");
+    }
+
+    [Test]
+    public async Task SecondaryRateLimit_DetectedByRetryAfter()
+    {
+        using var client = new HttpClient(
+            new StatusHandler(
+                HttpStatusCode.Forbidden,
+                """{"message":"You have exceeded a secondary rate limit"}""",
+                [("retry-after", "60")]));
+        var platform = new GitHubSponsorsPlatform(client);
+        var log = new TaskLoggingHelperFor(new StubBuildEngine());
+
+        RateLimitedException? thrown = null;
+        try
+        {
+            await platform.FetchSponsorAccounts("SimonCropp", $"ghp_{new string('x', 36)}", log, Cancel.None);
+        }
+        catch (RateLimitedException exception)
+        {
+            thrown = exception;
+        }
+
+        await Assert.That(thrown).IsNotNull();
+        await Assert.That(thrown!.Message).Contains("retry after 60 seconds");
+    }
+
+    [Test]
+    public async Task GraphQlRateLimited_ThrowsRateLimited()
+    {
+        // GraphQL reports a spent budget as a 200 carrying a RATE_LIMITED error, so the HTTP status
+        // check never sees it.
+        var json = """
+        {
+          "errors": [
+            { "type": "RATE_LIMITED", "message": "API rate limit exceeded" }
+          ]
+        }
+        """;
+        var exception = Assert.Throws<RateLimitedException>(() => GitHubSponsorsPlatform.ParseResponse(json));
+        await Assert.That(exception.Message).Contains("5,000 points per hour");
+    }
+
+    sealed class StatusHandler(HttpStatusCode status, string body, (string Name, string Value)[]? headers = null) :
+        HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
+        {
+            var response = new HttpResponseMessage(status)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+            foreach (var (name, value) in headers ?? [])
+            {
+                response.Headers.TryAddWithoutValidation(name, value);
+            }
+
+            return Task.FromResult(response);
+        }
     }
 
     sealed class StubHandler(string body) : HttpMessageHandler

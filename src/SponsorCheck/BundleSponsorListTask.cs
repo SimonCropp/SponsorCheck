@@ -191,6 +191,16 @@ public sealed class BundleSponsorListTask :
             SponsorCheckLog.Error(Log, "SC102", exception.Message);
             return false;
         }
+        catch (InvalidCredentialException exception)
+        {
+            SponsorCheckLog.Error(Log, "SC107", exception.Message);
+            return false;
+        }
+        catch (RateLimitedException exception)
+        {
+            SponsorCheckLog.Error(Log, "SC108", exception.Message);
+            return false;
+        }
         catch (MaintenanceFeeException exception)
         {
             SponsorCheckLog.Error(Log, "SC100", exception.Message);
@@ -391,7 +401,7 @@ public sealed class BundleSponsorListTask :
     async Task<IReadOnlyList<string>> FetchWithCandidateTokens(
         ISponsorshipPlatform platform,
         string ownerAccount,
-        IReadOnlyList<string> tokens)
+        IReadOnlyList<TokenCandidate> tokens)
     {
         if (tokens.Count == 0)
         {
@@ -404,7 +414,7 @@ public sealed class BundleSponsorListTask :
         {
             try
             {
-                return await platform.FetchSponsorAccounts(ownerAccount, tokens[i], Log, Cancel.None)
+                return await platform.FetchSponsorAccounts(ownerAccount, tokens[i].Value, Log, Cancel.None)
                     .ConfigureAwait(false);
             }
             catch (MaintenanceFeeException exception)
@@ -419,7 +429,29 @@ public sealed class BundleSponsorListTask :
             }
         }
 
-        throw lastError!;
+        throw WithCredentialSources(lastError!, tokens);
+    }
+
+    // A platform knows the credential was rejected but not where it was stored, so the source is
+    // grafted on here. Only for a rejection: for a transient HTTP failure naming the token source
+    // would point the author at the one thing that isn't broken.
+    static MaintenanceFeeException WithCredentialSources(
+        MaintenanceFeeException error,
+        IReadOnlyList<TokenCandidate> tokens)
+    {
+        if (error is not InvalidCredentialException)
+        {
+            return error;
+        }
+
+        if (tokens.Count == 1)
+        {
+            return new InvalidCredentialException($"{error.Message} The rejected credential was read from {tokens[0].Source}.");
+        }
+
+        var sources = string.Join(", then ", tokens.Select(_ => _.Source));
+        return new InvalidCredentialException(
+            $"{error.Message} SponsorCheck tried {tokens.Count} configured credentials in order and none were accepted: {sources}. The detail above is from the last attempt.");
     }
 
     IReadOnlyDictionary<string, string> UserSecrets => field ??= LoadUserSecrets();
@@ -451,7 +483,7 @@ public sealed class BundleSponsorListTask :
         }
     }
 
-    IReadOnlyList<string> TokensFor(string platformId)
+    IReadOnlyList<TokenCandidate> TokensFor(string platformId)
     {
         var explicitToken = platformId switch
         {
@@ -469,22 +501,23 @@ public sealed class BundleSponsorListTask :
     // standard "GitHubToken" name (matching the GITHUB_TOKEN env var convention); other platforms
     // use "SponsorCheck:{PlatformId}Token". Static + injected secrets dict so this is unit-testable
     // without writing to the real user-secrets directory.
-    public static IReadOnlyList<string> ResolveTokens(string platformId, string? explicitToken, IReadOnlyDictionary<string, string> userSecrets)
+    public static IReadOnlyList<TokenCandidate> ResolveTokens(string platformId, string? explicitToken, IReadOnlyDictionary<string, string> userSecrets)
     {
-        var tokens = new List<string>();
+        var propertyName = platformId == "GitHubSponsors"
+            ? "GitHubToken"
+            : $"{platformId}Token";
+        var tokens = new List<TokenCandidate>();
         if (!string.IsNullOrWhiteSpace(explicitToken))
         {
-            tokens.Add(explicitToken!);
+            tokens.Add(new(explicitToken!, $"the <{propertyName}> MSBuild property (which MSBuild also auto-imports from a '{propertyName}' env var)"));
         }
 
-        var key = platformId == "GitHubSponsors"
-            ? "SponsorCheck:GitHubToken"
-            : $"SponsorCheck:{platformId}Token";
+        var key = $"SponsorCheck:{propertyName}";
         if (userSecrets.TryGetValue(key, out var value) &&
             !string.IsNullOrWhiteSpace(value) &&
-            !tokens.Contains(value, StringComparer.Ordinal))
+            !tokens.Any(_ => string.Equals(_.Value, value, StringComparison.Ordinal)))
         {
-            tokens.Add(value);
+            tokens.Add(new(value, $"user-secrets key '{key}'"));
         }
 
         return tokens;
@@ -500,7 +533,7 @@ public sealed class BundleSponsorListTask :
             return null;
         }
 
-        return tokens[0];
+        return tokens[0].Value;
     }
 
     // MSBuild target/item names reject dots and dashes, so non-alphanumeric chars are

@@ -40,7 +40,20 @@ public sealed class PolarPlatform(HttpClient? client = null) :
             var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                throw new MaintenanceFeeException($"Polar HTTP {(int)response.StatusCode}: {body}");
+                var status = (int)response.StatusCode;
+                if (status == 401)
+                {
+                    throw new InvalidCredentialException(
+                        $"Polar: the configured token was rejected (HTTP 401). Token supplied: {TokenShape.Describe(token)}. Issue a replacement organization access token at https://polar.sh with the subscriptions:read, customers:read, and organizations:read scopes. A 401 means Polar does not recognize the credential itself, so this is not a missing-scope failure (those return 403).");
+                }
+
+                if (status == 429)
+                {
+                    throw new RateLimitedException(
+                        $"Polar: the API rate limit is exhausted (HTTP 429). {RateLimitAdvice.ResetAdvice(response, DateTime.UtcNow)} Nothing is misconfigured — re-running the build after the reset is the fix.");
+                }
+
+                throw new MaintenanceFeeException($"Polar HTTP {status}: {body}");
             }
 
             var pageResult = ParseResponse(body);

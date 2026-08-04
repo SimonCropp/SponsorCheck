@@ -421,8 +421,11 @@ public class BundleSponsorListTaskTests
             "ghp_explicit",
             Secrets(("SponsorCheck:GitHubToken", "ghp_from_secrets")));
         await Assert.That(tokens.Count).IsEqualTo(2);
-        await Assert.That(tokens[0]).IsEqualTo("ghp_explicit");
-        await Assert.That(tokens[1]).IsEqualTo("ghp_from_secrets");
+        await Assert.That(tokens[0].Value).IsEqualTo("ghp_explicit");
+        await Assert.That(tokens[1].Value).IsEqualTo("ghp_from_secrets");
+        // Each candidate carries where it came from, so SC107 can name the stored value to replace.
+        await Assert.That(tokens[0].Source).Contains("<GitHubToken> MSBuild property");
+        await Assert.That(tokens[1].Source).Contains("SponsorCheck:GitHubToken");
     }
 
     [Test]
@@ -434,7 +437,7 @@ public class BundleSponsorListTaskTests
             "ghp_same",
             Secrets(("SponsorCheck:GitHubToken", "ghp_same")));
         await Assert.That(tokens.Count).IsEqualTo(1);
-        await Assert.That(tokens[0]).IsEqualTo("ghp_same");
+        await Assert.That(tokens[0].Value).IsEqualTo("ghp_same");
     }
 
     [Test]
