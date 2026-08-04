@@ -9,23 +9,11 @@ namespace SponsorCheck.Web.Tests;
 /// </summary>
 public class ScreenSnapshotTests
 {
-    static PublishedWizard? wizard;
-
-    [Before(Class)]
-    public static async Task Setup() => wizard = await PublishedWizard.Start();
-
-    [After(Class)]
-    public static async Task Teardown()
-    {
-        if (wizard != null)
-        {
-            await wizard.DisposeAsync();
-        }
-    }
+    static PublishedWizard wizard => PublishedWizard.Shared;
 
     static async Task<IPage> Open(string path, string readySelector)
     {
-        var page = await wizard!.NewPage();
+        var page = await wizard.NewPage();
         await page.GotoAsync(wizard.Url(path));
         await page.WaitForSelectorAsync(readySelector);
         return page;

@@ -13,6 +13,29 @@ public sealed class PublishedWizard : IAsyncDisposable
     public IBrowser Browser { get; }
     public int Port { get; }
 
+    static PublishedWizard? shared;
+
+    /// <summary>
+    /// One Kestrel host and one Chromium for the whole assembly. Every browser-based test class hangs
+    /// off this: a per-class instance meant two cold WASM boots racing each other on a two-core CI
+    /// agent, and the losers blew Playwright's 30s default before the runtime finished starting.
+    /// </summary>
+    public static PublishedWizard Shared =>
+        shared ?? throw new("PublishedWizard has not been started.");
+
+    [Before(HookType.Assembly)]
+    public static async Task StartShared() => shared = await Start();
+
+    [After(HookType.Assembly)]
+    public static async Task StopShared()
+    {
+        if (shared != null)
+        {
+            await shared.DisposeAsync();
+            shared = null;
+        }
+    }
+
     PublishedWizard(WebApplication app, IPlaywright playwright, IBrowser browser, int port)
     {
         this.app = app;
@@ -75,7 +98,28 @@ public sealed class PublishedWizard : IAsyncDisposable
 
         var playwright = await Playwright.CreateAsync();
         var browser = await playwright.Chromium.LaunchAsync();
-        return new(app, playwright, browser, port);
+        var wizard = new PublishedWizard(app, playwright, browser, port);
+        await wizard.WarmUp();
+        return wizard;
+    }
+
+    /// <summary>
+    /// Boot the app once, serially, before any test runs. The first load downloads and initializes the
+    /// WASM runtime — on a cold CI agent that alone can outlast Playwright's 30s default, and doing it
+    /// concurrently in several pages only makes each one slower. After this the browser's HTTP cache is
+    /// warm, so the pages the tests open start against an already-fetched runtime.
+    /// </summary>
+    async Task WarmUp()
+    {
+        var page = await NewPage();
+        await page.GotoAsync(Url());
+        await page.WaitForSelectorAsync(
+            ".role-cards",
+            new()
+            {
+                Timeout = 120_000
+            });
+        await page.CloseAsync();
     }
 
     public async ValueTask DisposeAsync()
