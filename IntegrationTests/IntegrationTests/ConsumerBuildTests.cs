@@ -459,6 +459,21 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task DirectReference_ToPackageShippingItsOwnTargets_IsVerified()
+    {
+        // ThePackageOwnTargetsDir claims the <PackageId>.targets slot in build/ AND buildTransitive/.
+        // NuGet imports build/<id>.targets for a direct reference, so the verifier is packed into both
+        // folders (the author's copies relocated to sidecars). Without that, this direct consumer would
+        // import the author's targets, get no verifier, and build clean while declaring no sponsor
+        // account. The author's own logic must still run, from the sidecar the verifier imports.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOwnTargetsDir");
+        var result = await BuildFixtureInFeed("Consumer.OwnTargetsDirect", feed);
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC001");
+        await Assert.That(result.Combined).Contains("ThePackageOwnTargetsDir author target ran.");
+    }
+
+    [Test]
     public async Task TransitiveReference_WhenCheckTransitiveEnabled_IsVerified()
     {
         // ThePackageTransitive sets CheckTransitiveReferences="true", so its verifier ships under

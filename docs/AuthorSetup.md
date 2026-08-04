@@ -204,7 +204,9 @@ NuGet auto-imports exactly one file named `<PackageId>.targets` into a consumer,
 </ItemGroup>
 ```
 
-Only the copy in the folder SponsorCheck packs into is relocated (`build/` by default, or `buildTransitive/` under [`CheckTransitiveReferences`](#checking-transitive-references)). When the file is shipped to both folders — so it loads for direct *and* transitive references — the other copy is left in place; using identical MSBuild target names across the two keeps a direct consumer that imports both idempotent. This applies to `<PackageId>.targets` only; a shipped `<PackageId>.props` is untouched, since SponsorCheck never claims the props slot.
+The `PackagePath` may name the file (as above) or only the folder (`PackagePath="buildTransitive\"`) — both are detected. When the file is shipped to both `build/` and `buildTransitive/` — so it loads for direct *and* transitive references — both copies are relocated and the verifier is packed into both folders, since NuGet imports `build/<PackageId>.targets` for a direct reference and `buildTransitive/<PackageId>.targets` for a transitive one. Leaving either folder to the author's file would mean those consumers get no verification at all. Both verifier copies carry identical target names, so a consumer importing both runs the check once.
+
+This applies to `<PackageId>.targets` only; a shipped `<PackageId>.props` is untouched, since SponsorCheck never claims the props slot.
 
 
 ## Tuning verifier severity and message text

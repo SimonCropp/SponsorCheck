@@ -1,0 +1,6 @@
+<Project>
+  <!-- Author-owned build logic, packed via a folder-form PackagePath. -->
+  <Target Name="ThePackageOwnTargetsDir_AuthorMarker" BeforeTargets="BeforeBuild">
+    <Message Importance="high" Text="ThePackageOwnTargetsDir author target ran." />
+  </Target>
+</Project>

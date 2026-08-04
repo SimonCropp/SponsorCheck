@@ -1,0 +1,7 @@
+<Project>
+  <!-- A sibling packed to the same folder. It shares the folder-form PackagePath with the author's
+       .targets, so relocating the .targets must not take this file with it. -->
+  <PropertyGroup>
+    <ThePackageOwnTargetsDir_AuthorProps>true</ThePackageOwnTargetsDir_AuthorProps>
+  </PropertyGroup>
+</Project>
