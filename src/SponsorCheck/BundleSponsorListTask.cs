@@ -503,21 +503,24 @@ public sealed class BundleSponsorListTask :
     // without writing to the real user-secrets directory.
     public static IReadOnlyList<TokenCandidate> ResolveTokens(string platformId, string? explicitToken, IReadOnlyDictionary<string, string> userSecrets)
     {
-        var propertyName = platformId == "GitHubSponsors"
-            ? "GitHubToken"
-            : $"{platformId}Token";
+        // Both names spelled out per branch rather than composing the key from propertyName. The
+        // literal "SponsorCheck:GitHubToken" is what RepoContractTests.UserSecretKeysFollowConvention
+        // greps for to anchor the wizard's advertised key to the code that actually reads it — build
+        // the key by interpolation and that guard silently stops guarding anything.
+        var (propertyName, secretKey) = platformId == "GitHubSponsors"
+            ? ("GitHubToken", "SponsorCheck:GitHubToken")
+            : ($"{platformId}Token", $"SponsorCheck:{platformId}Token");
         var tokens = new List<TokenCandidate>();
         if (!string.IsNullOrWhiteSpace(explicitToken))
         {
             tokens.Add(new(explicitToken!, $"the <{propertyName}> MSBuild property (which MSBuild also auto-imports from a '{propertyName}' env var)"));
         }
 
-        var key = $"SponsorCheck:{propertyName}";
-        if (userSecrets.TryGetValue(key, out var value) &&
+        if (userSecrets.TryGetValue(secretKey, out var value) &&
             !string.IsNullOrWhiteSpace(value) &&
             !tokens.Any(_ => string.Equals(_.Value, value, StringComparison.Ordinal)))
         {
-            tokens.Add(new(value, $"user-secrets key '{key}'"));
+            tokens.Add(new(value, $"user-secrets key '{secretKey}'"));
         }
 
         return tokens;
