@@ -114,6 +114,40 @@ public class AuthorPackTests
     }
 
     [Test]
+    public async Task OwnTargets_RelocatedToSidecar_FolderFormPackagePath()
+    {
+        // Regression: detection previously only matched a PackagePath that named the file
+        // ('buildTransitive\<id>.targets'). The far more common authoring style names just the folder
+        // ('buildTransitive\'), letting the item's own file name land it in the same slot. That shape
+        // went undetected, so nothing was relocated and pack failed with NU5118 (seen in Verify).
+        // The relocation must also leave the sibling .props packed to the same folder alone — it shares
+        // the folder-form PackagePath, so matching on PackagePath alone would remove it too.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackageOwnTargetsDir");
+        var nupkg = Directory.GetFiles(feed, "ThePackageOwnTargetsDir.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entries = zip.Entries.Select(_ => _.FullName).ToList();
+
+        await Assert.That(entries).Contains("buildTransitive/ThePackageOwnTargetsDir.targets");
+        await Assert.That(entries).Contains("buildTransitive/ThePackageOwnTargetsDir.SponsorCheckInner.targets");
+        await Assert.That(entries).Contains("build/ThePackageOwnTargetsDir.targets");
+        // Siblings sharing the folder-form PackagePath are untouched.
+        await Assert.That(entries).Contains("buildTransitive/ThePackageOwnTargetsDir.props");
+        await Assert.That(entries).Contains("build/ThePackageOwnTargetsDir.props");
+
+        var verifier = await ReadEntry(zip, "buildTransitive/ThePackageOwnTargetsDir.targets");
+        await Assert.That(verifier).Contains("VerifySponsorshipTask");
+        await Assert.That(verifier).Contains("ThePackageOwnTargetsDir.SponsorCheckInner.targets");
+
+        var inner = await ReadEntry(zip, "buildTransitive/ThePackageOwnTargetsDir.SponsorCheckInner.targets");
+        await Assert.That(inner).Contains("ThePackageOwnTargetsDir_AuthorMarker");
+        await Assert.That(inner).DoesNotContain("VerifySponsorshipTask");
+
+        var buildCopy = await ReadEntry(zip, "build/ThePackageOwnTargetsDir.targets");
+        await Assert.That(buildCopy).Contains("ThePackageOwnTargetsDir_AuthorMarker");
+        await Assert.That(buildCopy).DoesNotContain("VerifySponsorshipTask");
+    }
+
+    [Test]
     public async Task BundledHashesMatchOverrideListAndAreDeterministic()
     {
         var feed = await ThePackageBuilder.EnsureBuilt();

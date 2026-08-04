@@ -147,12 +147,24 @@
     <PropertyGroup>
       <_SponsorCheck_OwnTargetsPackagePath>$(_SponsorCheck_BuildFolder)%5C$(PackageId).targets</_SponsorCheck_OwnTargetsPackagePath>
       <_SponsorCheck_OwnTargetsPackagePathAlt>$(_SponsorCheck_BuildFolder)/$(PackageId).targets</_SponsorCheck_OwnTargetsPackagePathAlt>
+      <!-- A PackagePath naming just the folder ('buildTransitive\', 'buildTransitive/' or bare
+           'buildTransitive') packs the item under its own file name, so it lands in the same slot
+           whenever that file name is <PackageId>.targets. This is the more common authoring style —
+           e.g. <None Include="buildTransitive\Foo.targets" PackagePath="buildTransitive\" />. -->
+      <_SponsorCheck_OwnTargetsDir>$(_SponsorCheck_BuildFolder)%5C</_SponsorCheck_OwnTargetsDir>
+      <_SponsorCheck_OwnTargetsDirAlt>$(_SponsorCheck_BuildFolder)/</_SponsorCheck_OwnTargetsDirAlt>
       <_SponsorCheck_InnerTargetsFileName>$(PackageId).SponsorCheckInner.targets</_SponsorCheck_InnerTargetsFileName>
     </PropertyGroup>
 
     <ItemGroup>
       <_SponsorCheck_AuthorOwnTargets Include="@(None)"
-          Condition="'%(None.Pack)' == 'true' and ('%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsPackagePath)' or '%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsPackagePathAlt)')" />
+          Condition="'%(None.Pack)' == 'true' and (
+            '%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsPackagePath)' or
+            '%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsPackagePathAlt)' or
+            ('%(None.Filename)%(None.Extension)' == '$(PackageId).targets' and (
+              '%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsDir)' or
+              '%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsDirAlt)' or
+              '%(None.PackagePath)' == '$(_SponsorCheck_BuildFolder)')))" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -210,12 +222,13 @@
         OverridePackDate="$(SponsorCheck_PackDateOverride)" />
 
     <!-- Move the author's own <PackageId>.targets aside to the sidecar the verifier imports, freeing
-         the <PackageId>.targets slot for the verifier <None> added below. MatchOnMetadata="PackagePath"
-         removes only the colliding item: an author who also ships the file to build\ (for direct refs,
-         when we pack into buildTransitive\) keeps that copy untouched — only the one in our pack folder
-         is relocated. The sidecar import in the verifier loads the author's logic for every consumer. -->
+         the <PackageId>.targets slot for the verifier <None> added below. Matching on Identity plus
+         PackagePath removes only the colliding item: an author who also ships the file to build\ (for
+         direct refs, when we pack into buildTransitive\) keeps that copy untouched — only the one in
+         our pack folder is relocated. PackagePath alone is not enough once folder-form PackagePaths are
+         matched, since sibling items (a .props packed to the same folder) share that metadata value. The sidecar import in the verifier loads the author's logic for every consumer. -->
     <ItemGroup Condition="'$(_SponsorCheck_HasAuthorOwnTargets)' == 'true'">
-      <None Remove="@(_SponsorCheck_AuthorOwnTargets)" MatchOnMetadata="PackagePath" />
+      <None Remove="@(_SponsorCheck_AuthorOwnTargets)" MatchOnMetadata="Identity;PackagePath" />
       <None Include="@(_SponsorCheck_AuthorOwnTargets)"
             Pack="true"
             PackagePath="$(_SponsorCheck_BuildFolder)\$(_SponsorCheck_InnerTargetsFileName)"

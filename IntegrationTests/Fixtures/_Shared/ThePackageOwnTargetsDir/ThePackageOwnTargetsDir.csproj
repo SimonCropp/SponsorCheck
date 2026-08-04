@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Same collision as ThePackageOwnTargets, but authored the way most packages write it: the
+         PackagePath names the folder, not the file, so the item lands in the <PackageId>.targets slot
+         by virtue of its own file name. A sibling .props packed to the same folder shares that
+         PackagePath value and must survive the relocation untouched. -->
+    <None Include="buildTransitive\ThePackageOwnTargetsDir.props" Pack="true" PackagePath="buildTransitive\" />
+    <None Include="buildTransitive\ThePackageOwnTargetsDir.props" Pack="true" PackagePath="build\" />
+    <None Include="buildTransitive\ThePackageOwnTargetsDir.targets" Pack="true" PackagePath="buildTransitive\" />
+    <None Include="buildTransitive\ThePackageOwnTargetsDir.targets" Pack="true" PackagePath="build\" />
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp"
+                      CheckTransitiveReferences="true" />
+  </ItemGroup>
+</Project>
