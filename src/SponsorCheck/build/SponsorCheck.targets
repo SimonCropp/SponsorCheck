@@ -154,6 +154,21 @@
       <_SponsorCheck_OwnTargetsDir>$(_SponsorCheck_BuildFolder)%5C</_SponsorCheck_OwnTargetsDir>
       <_SponsorCheck_OwnTargetsDirAlt>$(_SponsorCheck_BuildFolder)/</_SponsorCheck_OwnTargetsDirAlt>
       <_SponsorCheck_InnerTargetsFileName>$(PackageId).SponsorCheckInner.targets</_SponsorCheck_InnerTargetsFileName>
+
+      <!-- An author shipping their own <PackageId>.targets to BOTH build\ and buildTransitive\ (so their
+           logic loads for direct and transitive consumers alike) claims the auto-import slot in the
+           folder we don't pack into as well. Leaving that copy alone would hand every direct consumer
+           the author's file and no verifier — NuGet imports build\<id>.targets for direct references,
+           in preference to buildTransitive\. So the second folder is treated exactly like the pack
+           folder: the author's copy is relocated to a sidecar there too, and the verifier plus its data
+           files are packed alongside it. Both copies of the verifier carry identical target names, so a
+           consumer importing both is idempotent, and each folder holds its own complete set of data
+           files, so neither import reads across folders. -->
+      <_SponsorCheck_SecondFolder Condition="'$(_SponsorCheck_BuildFolder)' == 'buildTransitive'">build</_SponsorCheck_SecondFolder>
+      <_SponsorCheck_SecondOwnTargetsPackagePath>$(_SponsorCheck_SecondFolder)%5C$(PackageId).targets</_SponsorCheck_SecondOwnTargetsPackagePath>
+      <_SponsorCheck_SecondOwnTargetsPackagePathAlt>$(_SponsorCheck_SecondFolder)/$(PackageId).targets</_SponsorCheck_SecondOwnTargetsPackagePathAlt>
+      <_SponsorCheck_SecondOwnTargetsDir>$(_SponsorCheck_SecondFolder)%5C</_SponsorCheck_SecondOwnTargetsDir>
+      <_SponsorCheck_SecondOwnTargetsDirAlt>$(_SponsorCheck_SecondFolder)/</_SponsorCheck_SecondOwnTargetsDirAlt>
     </PropertyGroup>
 
     <ItemGroup>
@@ -165,11 +180,24 @@
               '%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsDir)' or
               '%(None.PackagePath)' == '$(_SponsorCheck_OwnTargetsDirAlt)' or
               '%(None.PackagePath)' == '$(_SponsorCheck_BuildFolder)')))" />
+      <_SponsorCheck_AuthorOwnTargetsSecond Include="@(None)"
+          Condition="'$(_SponsorCheck_SecondFolder)' != '' and '%(None.Pack)' == 'true' and (
+            '%(None.PackagePath)' == '$(_SponsorCheck_SecondOwnTargetsPackagePath)' or
+            '%(None.PackagePath)' == '$(_SponsorCheck_SecondOwnTargetsPackagePathAlt)' or
+            ('%(None.Filename)%(None.Extension)' == '$(PackageId).targets' and (
+              '%(None.PackagePath)' == '$(_SponsorCheck_SecondOwnTargetsDir)' or
+              '%(None.PackagePath)' == '$(_SponsorCheck_SecondOwnTargetsDirAlt)' or
+              '%(None.PackagePath)' == '$(_SponsorCheck_SecondFolder)')))" />
     </ItemGroup>
 
     <PropertyGroup>
       <_SponsorCheck_HasAuthorOwnTargets>false</_SponsorCheck_HasAuthorOwnTargets>
-      <_SponsorCheck_HasAuthorOwnTargets Condition="'@(_SponsorCheck_AuthorOwnTargets)' != ''">true</_SponsorCheck_HasAuthorOwnTargets>
+      <_SponsorCheck_HasAuthorOwnTargets Condition="'@(_SponsorCheck_AuthorOwnTargets)' != '' or '@(_SponsorCheck_AuthorOwnTargetsSecond)' != ''">true</_SponsorCheck_HasAuthorOwnTargets>
+      <!-- Only pack into the second folder when the author already claimed the slot there. Without a
+           collision the default stands: the verifier lives in exactly one folder, which is what makes
+           CheckTransitiveReferences the direct-vs-transitive toggle. -->
+      <_SponsorCheck_PackSecondFolder>false</_SponsorCheck_PackSecondFolder>
+      <_SponsorCheck_PackSecondFolder Condition="'@(_SponsorCheck_AuthorOwnTargetsSecond)' != ''">true</_SponsorCheck_PackSecondFolder>
       <!-- Empty unless an author-owned targets was found, so the bundler emits no <Import> in the common case. -->
       <_SponsorCheck_InnerImportArg Condition="'$(_SponsorCheck_HasAuthorOwnTargets)' == 'true'">$(_SponsorCheck_InnerTargetsFileName)</_SponsorCheck_InnerImportArg>
     </PropertyGroup>
@@ -223,11 +251,10 @@
 
     <!-- Move the author's own <PackageId>.targets aside to the sidecar the verifier imports, freeing
          the <PackageId>.targets slot for the verifier <None> added below. Matching on Identity plus
-         PackagePath removes only the colliding item: an author who also ships the file to build\ (for
-         direct refs, when we pack into buildTransitive\) keeps that copy untouched — only the one in
-         our pack folder is relocated. PackagePath alone is not enough once folder-form PackagePaths are
-         matched, since sibling items (a .props packed to the same folder) share that metadata value. The sidecar import in the verifier loads the author's logic for every consumer. -->
-    <ItemGroup Condition="'$(_SponsorCheck_HasAuthorOwnTargets)' == 'true'">
+         PackagePath removes only the colliding item: PackagePath alone is not enough once folder-form
+         PackagePaths are matched, since sibling items (a .props packed to the same folder) share that
+         metadata value. The sidecar import in the verifier loads the author's logic for every consumer. -->
+    <ItemGroup Condition="'@(_SponsorCheck_AuthorOwnTargets)' != ''">
       <None Remove="@(_SponsorCheck_AuthorOwnTargets)" MatchOnMetadata="Identity;PackagePath" />
       <None Include="@(_SponsorCheck_AuthorOwnTargets)"
             Pack="true"
@@ -235,38 +262,57 @@
             Visible="false" />
     </ItemGroup>
 
+    <!-- Same relocation for the author's copy in the second folder (see _SponsorCheck_SecondFolder). -->
+    <ItemGroup Condition="'$(_SponsorCheck_PackSecondFolder)' == 'true'">
+      <None Remove="@(_SponsorCheck_AuthorOwnTargetsSecond)" MatchOnMetadata="Identity;PackagePath" />
+      <None Include="@(_SponsorCheck_AuthorOwnTargetsSecond)"
+            Pack="true"
+            PackagePath="$(_SponsorCheck_SecondFolder)\$(_SponsorCheck_InnerTargetsFileName)"
+            Visible="false" />
+    </ItemGroup>
+
+    <!-- The folders the verifier and its data files are packed into: the pack folder, plus the second
+         folder when the author claimed the slot there too. Every <None> below batches over this item,
+         producing one copy per folder — each folder ends up self-contained, since the verifier resolves
+         its data files relative to $(MSBuildThisFileDirectory). -->
+    <ItemGroup>
+      <_SponsorCheck_PackFolder Include="$(_SponsorCheck_BuildFolder)" />
+      <_SponsorCheck_PackFolder Include="$(_SponsorCheck_SecondFolder)"
+                                Condition="'$(_SponsorCheck_PackSecondFolder)' == 'true'" />
+    </ItemGroup>
+
     <ItemGroup>
       <None Include="$(_SponsorCheck_HashListPath)"
             Pack="true"
-            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.SponsorHashes.txt"
+            PackagePath="%(_SponsorCheck_PackFolder.Identity)\SponsorCheck.SponsorHashes.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_PackDatePath)"
             Pack="true"
-            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.PackDate.txt"
+            PackagePath="%(_SponsorCheck_PackFolder.Identity)\SponsorCheck.PackDate.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_AuthorAccountsPath)"
             Pack="true"
-            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.AuthorAccounts.txt"
+            PackagePath="%(_SponsorCheck_PackFolder.Identity)\SponsorCheck.AuthorAccounts.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_SeverityOverridesPath)"
             Pack="true"
-            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.SeverityOverrides.txt"
+            PackagePath="%(_SponsorCheck_PackFolder.Identity)\SponsorCheck.SeverityOverrides.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_MessageOverridesPath)"
             Pack="true"
-            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.MessageOverrides.json"
+            PackagePath="%(_SponsorCheck_PackFolder.Identity)\SponsorCheck.MessageOverrides.json"
             Visible="false" />
       <None Include="$(_SponsorCheck_LandingUrlPath)"
             Pack="true"
-            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.LandingUrl.txt"
+            PackagePath="%(_SponsorCheck_PackFolder.Identity)\SponsorCheck.LandingUrl.txt"
             Visible="false" />
       <None Include="$(_SponsorCheck_ExemptionsPath)"
             Pack="true"
-            PackagePath="$(_SponsorCheck_BuildFolder)\SponsorCheck.Exemptions.json"
+            PackagePath="%(_SponsorCheck_PackFolder.Identity)\SponsorCheck.Exemptions.json"
             Visible="false" />
       <None Include="$(_SponsorCheck_GeneratedTargetsPath)"
             Pack="true"
-            PackagePath="$(_SponsorCheck_BuildFolder)\$(PackageId).targets"
+            PackagePath="%(_SponsorCheck_PackFolder.Identity)\$(PackageId).targets"
             Visible="false" />
       <!-- Forward slash in PackagePath — see SponsorCheck.csproj for the rationale (Linux MSBuild
            + NuGet pack produces 'tasks/netstandard2.0//<dll>' double-slashes with '\' here). -->

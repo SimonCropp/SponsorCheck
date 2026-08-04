@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- ThePackageOwnTargetsDir ships its own <PackageId>.targets to build/ AND buildTransitive/ while
+         using CheckTransitiveReferences. NuGet imports build/<id>.targets for this direct reference, so
+         the verifier has to live there too — otherwise a direct consumer would silently get the author's
+         targets and no verification. With no sponsor account declared, the build fails with SC001, and
+         the author's own target still runs from the relocated sidecar. -->
+    <PackageReference Include="ThePackageOwnTargetsDir" Version="1.0.0" />
+  </ItemGroup>
+</Project>
