@@ -256,4 +256,4 @@ Every distinct terminal state across both scenarios, with the consumer's effort 
 | --- | --- | --- |
 | Author never learns whether they are under-funded | None — SC005/SC017 are consumer-local; the author never sees them | Shared limitation, not a SponsorCheck win |
 
-> One upstream precondition gates the entire Build-time check column: the author's pack must succeed. A missing platform credential (`SC102`), no configured platform account (`SC101`), or a platform fetch failure (`SC100`) is surfaced in the author's *own* pack log (see [Bundler diagnostic codes](BundlerDiagnosticCodes.md)) and determines whether a correct verifier ships at all.
+> One upstream precondition gates the entire Build-time check column: the author's pack must succeed. A missing platform credential (`SC102`), a rejected one (`SC107`), no configured platform account (`SC101`), an exhausted platform rate limit (`SC108`), or a platform fetch failure (`SC100`) is surfaced in the author's *own* pack log (see [Bundler diagnostic codes](BundlerDiagnosticCodes.md)) and determines whether a correct verifier ships at all.

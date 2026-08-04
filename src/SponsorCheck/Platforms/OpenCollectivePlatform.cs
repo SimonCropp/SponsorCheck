@@ -88,7 +88,30 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
             return body;
         }
 
-        throw new MaintenanceFeeException($"Open Collective GraphQL HTTP {(int)response.StatusCode}: {body}");
+        var status = (int)response.StatusCode;
+        if (status == 401)
+        {
+            // Open Collective is the one platform where the credential is optional (it only buys
+            // rate-limit headroom), so deleting the stored value is a legitimate fix here and not
+            // just a way to trade one failure for another.
+            throw new InvalidCredentialException(
+                $"Open Collective: the configured Personal-Token was rejected (HTTP 401). Token supplied: {TokenShape.Describe(token)}. This token is optional — it only raises the rate limit on collectives with many backers — so either issue a replacement at https://opencollective.com/applications or remove the stored value entirely to fall back to anonymous access.");
+        }
+
+        if (status == 429)
+        {
+            // Unlike the other two platforms this one is routinely called anonymously, and the
+            // anonymous ceiling is what a collective with many backers actually hits — paging
+            // through the member list is several requests. So here a token is the durable fix,
+            // not merely a retry.
+            var fix = string.IsNullOrWhiteSpace(token)
+                ? "The call was unauthenticated, and anonymous callers get a much lower ceiling than token holders — a collective with many backers pages through several requests and exhausts it. Create a Personal Token at https://opencollective.com/applications (no scopes required) and set it as the <OpenCollectiveToken> MSBuild property, or the 'OpenCollectiveToken' env var, for a durable fix."
+                : "Nothing is misconfigured — re-running the build after the reset is the fix.";
+            throw new RateLimitedException(
+                $"Open Collective: the API rate limit is exhausted (HTTP 429). {RateLimitAdvice.ResetAdvice(response, DateTime.UtcNow)} {fix}");
+        }
+
+        throw new MaintenanceFeeException($"Open Collective GraphQL HTTP {status}: {body}");
     }
 
     public readonly record struct PageResult(bool AccountExists, IReadOnlyList<string> MemberSlugs, int RawItemCount, int TotalCount);

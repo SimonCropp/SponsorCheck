@@ -134,6 +134,8 @@ public static class SponsorCheckLog
         "SC104" => "Invalid severity override",
         "SC105" => "Invalid SponsorOwner",
         "SC106" => "Invalid exemption definition",
+        "SC107" => "Platform credential rejected",
+        "SC108" => "Platform rate limit exhausted",
         _ => code
     };
 }

@@ -192,7 +192,59 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
             return body;
         }
 
-        throw new MaintenanceFeeException($"GitHub GraphQL HTTP {(int) response.StatusCode}: {body}");
+        var status = (int) response.StatusCode;
+        if (status == 401)
+        {
+            throw new InvalidCredentialException(CredentialRejectedMessage(token));
+        }
+
+        if (IsRateLimited(response, status))
+        {
+            throw new RateLimitedException(
+                $"GitHub Sponsors: the API rate limit is exhausted (HTTP {status}). {RateLimitAdvice.ResetAdvice(response, DateTime.UtcNow)} {sharedBudgetNote}");
+        }
+
+        throw new MaintenanceFeeException($"GitHub GraphQL HTTP {status}: {body}");
+    }
+
+    const string sharedBudgetNote =
+        "The limit is charged against the token making the call, not the repository, so a CI matrix that packs several projects at once draws them all from one budget. Nothing is misconfigured — re-running the build after the reset is the fix.";
+
+    // GitHub signals an exhausted primary limit as 429, or as 403 with x-ratelimit-remaining: 0, and
+    // a secondary (abuse) limit as 403 with Retry-After. A 403 without either is a real permission
+    // failure and has to stay on the generic path.
+    static bool IsRateLimited(HttpResponseMessage response, int status)
+    {
+        if (status == 429)
+        {
+            return true;
+        }
+
+        if (status != 403)
+        {
+            return false;
+        }
+
+        return RateLimitAdvice.Header(response, "x-ratelimit-remaining") == "0" ||
+               RateLimitAdvice.Header(response, "retry-after") != null;
+    }
+
+    // GitHub answers an unknown credential with a bare 401 and no machine-readable reason, so the
+    // token's own published prefix is the only available signal for separating "correct kind of
+    // token, dead value" from "wrong kind of token entirely". Those two have completely different
+    // fixes and otherwise render identically.
+    public static string CredentialRejectedMessage(string? token)
+    {
+        var diagnosis = TokenShape.Prefix(token) switch
+        {
+            "ghp_" => "That is a classic PAT, which is the correct type, so GitHub no longer recognizes this particular value — it has been deleted or regenerated. Issue a replacement at https://github.com/settings/tokens with read:user (plus read:org when sponsored as an organization).",
+            "github_pat_" => "That is a fine-grained PAT. Fine-grained tokens expose no Sponsorships permission and cannot read sponsor lists at all — issue a classic PAT at https://github.com/settings/tokens/new with read:user (plus read:org when sponsored as an organization).",
+            "ghs_" => "That is a GitHub App installation token, which is what secrets.GITHUB_TOKEN expands to on GitHub Actions. It cannot read sponsorships — store a classic PAT as your own secret and expose that one under the GitHubToken name instead.",
+            "gho_" or "ghu_" => "That is an OAuth app token rather than a personal access token. Issue a classic PAT at https://github.com/settings/tokens/new with read:user (plus read:org when sponsored as an organization).",
+            _ => "GitHub tokens carry a published prefix (ghp_ for classic, github_pat_ for fine-grained), so this value is most likely truncated, a placeholder, or an unrelated secret."
+        };
+
+        return $"GitHub Sponsors: the configured token was rejected (HTTP 401 Bad credentials). Token supplied: {TokenShape.Describe(token)}. {diagnosis} A 401 means GitHub does not recognize the credential itself — a missing scope returns INSUFFICIENT_SCOPES and an organization that blocks classic PATs returns FORBIDDEN, so this is not a scope, SSO, or org-policy failure.";
     }
 
     public readonly record struct SponsorshipEntry(
@@ -229,6 +281,14 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
                 {
                     throw new MaintenanceFeeException(
                         $"GitHub Sponsors: organization '{orgName}' has disabled access via classic personal access tokens. Fine-grained PATs don't expose a Sponsorships permission, so a classic PAT is the only token type that can read private sponsors. Ask an admin of '{orgName}' to re-enable classic-PAT access in the org's personal-access-token settings, then refresh SponsorCheck:GitHubToken (or the GitHubToken MSBuild property / env var).");
+                }
+
+                if (IsRateLimited(error))
+                {
+                    // GraphQL reports an exhausted budget as a 200 carrying a RATE_LIMITED error,
+                    // so this never reaches the HTTP status check in Post.
+                    throw new RateLimitedException(
+                        $"GitHub Sponsors: the API rate limit is exhausted (GraphQL RATE_LIMITED). The GraphQL budget is 5,000 points per hour and refills on a rolling hourly window. {sharedBudgetNote}");
                 }
 
                 if (IsInsufficientScopes(error))
@@ -291,6 +351,17 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
         }
 
         return true;
+    }
+
+    static bool IsRateLimited(JsonElement error)
+    {
+        if (!error.TryGetProperty("type", out var type) ||
+            type.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        return string.Equals(type.GetString(), "RATE_LIMITED", StringComparison.Ordinal);
     }
 
     static bool IsInsufficientScopes(JsonElement error)
