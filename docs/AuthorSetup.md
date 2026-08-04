@@ -35,7 +35,7 @@ At least one `<Platform>Account` must be set. Credentials per platform:
 
 Required - [classic PAT](https://github.com/settings/tokens/new) with `read:user`, plus `read:org` if sponsored as an organization. `read:user` is always required because the bundler reads per-sponsorship metadata (`isOneTimePayment`, `createdAt`, `isActive`) from `sponsorshipsAsMaintainer`, and GitHub gates those fields on `read:user` even when the maintainer is an organization. Fine-grained PATs don't expose a Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently filtered out and the bundled hash list will be incomplete.
 
-Some organizations disable classic-PAT access in their security settings. When sponsored as such an org, a classic PAT will fail with a `FORBIDDEN` error from GitHub at pack time and the bundler emits an actionable message. The org admin needs to re-enable classic-PAT access for the sponsored org.
+Some organizations disable classic-PAT access in their security settings. When sponsored as such an org, a classic PAT will fail with a `FORBIDDEN` error from GitHub at pack time and the bundler emits an actionable message. The org admin needs to re-enable classic-PAT access for the sponsored org. Because that arrives as `FORBIDDEN` rather than as a 401, it is reported separately from a credential the platform does not recognize at all ([SC107](BundlerDiagnosticCodes.md#sc107)) — the two have different fixes and neither message is emitted for the other case.
 
 
 #### One-time sponsors
@@ -53,7 +53,7 @@ Recurring sponsors are bundled while their sponsorship is active and dropped as 
  * Env var: `OpenCollectiveToken` (auto-imported into the MSBuild property of the same name)
  * User-secrets key: `SponsorCheck:OpenCollectiveToken`
 
-Optional - public collectives are queryable anonymously, but anonymous calls hit rate limits on collectives with many backers. Create a [Personal Token](https://opencollective.com/applications) (no scopes required — the token is used for rate-limit headroom, not access).
+Optional - public collectives are queryable anonymously, but anonymous calls hit rate limits on collectives with many backers. Create a [Personal Token](https://opencollective.com/applications) (no scopes required — the token is used for rate-limit headroom, not access). A pack that exhausts the anonymous ceiling fails with [SC108](BundlerDiagnosticCodes.md#sc108), which recommends creating the token rather than advising a retry — paging a large member list will exhaust it again on the next run.
 
 
 ### [Polar](https://polar.sh)
@@ -65,9 +65,13 @@ Optional - public collectives are queryable anonymously, but anonymous calls hit
 Required - [organization access token](https://docs.polar.sh/integrate/authentication/personal-access-token) with scopes `subscriptions:read`, `customers:read`, `organizations:read`. The customer scope matters: without it Polar can return null `github_username` / `email` on embedded customer objects, causing the bundler to fall back to opaque `user_id`s that won't match consumer-declared `<PolarSponsorAccount>` values.
 
 
-## Token expiry
+## Token expiry and rejection
 
-GitHub PATs and Polar API keys both expire. If a CI build suddenly fails with HTTP 401 from a platform, the token has likely expired — rotate it and update the secret. Pick "no expiration" on the GitHub PAT form for set-and-forget; otherwise add the rotation date to a calendar.
+GitHub PATs and Polar API keys can both carry an expiry. A pack that suddenly fails with [SC107](BundlerDiagnosticCodes.md#sc107) means the platform no longer recognizes the stored credential — rotate it and update the secret. Pick "no expiration" on the GitHub PAT form for set-and-forget; otherwise add the rotation date to a calendar.
+
+Expiry is not the only cause, and a token marked "no expiration" is not immune: deleting or regenerating a PAT invalidates the old value, and a CI secret store can go on holding a copy of a token that was replaced months ago. SC107 reports the credential's vendor prefix and length — never the value — and names the MSBuild property, env var, or user-secrets key it was read from, which is what identifies the store to correct when the same token name is configured in more than one place.
+
+A rejection is not a permissions failure. A missing scope, a token an org has deauthorized under SAML, and an org that blocks classic PATs entirely all arrive as `FORBIDDEN` or `INSUFFICIENT_SCOPES` rather than as a 401, and each reports with its own message. SC107 specifically means the credential is unknown to the platform.
 
 
 ## Storing credentials
