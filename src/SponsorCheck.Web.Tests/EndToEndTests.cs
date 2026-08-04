@@ -6,24 +6,12 @@ namespace SponsorCheck.Web.Tests;
 /// </summary>
 public class EndToEndTests
 {
-    static PublishedWizard? wizard;
-
-    [Before(Class)]
-    public static async Task Setup() => wizard = await PublishedWizard.Start();
-
-    [After(Class)]
-    public static async Task Teardown()
-    {
-        if (wizard != null)
-        {
-            await wizard.DisposeAsync();
-        }
-    }
+    static PublishedWizard wizard => PublishedWizard.Shared;
 
     [Test]
     public async Task Boots()
     {
-        var page = await wizard!.NewPage();
+        var page = await wizard.NewPage();
         await page.GotoAsync(wizard.Url());
         await page.WaitForSelectorAsync(".role-cards");
 
@@ -34,7 +22,7 @@ public class EndToEndTests
     [Test]
     public async Task AuthorJourney()
     {
-        var page = await wizard!.NewPage();
+        var page = await wizard.NewPage();
         await page.GotoAsync(wizard.Url());
         await page.ClickAsync("a.role-card[href='author']");
         await page.WaitForSelectorAsync("#packageId");
@@ -62,7 +50,7 @@ public class EndToEndTests
     [Test]
     public async Task ConsumerOwnerJourney()
     {
-        var page = await wizard!.NewPage();
+        var page = await wizard.NewPage();
         await page.GotoAsync(wizard.Url());
         await page.ClickAsync("a.role-card[href='consumer']");
         await page.WaitForSelectorAsync("#packageId");
@@ -95,7 +83,7 @@ public class EndToEndTests
     public async Task DeepLinkToConsumerFlow()
     {
         // Exercises the SPA fallback (404.html / MapFallbackToFile) that GitHub Pages relies on.
-        var page = await wizard!.NewPage();
+        var page = await wizard.NewPage();
         await page.GotoAsync(wizard.Url("/consumer"));
         await page.WaitForSelectorAsync("#packageId");
 
