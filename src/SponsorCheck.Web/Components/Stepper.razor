@@ -5,7 +5,9 @@
         @if (index < Active)
         {
             <li class="done">
-                <button type="button" class="step-link" title="Back to step @(index + 1): @Labels[index]"
+                <button type="button"
+                        class="step-link"
+                        title="Back to step @(index + 1): @Labels[index]"
                         @onclick="() => StepSelected.InvokeAsync(index)"><span class="step-num">@(index + 1).</span> @Labels[index]</button>
             </li>
         }

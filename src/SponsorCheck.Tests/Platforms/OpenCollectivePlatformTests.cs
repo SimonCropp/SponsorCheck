@@ -1,5 +1,3 @@
-using System.Net;
-
 public class OpenCollectivePlatformTests
 {
     [Test]

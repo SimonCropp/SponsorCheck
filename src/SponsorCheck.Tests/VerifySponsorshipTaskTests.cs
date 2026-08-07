@@ -2338,7 +2338,7 @@ public class VerifySponsorshipTaskTests
     static readonly DateTime clock = new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc);
 
     static Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> Exemptions(params (string name, string message, int? maxTermMonths)[] entries) =>
-        new(() => (IReadOnlyDictionary<string, ExemptionDefinition>) entries.ToDictionary(
+        new(() => entries.ToDictionary(
             _ => _.name,
             _ => new ExemptionDefinition(_.message, _.maxTermMonths),
             StringComparer.OrdinalIgnoreCase));

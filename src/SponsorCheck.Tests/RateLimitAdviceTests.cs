@@ -1,5 +1,3 @@
-using System.Globalization;
-
 public class RateLimitAdviceTests
 {
     static readonly DateTime now = new(2026, 8, 4, 12, 0, 0, DateTimeKind.Utc);

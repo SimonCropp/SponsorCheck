@@ -15,7 +15,8 @@ __SC_INNER_IMPORT__
     <_SponsorCheck_ExemptionsPath>$(MSBuildThisFileDirectory)SponsorCheck.Exemptions.json</_SponsorCheck_ExemptionsPath>
   </PropertyGroup>
 
-  <UsingTask TaskName="VerifySponsorshipTask"
+  <!-- Version-scoped task name — see ConsumerVerifier.targets for why the bare name can't be used. -->
+  <UsingTask TaskName="__SC_TASK_NAME__"
              AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
 
   <!-- Project-reference coverage responders. When a transitive consumer (this project's verifier
@@ -69,7 +70,7 @@ __SC_INNER_IMPORT__
       <_SponsorCheck_OwnerVerified___SC_OWNER_ID__>true</_SponsorCheck_OwnerVerified___SC_OWNER_ID__>
     </PropertyGroup>
 
-    <VerifySponsorshipTask
+    <__SC_TASK_NAME__
         Condition="'@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
         ThePackageId="$(_SponsorCheck_ThePackageId)"
         OwnerId="$(_SponsorCheck_OwnerId)"

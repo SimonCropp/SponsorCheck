@@ -246,7 +246,7 @@ public class RepoContractTests
     public async Task DocLinkAnchorsResolveToHeadings()
     {
         var links = typeof(DocLinks)
-            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
             .Select(_ => (string) _.GetRawConstantValue()!)
             .Concat(OverrideInfo.All.SelectMany(_ => _.CodeList).Select(DocLinks.VerifierCode))
             .Where(_ => _.Contains('#'))

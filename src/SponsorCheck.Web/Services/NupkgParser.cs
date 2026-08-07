@@ -143,7 +143,7 @@ public static class NupkgParser
                     var bare = value.GetString();
                     if (!string.IsNullOrWhiteSpace(bare))
                     {
-                        result.Add(new(property.Name, bare!));
+                        result.Add(new(property.Name, bare));
                     }
 
                     continue;
@@ -171,7 +171,7 @@ public static class NupkgParser
                     maxTermMonths = months;
                 }
 
-                result.Add(new(property.Name, message!, maxTermMonths));
+                result.Add(new(property.Name, message, maxTermMonths));
             }
         }
         catch (JsonException)

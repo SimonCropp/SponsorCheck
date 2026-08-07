@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Net;
-
 public class GitHubSponsorsPlatformTests
 {
     [Test]

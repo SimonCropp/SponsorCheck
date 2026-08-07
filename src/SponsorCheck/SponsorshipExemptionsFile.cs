@@ -12,7 +12,7 @@ public static class SponsorshipExemptionsFile
         // Written with Utf8JsonWriter rather than JsonSerializer so the optional maxTermMonths
         // is simply absent when unset, instead of a null the readers would have to skip.
         using var stream = File.Create(path);
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions {Indented = true});
+        using var writer = new Utf8JsonWriter(stream, new() {Indented = true});
         writer.WriteStartObject();
         foreach (var pair in sorted)
         {

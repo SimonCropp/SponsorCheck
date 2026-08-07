@@ -1,6 +1,6 @@
 public static class DecisionApplier
 {
-    const string newline = "\n";
+    const char newline = '\n';
 
     public static bool Apply(
         LicenseDecision decision,

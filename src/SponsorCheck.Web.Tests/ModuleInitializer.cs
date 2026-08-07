@@ -26,11 +26,12 @@ static class ModuleInitializer
         // layout changes.
         VerifierSettings.UseSsimForPng(.7);
 
-        VerifierSettings.ScrubLinesWithReplace(_ => Regex.Replace(
-            _,
-            "blazor:elementreference=\"[^\"]*\"",
-            "blazor:elementreference=\"scrubbed\"",
-            RegexOptions.IgnoreCase));
+        VerifierSettings.ScrubLinesWithReplace(_ =>
+            Regex.Replace(
+                _,
+                "blazor:elementreference=\"[^\"]*\"",
+                "blazor:elementreference=\"scrubbed\"",
+                RegexOptions.IgnoreCase));
 
         // The author flow surfaces the current SponsorCheck version (generated from $(Version)) in
         // placeholders; scrub it so html screen snapshots survive version bumps.

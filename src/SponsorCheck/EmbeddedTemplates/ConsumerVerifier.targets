@@ -14,7 +14,14 @@ __SC_INNER_IMPORT__
     <_SponsorCheck_ExemptionsPath>$(MSBuildThisFileDirectory)SponsorCheck.Exemptions.json</_SponsorCheck_ExemptionsPath>
   </PropertyGroup>
 
-  <UsingTask TaskName="VerifySponsorshipTask"
+  <!-- __SC_TASK_NAME__ renders to the version-scoped task type (VerifySponsorshipTask_<version>).
+       MSBuild's task registry is keyed by task *name*, and the first UsingTask to claim a name wins
+       for the whole project — the assembly identity is not part of the key. Two packages bundling
+       different SponsorCheck versions therefore used to share one registration, and whichever one
+       registered first supplied the task for both: MSB4064 as soon as the newer verifier passed a
+       parameter the older task didn't declare. A version-scoped name gives each SponsorCheck release
+       its own registration, so every verifier binds to the copy it was generated against. -->
+  <UsingTask TaskName="__SC_TASK_NAME__"
              AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
 
   <!-- Project-reference coverage responders — see ConsumerVerifierOwner.targets for the rationale.
@@ -80,7 +87,7 @@ __SC_INNER_IMPORT__
       <_SponsorCheck___SC_PACKAGE_ID___PolarFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(PolarSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___PolarFromVer>
     </PropertyGroup>
 
-    <VerifySponsorshipTask
+    <__SC_TASK_NAME__
         Condition="'@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
         ThePackageId="$(_SponsorCheck_ThePackageId)"
         SponsorHashListPath="$(_SponsorCheck_HashListPath)"
