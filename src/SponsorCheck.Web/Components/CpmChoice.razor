@@ -1,16 +1,22 @@
 <div class="field">
     <label>Central Package Management?</label>
     <div class="radio-row">
-        <input type="radio" id="cpm-no" name="cpm"
-               checked="@(!Model.Cpm)" @onchange="() => SetCpm(false)" />
+        <input type="radio"
+               id="cpm-no"
+               name="cpm"
+               checked="@(!Model.Cpm)"
+               @onchange="() => SetCpm(false)" />
         <label for="cpm-no">
             No
             <p class="hint">Versions sit on each <code>&lt;PackageReference&gt;</code> (odd-numbered codes: SC001, SC007, …).</p>
         </label>
     </div>
     <div class="radio-row">
-        <input type="radio" id="cpm-yes" name="cpm"
-               checked="@Model.Cpm" @onchange="() => SetCpm(true)" />
+        <input type="radio"
+               id="cpm-yes"
+               name="cpm"
+               checked="@Model.Cpm"
+               @onchange="() => SetCpm(true)" />
         <label for="cpm-yes">
             Yes
             <p class="hint">Versions live in <code>Directory.Packages.props</code> (even-numbered codes: SC002, SC008, …).</p>

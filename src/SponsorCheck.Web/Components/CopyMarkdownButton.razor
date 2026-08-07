@@ -1,6 +1,8 @@
 @inject ClipboardService Clipboard
 
-<button type="button" class="copy-markdown" @onclick="Copy">@(copied ? "Copied!" : "Copy as markdown")</button>
+<button type="button"
+        class="copy-markdown"
+        @onclick="Copy">@(copied ? "Copied!" : "Copy as markdown")</button>
 
 @code {
     // The full generated result as one self-contained markdown document — paste-ready for a PR

@@ -143,7 +143,7 @@ public static class NupkgParser
                     var bare = value.GetString();
                     if (!string.IsNullOrWhiteSpace(bare))
                     {
-                        result.Add(new(property.Name, bare!));
+                        result.Add(new(property.Name, bare));
                     }
 
                     continue;

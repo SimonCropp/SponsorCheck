@@ -3,7 +3,9 @@
 <PageTitle>SponsorCheck Setup Wizard — consumer</PageTitle>
 
 <div class="wizard">
-    <Stepper Labels="steps" Active="step" StepSelected="GoToStep" />
+    <Stepper Labels="steps"
+             Active="step"
+             StepSelected="GoToStep" />
 
     <div class="step-body">
         @switch (step)
@@ -13,17 +15,28 @@
                 <div class="field">
                     <label for="packageId">Package id</label>
                     <p class="hint">The package named in the diagnostic. With a nuget.org lookup, the wizard reads the bundled SponsorCheck configuration and pre-answers the questions.</p>
-                    <input id="packageId" type="text" placeholder="ThePackage"
-                           @bind="model.PackageId" @bind:event="oninput" @bind:after="PackageChanged" />
+                    <input id="packageId"
+                           type="text"
+                           placeholder="ThePackage"
+                           @bind="model.PackageId"
+                           @bind:event="oninput"
+                           @bind:after="PackageChanged" />
                 </div>
                 <div class="field">
                     <label for="packageVersion">Version <span class="optional-tag">optional</span></label>
                     <p class="hint">The referenced version. Blank: the lookup inspects the latest stable release.</p>
-                    <input id="packageVersion" type="text" placeholder="1.0.0"
-                           @bind="model.PackageVersion" @bind:event="oninput" @bind:after="PackageChanged" />
+                    <input id="packageVersion"
+                           type="text"
+                           placeholder="1.0.0"
+                           @bind="model.PackageVersion"
+                           @bind:event="oninput"
+                           @bind:after="PackageChanged" />
                 </div>
                 <div class="field">
-                    <button type="button" class="lookup" disabled="@(!CanLookup)" @onclick="LookupPackage">
+                    <button type="button"
+                            class="lookup"
+                            disabled="@(!CanLookup)"
+                            @onclick="LookupPackage">
                         @(lookupBusy ? "Inspecting…" : "Look up on nuget.org")
                     </button>
                     <p class="hint">Optional — the download and inspection happen in the browser; nothing is uploaded anywhere.</p>
@@ -80,8 +93,12 @@
                     <div class="field">
                         <label for="scCode">Diagnostic code from the failing build <span class="optional-tag">optional</span></label>
                         <p class="hint">The SC code in the build output encodes the answers below — enter it and the questions pre-answer themselves (still editable).</p>
-                        <input id="scCode" type="text" placeholder="SC001"
-                               @bind="model.EnteredCode" @bind:event="oninput" @bind:after="CodeChanged" />
+                        <input id="scCode"
+                               type="text"
+                               placeholder="SC001"
+                               @bind="model.EnteredCode"
+                               @bind:event="oninput"
+                               @bind:after="CodeChanged" />
                         @if (classification is { } parsed)
                         {
                             @if (!parsed.Recognized)
@@ -106,16 +123,22 @@
                     <div class="field">
                         <label>Configuration style</label>
                         <div class="radio-row">
-                            <input type="radio" id="style-package" name="configStyle"
-                                   checked="@(!model.OwnerMode)" @onchange="() => model.OwnerMode = false" />
+                            <input type="radio"
+                                   id="style-package"
+                                   name="configStyle"
+                                   checked="@(!model.OwnerMode)"
+                                   @onchange="() => model.OwnerMode = false" />
                             <label for="style-package">
                                 Per package
                                 <p class="hint">The metadata lives on the package reference itself (codes SC001–SC016 and most others).</p>
                             </label>
                         </div>
                         <div class="radio-row">
-                            <input type="radio" id="style-owner" name="configStyle"
-                                   checked="@model.OwnerMode" @onchange="() => model.OwnerMode = true" />
+                            <input type="radio"
+                                   id="style-owner"
+                                   name="configStyle"
+                                   checked="@model.OwnerMode"
+                                   @onchange="() => model.OwnerMode = true" />
                             <label for="style-owner">
                                 Owner mode
                                 <p class="hint">The error names a global property like <code>&lt;acme_GitHubSponsorAccount&gt;</code> (codes SC021–SC028) — one declaration covers every package from that owner.</p>
@@ -128,8 +151,11 @@
                         <div class="field">
                             <label for="ownerId">Owner id</label>
                             <p class="hint">Copy it from the property name in the error message — the part before the underscore, e.g. <code>acme</code> for <code>&lt;acme_GitHubSponsorAccount&gt;</code>.</p>
-                            <input id="ownerId" type="text" placeholder="acme"
-                                   @bind="model.OwnerId" @bind:event="oninput" />
+                            <input id="ownerId"
+                                   type="text"
+                                   placeholder="acme"
+                                   @bind="model.OwnerId"
+                                   @bind:event="oninput" />
                         </div>
                     }
                     else
@@ -143,22 +169,30 @@
                 <h2>License mode</h2>
                 <p class="hint">The modes are mutually exclusive — pick exactly one.</p>
                 <div class="mode-cards">
-                    <button type="button" class="mode-card @CardClass(ConsumerLicenseMode.Sponsor)" @onclick="() => SetMode(ConsumerLicenseMode.Sponsor)">
+                    <button type="button"
+                            class="mode-card @CardClass(ConsumerLicenseMode.Sponsor)"
+                            @onclick="() => SetMode(ConsumerLicenseMode.Sponsor)">
                         <strong>Sponsor account</strong>
                         <span>Sponsoring the author (or about to)</span>
                     </button>
-                    <button type="button" class="mode-card @CardClass(ConsumerLicenseMode.License)" @onclick="() => SetMode(ConsumerLicenseMode.License)">
+                    <button type="button"
+                            class="mode-card @CardClass(ConsumerLicenseMode.License)"
+                            @onclick="() => SetMode(ConsumerLicenseMode.License)">
                         <strong>Private license</strong>
                         <span>A licensing arrangement with the author</span>
                     </button>
                     @if (ExemptionModeAvailable)
                     {
-                        <button type="button" class="mode-card @CardClass(ConsumerLicenseMode.Exemption)" @onclick="() => SetMode(ConsumerLicenseMode.Exemption)">
+                        <button type="button"
+                                class="mode-card @CardClass(ConsumerLicenseMode.Exemption)"
+                                @onclick="() => SetMode(ConsumerLicenseMode.Exemption)">
                             <strong>Exemption</strong>
                             <span>Claiming a carve-out the publisher defined</span>
                         </button>
                     }
-                    <button type="button" class="mode-card @CardClass(ConsumerLicenseMode.Ignore)" @onclick="() => SetMode(ConsumerLicenseMode.Ignore)">
+                    <button type="button"
+                            class="mode-card @CardClass(ConsumerLicenseMode.Ignore)"
+                            @onclick="() => SetMode(ConsumerLicenseMode.Ignore)">
                         <strong>Ignore</strong>
                         <span>Proceed unlicensed, warning accepted</span>
                     </button>
@@ -173,15 +207,20 @@
                             var selection = model.Selection(platform.Kind);
                             <div class="platform-row">
                                 <div class="check">
-                                    <input type="checkbox" id="@($"sponsor-{platform.Kind}")" @bind="selection.Enabled" />
+                                    <input type="checkbox"
+                                           id="@($"sponsor-{platform.Kind}")"
+                                           @bind="selection.Enabled" />
                                     <label for="@($"sponsor-{platform.Kind}")">@platform.DisplayName</label>
                                 </div>
                                 @if (selection.Enabled)
                                 {
                                     <div class="account field">
                                         <label for="@($"sponsor-account-{platform.Kind}")">@platform.ConsumerAccountMetadata</label>
-                                        <input id="@($"sponsor-account-{platform.Kind}")" type="text" placeholder="the sponsoring account"
-                                               @bind="selection.Account" @bind:event="oninput" />
+                                        <input id="@($"sponsor-account-{platform.Kind}")"
+                                               type="text"
+                                               placeholder="the sponsoring account"
+                                               @bind="selection.Account"
+                                               @bind:event="oninput" />
                                         @if (SponsorHint(platform) is { } sponsorHint)
                                         {
                                             <p class="hint">@sponsorHint</p>
@@ -191,7 +230,9 @@
                             </div>
                         }
                         <div class="check" style="margin-top:1rem">
-                            <input type="checkbox" id="startedAfter" @bind="model.StartedAfterRelease" />
+                            <input type="checkbox"
+                                   id="startedAfter"
+                                   @bind="model.StartedAfterRelease" />
                             <label for="startedAfter">
                                 The sponsorship started after this package version was released
                                 <p class="hint">
@@ -205,8 +246,11 @@
                         {
                             <div class="field">
                                 <label for="sponsorshipStart">Sponsorship start date</label>
-                                <input id="sponsorshipStart" type="text" placeholder="yyyy-MM-dd"
-                                       @bind="model.SponsorshipStart" @bind:event="oninput" />
+                                <input id="sponsorshipStart"
+                                       type="text"
+                                       placeholder="yyyy-MM-dd"
+                                       @bind="model.SponsorshipStart"
+                                       @bind:event="oninput" />
                                 @if (model.SponsorshipStart.Trim().Length > 0 && !model.IsSponsorshipStartValid)
                                 {
                                     <p class="validation-error">Use the format yyyy-MM-dd, e.g. 2026-04-30.</p>
@@ -223,8 +267,11 @@
                         <div class="field">
                             <label for="licensedUntil">Licensed until (last covered month)</label>
                             <p class="hint">Format yyyy-MM; valid through the end of that month (UTC). Capped at one year out — a longer arrangement is renewed with a one-line edit.</p>
-                            <input id="licensedUntil" type="text" placeholder="yyyy-MM"
-                                   @bind="model.LicensedUntilMonth" @bind:event="oninput" />
+                            <input id="licensedUntil"
+                                   type="text"
+                                   placeholder="yyyy-MM"
+                                   @bind="model.LicensedUntilMonth"
+                                   @bind:event="oninput" />
                             @if (model.LicensedUntilMonth.Trim().Length > 0 && !model.IsLicensedUntilValid)
                             {
                                 <p class="validation-error">Use the format yyyy-MM, e.g. 2027-06.</p>
@@ -238,7 +285,8 @@
                             @if (model.Facts is { BundlesSponsorCheck: true, Exemptions.Count: > 0 } factsWithExemptions)
                             {
                                 <p class="hint">The publisher defined these exemptions — pick the one that applies.</p>
-                                <select id="exemptionName" @bind="model.ExemptionName">
+                                <select id="exemptionName"
+                                        @bind="model.ExemptionName">
                                     <option value="">Pick an exemption…</option>
                                     @foreach (var exemption in factsWithExemptions.Exemptions)
                                     {
@@ -253,8 +301,11 @@
                             else
                             {
                                 <p class="hint">Exemptions are defined by the publisher at pack time — the failing build's error message lists the available names when an unknown one is claimed.</p>
-                                <input id="exemptionName" type="text" placeholder="Consulting"
-                                       @bind="model.ExemptionName" @bind:event="oninput" />
+                                <input id="exemptionName"
+                                       type="text"
+                                       placeholder="Consulting"
+                                       @bind="model.ExemptionName"
+                                       @bind:event="oninput" />
                             }
                         </div>
                         @if (model.ExemptionName.Trim().Length > 0)
@@ -277,13 +328,24 @@
                                     </p>
                                 }
 
-                                <input id="exemptionUntil" type="text" placeholder="yyyy-MM"
-                                       @bind="model.ExemptionUntilMonth" @bind:event="oninput" />
-                                @if (model.HasExemptionUntil && !model.IsExemptionUntilValid)
+                                <input id="exemptionUntil"
+                                       type="text"
+                                       placeholder="yyyy-MM"
+                                       @bind="model.ExemptionUntilMonth"
+                                       @bind:event="oninput" />
+                                @if (model is
+                                     {
+                                         HasExemptionUntil: true,
+                                         IsExemptionUntilValid: false
+                                     })
                                 {
                                     <p class="validation-error">Use the format yyyy-MM, e.g. 2027-02.</p>
                                 }
-                                else if (model.IsExemptionUntilRequired && !model.HasExemptionUntil)
+                                else if (model is
+                                         {
+                                             IsExemptionUntilRequired: true,
+                                             HasExemptionUntil: false
+                                         })
                                 {
                                     <p class="validation-error">This exemption is time-bounded — an end month is required.</p>
                                 }
@@ -327,7 +389,10 @@
         <span>
             @if (step < outputStep)
             {
-                <button type="button" class="primary" disabled="@(!CanAdvance)" @onclick="Next">
+                <button type="button"
+                        class="primary"
+                        disabled="@(!CanAdvance)"
+                        @onclick="Next">
                     @(step == outputStep - 1 ? "Generate" : "Next")
                 </button>
             }
