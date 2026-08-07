@@ -1,6 +1,7 @@
 namespace SponsorCheck.IntegrationTests;
 
 using System.IO.Compression;
+using System.Text.RegularExpressions;
 
 public class AuthorPackTests
 {
@@ -235,6 +236,30 @@ public class AuthorPackTests
         var content = await reader.ReadToEndAsync();
         await Assert.That(content).Contains("VerifySponsorshipTask");
         await Assert.That(content).Contains("_SponsorCheck_Verify_ThePackage");
+    }
+
+    [Test]
+    public async Task BundledTargetsScopeTaskNameToSponsorCheckVersion()
+    {
+        // MSBuild's task registry is keyed by task name — not by assembly path, identity, or version —
+        // and the first UsingTask to claim a name serves every invocation of it in the project. Under
+        // the bare name VerifySponsorshipTask, a consumer referencing two packages that each bundle a
+        // different SponsorCheck version got one task instance for both verifiers, and the build died
+        // with MSB4064 as soon as the newer verifier passed a parameter the older task didn't declare.
+        // Regression guard: the packed verifier must bind a version-scoped name.
+        var feed = await ThePackageBuilder.EnsureBuilt();
+        var nupkg = Directory.GetFiles(feed, "ThePackage.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.GetEntry("build/ThePackage.targets")!;
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync();
+
+        var taskName = Regex.Match(content, @"TaskName=""([^""]+)""").Groups[1].Value;
+        await Assert.That(taskName).Matches(@"^VerifySponsorshipTask_\d+_\d+_\d+");
+        // The task element must call the same scoped name, not the bare one it used to.
+        await Assert.That(Regex.IsMatch(content, $@"<{taskName}\s")).IsTrue();
+        await Assert.That(Regex.IsMatch(content, @"<VerifySponsorshipTask\s")).IsFalse();
     }
 
     [Test]

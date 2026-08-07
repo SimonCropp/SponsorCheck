@@ -1,4 +1,9 @@
-public sealed class VerifySponsorshipTask :
+// Not sealed: the build generates a version-scoped subclass (VerifySponsorshipTask_<version>, see
+// _SponsorCheck_GenerateVersionedTaskName in SponsorCheck.csproj) and the shipped verifier targets
+// UsingTask *that* name. MSBuild's task registry is keyed by task name alone, so a bare shared name
+// lets whichever package registers first supply the task for every SponsorCheck-bundling package in
+// the project — MSB4064 the moment their task APIs differ.
+public class VerifySponsorshipTask :
     Microsoft.Build.Utilities.Task
 {
     [Required] public string ThePackageId { get; set; } = "";

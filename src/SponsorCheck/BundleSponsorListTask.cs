@@ -161,9 +161,13 @@ public sealed class BundleSponsorListTask :
             // alphanumeric + . _ - so MSBuild-safe; we replace . - with _ to keep MSBuild
             // identifier rules happy (no dots/dashes in target/item names).
             var sanitizedId = Sanitize(ThePackageId);
+            // __SC_TASK_NAME__ binds the verifier to the version-scoped task type compiled into the
+            // SponsorCheck copy packed alongside it, so a package bundling a different SponsorCheck
+            // version can't win the task-registry slot and be handed this verifier's parameters.
             var rendered = template
                 .Replace("__SC_PACKAGE_ID__", sanitizedId)
-                .Replace(">__SC_PACKAGE_ID_RAW__<", $">{ThePackageId}<");
+                .Replace(">__SC_PACKAGE_ID_RAW__<", $">{ThePackageId}<")
+                .Replace("__SC_TASK_NAME__", VersionedTaskName.Verify);
             if (isOwnerMode)
             {
                 // __SC_OWNER_ID__ keys the per-owner run-once guard property (must be an MSBuild-safe

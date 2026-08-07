@@ -31,6 +31,43 @@
     <None Include="nuget-readme.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
+  <!-- Emits the version-scoped task type the shipped verifier binds to. MSBuild's task registry is
+       keyed by task name — not by assembly identity, path, or version — and the first UsingTask to
+       claim a name serves every invocation of it in that project. So when two packages each bundle
+       their own SponsorCheck copy under the bare name VerifySponsorshipTask, one copy runs both
+       verifiers, and the build dies with MSB4064 as soon as the newer verifier passes a parameter
+       the older task lacks. Suffixing the type with the SponsorCheck version gives each release its
+       own registry slot, so skewed packages coexist. VersionedTaskName.Verify keeps the bundler's
+       __SC_TASK_NAME__ substitution in lockstep with the type actually compiled here.
+
+       Sanitizing '.'/'-'/'+' keeps prerelease and metadata versions ('0.19.0-beta.1') valid as both
+       a C# identifier and an MSBuild task name. The '.g.cs' suffix marks the file generated, which
+       is what keeps EnforceCodeStyleInBuild from failing it on the underscored type name. -->
+  <Target Name="_SponsorCheck_GenerateVersionedTaskName" BeforeTargets="BeforeCompile;CoreCompile">
+    <PropertyGroup>
+      <_SponsorCheck_VerifyTaskName>VerifySponsorshipTask_$(Version.Replace('.', '_').Replace('-', '_').Replace('+', '_'))</_SponsorCheck_VerifyTaskName>
+      <_SponsorCheck_VersionedTaskNameFile>$(IntermediateOutputPath)VersionedTaskName.g.cs</_SponsorCheck_VersionedTaskNameFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <_SponsorCheck_VersionedTaskNameLine Include="// &lt;auto-generated /&gt;" />
+      <_SponsorCheck_VersionedTaskNameLine Include="public sealed class $(_SponsorCheck_VerifyTaskName) : VerifySponsorshipTask" />
+      <_SponsorCheck_VersionedTaskNameLine Include="{" />
+      <_SponsorCheck_VersionedTaskNameLine Include="}" />
+      <_SponsorCheck_VersionedTaskNameLine Include="public static class VersionedTaskName" />
+      <_SponsorCheck_VersionedTaskNameLine Include="{" />
+      <_SponsorCheck_VersionedTaskNameLine Include="    public const string Verify = nameof($(_SponsorCheck_VerifyTaskName))%3B" />
+      <_SponsorCheck_VersionedTaskNameLine Include="}" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_SponsorCheck_VersionedTaskNameFile)"
+                      Lines="@(_SponsorCheck_VersionedTaskNameLine)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Compile Include="$(_SponsorCheck_VersionedTaskNameFile)" />
+      <FileWrites Include="$(_SponsorCheck_VersionedTaskNameFile)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="_SponsorCheck_PackTaskDlls" BeforeTargets="_GetPackageFiles">
     <ItemGroup>
       <!-- Forward slash, not backslash, in PackagePath: MSBuild on Linux normalizes the trailing '\'

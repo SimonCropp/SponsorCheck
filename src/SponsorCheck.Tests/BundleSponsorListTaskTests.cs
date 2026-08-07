@@ -496,6 +496,59 @@ public class BundleSponsorListTaskTests
     }
 
     [Test]
+    public async Task TemplateSubstitution_BindsVersionScopedTaskName()
+    {
+        // MSBuild's task registry is keyed by task name, and the first UsingTask to claim a name serves
+        // the whole project — so two packages bundling different SponsorCheck versions under the bare
+        // name VerifySponsorshipTask shared one task instance, and the build failed MSB4064 once their
+        // parameter sets diverged. The verifier therefore binds a per-release type name, which the
+        // build generates (_SponsorCheck_GenerateVersionedTaskName in SponsorCheck.csproj). Assert the
+        // generated type is really there and really is the task — a dropped codegen target would
+        // otherwise ship targets naming a type that doesn't exist, failing at consumer build time.
+        var scoped = typeof(VerifySponsorshipTask).Assembly.GetType(VersionedTaskName.Verify);
+        await Assert.That(scoped).IsNotNull();
+        await Assert.That(scoped!.BaseType).IsEqualTo(typeof(VerifySponsorshipTask));
+        await Assert.That(VersionedTaskName.Verify).Matches(@"^VerifySponsorshipTask_\d+_\d+_\d+");
+
+        using var dir = new TempDirectory();
+        var templatePath = Path.Combine(dir, "ConsumerVerifier.targets");
+        await File.WriteAllTextAsync(
+            templatePath,
+            """
+            <Project>
+              <UsingTask TaskName="__SC_TASK_NAME__" AssemblyFile="x" />
+              <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__">
+                <__SC_TASK_NAME__ ThePackageId="__SC_PACKAGE_ID_RAW__" />
+              </Target>
+            </Project>
+            """);
+
+        var override_ = WriteOverride(dir, "[]");
+        var task = new BundleSponsorListTask
+        {
+            BuildEngine = new StubBuildEngine(),
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = templatePath,
+            ThePackageId = "Acme.Lib",
+            OverrideListPath = override_,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "Acme.Lib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        var rendered = await File.ReadAllTextAsync(task.OutputVerifierTargetsPath);
+        await Assert.That(rendered).Contains($"TaskName=\"{VersionedTaskName.Verify}\"");
+        await Assert.That(rendered).Contains($"<{VersionedTaskName.Verify} ");
+        await Assert.That(rendered).DoesNotContain("__SC_TASK_NAME__");
+    }
+
+    [Test]
     public async Task InnerTargetsImport_Set_EmitsImportOfSidecar()
     {
         // When the author package ships its own <PackageId>.targets, SponsorCheck.targets relocates it
