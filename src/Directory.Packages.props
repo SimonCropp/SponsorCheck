@@ -9,7 +9,7 @@
     <PackageVersion Include="ProjectDefaults" Version="1.0.176" />
     <PackageVersion Include="RemoteZip" Version="0.2.1" />
     <PackageVersion Include="System.Text.Json" Version="10.0.10" />
-    <PackageVersion Include="Polyfill" Version="11.0.1" />
+    <PackageVersion Include="Polyfill" Version="11.0.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="TUnit" Version="1.63.0" />
     <PackageVersion Include="Verify" Version="31.28.0" />
