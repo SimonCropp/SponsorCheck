@@ -171,7 +171,7 @@ public static class NupkgParser
                     maxTermMonths = months;
                 }
 
-                result.Add(new(property.Name, message!, maxTermMonths));
+                result.Add(new(property.Name, message, maxTermMonths));
             }
         }
         catch (JsonException)

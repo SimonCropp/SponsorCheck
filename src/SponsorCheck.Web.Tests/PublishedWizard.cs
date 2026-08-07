@@ -48,14 +48,15 @@ public sealed class PublishedWizard : IAsyncDisposable
 
     /// <summary>Fixed viewport so screenshots are deterministic across machines.</summary>
     public Task<IPage> NewPage() =>
-        Browser.NewPageAsync(new()
-        {
-            ViewportSize = new()
+        Browser.NewPageAsync(
+            new()
             {
-                Width = 1280,
-                Height = 900
-            }
-        });
+                ViewportSize = new()
+                {
+                    Width = 1280,
+                    Height = 900
+                }
+            });
 
     public static async Task<PublishedWizard> Start()
     {
@@ -84,7 +85,7 @@ public sealed class PublishedWizard : IAsyncDisposable
         };
         var files = new PhysicalFileProvider(wwwroot);
 
-        app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = files });
+        app.UseDefaultFiles(new DefaultFilesOptions {FileProvider = files});
         app.UseStaticFiles(
             new StaticFileOptions
             {
@@ -92,7 +93,7 @@ public sealed class PublishedWizard : IAsyncDisposable
                 ContentTypeProvider = contentTypes,
                 ServeUnknownFileTypes = true
             });
-        app.MapFallbackToFile("index.html", new StaticFileOptions { FileProvider = files });
+        app.MapFallbackToFile("index.html", new StaticFileOptions {FileProvider = files});
 
         await app.StartAsync();
 
