@@ -218,7 +218,11 @@ public class AuthorPackTests
         var content = await reader.ReadToEndAsync();
         await Assert.That(content).Contains("VerifySponsorshipTask");
         await Assert.That(content).Contains("$(GitHubSponsorAccount)");
-        await Assert.That(content).Contains("_SponsorCheck_OwnerId>acme<");
+        // Package-scoped: owner mode emits one verifier per package, so an unscoped name would be
+        // shared by every package from this owner — see GeneratedVerifiers_ShareNoPropertyNames.
+        // The scope carries a hash suffix, so match around it rather than pinning the rendered id.
+        await Assert.That(content).Contains("_OwnerId>acme<");
+        await Assert.That(content).Contains("_SponsorCheck_ThePackageOwnerMode_");
         // The license-check task call must not pull from per-package metadata under owner mode.
         await Assert.That(content).DoesNotContain("GitHubFromVer");
         await Assert.That(content).DoesNotContain("IgnoredFromVer");
@@ -533,5 +537,48 @@ public class AuthorPackTests
         await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
         await Assert.That(result.Combined).Contains("SC106");
         await Assert.That(result.Combined).Contains("Consulting");
+    }
+    [Test]
+    public async Task GeneratedVerifiers_ShareNoPropertyNames()
+    {
+        // MSBuild properties are global and each verifier is imported into the same project, so a
+        // name defined by two of them is written twice and the last import wins for both. Every
+        // property a verifier defines therefore has to be scoped to what it verifies.
+        //
+        // The unscoped ones used to be the paths: a project referencing two SponsorCheck packages
+        // had both verifiers reading one package's sponsor list, exemptions and task assembly. The
+        // same clobbered TasksDir reached the authoring side, where the pack copies
+        // $(TasksDir)netstandard2.0\*.dll into the nupkg — so a package could ship the SponsorCheck
+        // its *dependency* bundled while its own restore was correct, failing only for consumers.
+        // Two owner-mode packages from the same owner: owner mode still emits one verifier per
+        // package, so scoping the paths by owner would leave these two sharing them.
+        var feed = await ThePackageBuilder.EnsureBuiltCombined("ThePackageOwnerMode", "ThePackageOwnerModeTransitive");
+
+        var first = PropertyNames(feed, "ThePackageOwnerMode");
+        var second = PropertyNames(feed, "ThePackageOwnerModeTransitive");
+
+        await Assert.That(first).IsNotEmpty();
+        await Assert.That(second).IsNotEmpty();
+
+        // The run-once guard is the one name they are meant to share: it is what makes N
+        // packages from one owner verify once instead of N times.
+        var shared = first.Intersect(second).ToList();
+        await Assert.That(shared.Count).IsEqualTo(1);
+        await Assert.That(shared[0]).StartsWith("_SponsorCheck_OwnerVerified_");
+    }
+
+    // The property names a package's generated verifier defines.
+    static List<string> PropertyNames(string feed, string packageId)
+    {
+        var nupkg = Directory.GetFiles(feed, $"{packageId}.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.Entries.Single(_ => _.FullName.EndsWith($"/{packageId}.targets", StringComparison.Ordinal));
+        using var reader = new StreamReader(entry.Open());
+        var targets = reader.ReadToEnd();
+
+        return Regex.Matches(targets, @"<(_SponsorCheck_[A-Za-z0-9_]*)>")
+            .Select(_ => _.Groups[1].Value)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 }
