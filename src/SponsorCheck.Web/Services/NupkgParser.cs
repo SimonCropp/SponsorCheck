@@ -16,7 +16,16 @@ public static class NupkgParser
     public const string SeverityOverridesFileName = "SponsorCheck.SeverityOverrides.txt";
     public const string LandingUrlFileName = "SponsorCheck.LandingUrl.txt";
     public const string ExemptionsFileName = "SponsorCheck.Exemptions.json";
-    public const string OwnerIdElement = "_SponsorCheck_OwnerId";
+    /// <summary>
+    /// Matches the owner id element in a generated owner-mode verifier. The element name is scoped
+    /// to the package it ships in (see ConsumerVerifierOwner.targets for why), so the middle segment
+    /// varies per package and is captured rather than pinned. The optional segment also keeps
+    /// packages published before scoping — whose element is the bare `_SponsorCheck_OwnerId` —
+    /// readable, since this parser runs against whatever is already on nuget.org, not just against
+    /// packages built from current source. The backreference stops a mismatched open/close pair
+    /// from parsing.
+    /// </summary>
+    public const string OwnerIdElementPattern = @"<(_SponsorCheck_(?:\w+_)?OwnerId)>(.+?)</\1>";
 
     public static async Task<PackageFacts> Parse(string packageId, string version, RemoteZipArchive nupkg)
     {
@@ -215,10 +224,10 @@ public static class NupkgParser
                 continue;
             }
 
-            var match = Regex.Match(content, $"<{OwnerIdElement}>(.+?)</{OwnerIdElement}>");
+            var match = Regex.Match(content, OwnerIdElementPattern);
             if (match.Success)
             {
-                return match.Groups[1].Value.Trim();
+                return match.Groups[2].Value.Trim();
             }
 
             // The per-package verifier targets have no owner id element.

@@ -135,8 +135,22 @@ public class RepoContractTests
             await Assert.That(template).Contains(sidecar).Because($"sidecar '{sidecar}' should exist in ConsumerVerifier.targets");
         }
 
+        // The owner id element is package-scoped, so the template holds a token rather than the final
+        // name. Pin the contract against what it renders to — mirroring the substitution in
+        // BundleSponsorListTask — since matching rendered output is what the parser actually does.
         var ownerTemplate = ReadSrc("SponsorCheck", "EmbeddedTemplates", "ConsumerVerifierOwner.targets");
-        await Assert.That(ownerTemplate).Contains(NupkgParser.OwnerIdElement);
+        var rendered = ownerTemplate
+            .Replace("__SC_PACKAGE_ID__", "SamplePackage_a1b2c3d4")
+            .Replace(">__SC_OWNER_ID_RAW__<", ">acme<");
+        var match = Regex.Match(rendered, NupkgParser.OwnerIdElementPattern);
+        await Assert.That(match.Success).IsTrue().Because("NupkgParser must find the owner id in a rendered owner verifier");
+        await Assert.That(match.Groups[2].Value).IsEqualTo("acme");
+
+        // Packages published before scoping carry the bare element and are still on nuget.org, so the
+        // parser has to keep reading them.
+        var legacy = Regex.Match("<_SponsorCheck_OwnerId>acme</_SponsorCheck_OwnerId>", NupkgParser.OwnerIdElementPattern);
+        await Assert.That(legacy.Success).IsTrue().Because("pre-scoping packages must stay readable");
+        await Assert.That(legacy.Groups[2].Value).IsEqualTo("acme");
     }
 
     /// <summary>
