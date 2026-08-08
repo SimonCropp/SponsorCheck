@@ -1,17 +1,27 @@
 <Project>
 __SC_INNER_IMPORT__
+  <!-- Every property here is scoped to the package it verifies, because this file is imported once per
+       referenced package and MSBuild properties are global. An unscoped name is written by each import in
+       turn and the last one wins for the whole project, so two of these files would share one set
+       of paths: each verifier would read another package's sponsor list, exemptions and task
+       assembly. The task-name collision below is the same problem — this is the rest of it.
+
+       The clobbered TasksDir also reached the *authoring* side. A package whose author references
+       another SponsorCheck package packs `$(TasksDir)netstandard2.0\*.dll` into its own nupkg, so
+       it shipped whichever SponsorCheck the other package bundled — a stale task in a package
+       whose restore was correct, failing only for its consumers. -->
   <PropertyGroup>
-    <_SponsorCheck_ThePackageId>__SC_PACKAGE_ID_RAW__</_SponsorCheck_ThePackageId>
-    <_SponsorCheck_TasksDir>$(MSBuildThisFileDirectory)..\tasks\</_SponsorCheck_TasksDir>
-    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck_TasksDir)netstandard2.0\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
-    <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
-    <_SponsorCheck_HashListPath>$(MSBuildThisFileDirectory)SponsorCheck.SponsorHashes.txt</_SponsorCheck_HashListPath>
-    <_SponsorCheck_PackDatePath>$(MSBuildThisFileDirectory)SponsorCheck.PackDate.txt</_SponsorCheck_PackDatePath>
-    <_SponsorCheck_AuthorAccountsPath>$(MSBuildThisFileDirectory)SponsorCheck.AuthorAccounts.txt</_SponsorCheck_AuthorAccountsPath>
-    <_SponsorCheck_SeverityOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.SeverityOverrides.txt</_SponsorCheck_SeverityOverridesPath>
-    <_SponsorCheck_MessageOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.MessageOverrides.json</_SponsorCheck_MessageOverridesPath>
-    <_SponsorCheck_LandingUrlPath>$(MSBuildThisFileDirectory)SponsorCheck.LandingUrl.txt</_SponsorCheck_LandingUrlPath>
-    <_SponsorCheck_ExemptionsPath>$(MSBuildThisFileDirectory)SponsorCheck.Exemptions.json</_SponsorCheck_ExemptionsPath>
+    <_SponsorCheck___SC_PACKAGE_ID___ThePackageId>__SC_PACKAGE_ID_RAW__</_SponsorCheck___SC_PACKAGE_ID___ThePackageId>
+    <_SponsorCheck___SC_PACKAGE_ID___TasksDir>$(MSBuildThisFileDirectory)..\tasks\</_SponsorCheck___SC_PACKAGE_ID___TasksDir>
+    <_SponsorCheck___SC_PACKAGE_ID___TasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_SponsorCheck___SC_PACKAGE_ID___TasksDir)netstandard2.0\SponsorCheck.dll</_SponsorCheck___SC_PACKAGE_ID___TasksAssembly>
+    <_SponsorCheck___SC_PACKAGE_ID___TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck___SC_PACKAGE_ID___TasksDir)net472\SponsorCheck.dll</_SponsorCheck___SC_PACKAGE_ID___TasksAssembly>
+    <_SponsorCheck___SC_PACKAGE_ID___HashListPath>$(MSBuildThisFileDirectory)SponsorCheck.SponsorHashes.txt</_SponsorCheck___SC_PACKAGE_ID___HashListPath>
+    <_SponsorCheck___SC_PACKAGE_ID___PackDatePath>$(MSBuildThisFileDirectory)SponsorCheck.PackDate.txt</_SponsorCheck___SC_PACKAGE_ID___PackDatePath>
+    <_SponsorCheck___SC_PACKAGE_ID___AuthorAccountsPath>$(MSBuildThisFileDirectory)SponsorCheck.AuthorAccounts.txt</_SponsorCheck___SC_PACKAGE_ID___AuthorAccountsPath>
+    <_SponsorCheck___SC_PACKAGE_ID___SeverityOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.SeverityOverrides.txt</_SponsorCheck___SC_PACKAGE_ID___SeverityOverridesPath>
+    <_SponsorCheck___SC_PACKAGE_ID___MessageOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.MessageOverrides.json</_SponsorCheck___SC_PACKAGE_ID___MessageOverridesPath>
+    <_SponsorCheck___SC_PACKAGE_ID___LandingUrlPath>$(MSBuildThisFileDirectory)SponsorCheck.LandingUrl.txt</_SponsorCheck___SC_PACKAGE_ID___LandingUrlPath>
+    <_SponsorCheck___SC_PACKAGE_ID___ExemptionsPath>$(MSBuildThisFileDirectory)SponsorCheck.Exemptions.json</_SponsorCheck___SC_PACKAGE_ID___ExemptionsPath>
   </PropertyGroup>
 
   <!-- __SC_TASK_NAME__ renders to the version-scoped task type (VerifySponsorshipTask_<version>).
@@ -22,7 +32,7 @@ __SC_INNER_IMPORT__
        parameter the older task didn't declare. A version-scoped name gives each SponsorCheck release
        its own registration, so every verifier binds to the copy it was generated against. -->
   <UsingTask TaskName="__SC_TASK_NAME__"
-             AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
+             AssemblyFile="$(_SponsorCheck___SC_PACKAGE_ID___TasksAssembly)" />
 
   <!-- Project-reference coverage responders — see ConsumerVerifierOwner.targets for the rationale.
        For per-package mode, transitive consumers can't supply the required <PackageReference>
@@ -31,8 +41,8 @@ __SC_INNER_IMPORT__
           Returns="@(_SponsorCheck_Covered___SC_PACKAGE_ID__)">
     <ItemGroup>
       <_SponsorCheck_Covered___SC_PACKAGE_ID__
-          Include="$(_SponsorCheck_ThePackageId)"
-          Condition="@(PackageReference->AnyHaveMetadataValue('Identity', '$(_SponsorCheck_ThePackageId)'))" />
+          Include="$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)"
+          Condition="@(PackageReference->AnyHaveMetadataValue('Identity', '$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)'))" />
     </ItemGroup>
     <MSBuild Projects="@(ProjectReference)"
              Targets="_SponsorCheck_CoversShallow___SC_PACKAGE_ID__"
@@ -46,8 +56,8 @@ __SC_INNER_IMPORT__
           Returns="@(_SponsorCheck_CoveredShallow___SC_PACKAGE_ID__)">
     <ItemGroup>
       <_SponsorCheck_CoveredShallow___SC_PACKAGE_ID__
-          Include="$(_SponsorCheck_ThePackageId)"
-          Condition="@(PackageReference->AnyHaveMetadataValue('Identity', '$(_SponsorCheck_ThePackageId)'))" />
+          Include="$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)"
+          Condition="@(PackageReference->AnyHaveMetadataValue('Identity', '$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)'))" />
     </ItemGroup>
   </Target>
 
@@ -61,8 +71,8 @@ __SC_INNER_IMPORT__
     </MSBuild>
 
     <ItemGroup>
-      <_SponsorCheck___SC_PACKAGE_ID___Ref Include="@(PackageReference)" Condition="'%(Identity)' == '$(_SponsorCheck_ThePackageId)'" />
-      <_SponsorCheck___SC_PACKAGE_ID___Ver Include="@(PackageVersion)"   Condition="'%(Identity)' == '$(_SponsorCheck_ThePackageId)'" />
+      <_SponsorCheck___SC_PACKAGE_ID___Ref Include="@(PackageReference)" Condition="'%(Identity)' == '$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)'" />
+      <_SponsorCheck___SC_PACKAGE_ID___Ver Include="@(PackageVersion)"   Condition="'%(Identity)' == '$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)'" />
     </ItemGroup>
 
     <!-- Flatten item-metadata into properties first so MSBuild doesn't task-batch. See SponsorCheck.targets for the full explanation. -->
@@ -89,14 +99,14 @@ __SC_INNER_IMPORT__
 
     <__SC_TASK_NAME__
         Condition="'@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
-        ThePackageId="$(_SponsorCheck_ThePackageId)"
-        SponsorHashListPath="$(_SponsorCheck_HashListPath)"
-        PackDatePath="$(_SponsorCheck_PackDatePath)"
-        AuthorAccountsPath="$(_SponsorCheck_AuthorAccountsPath)"
-        SeverityOverridesPath="$(_SponsorCheck_SeverityOverridesPath)"
-        MessageOverridesPath="$(_SponsorCheck_MessageOverridesPath)"
-        LandingUrlPath="$(_SponsorCheck_LandingUrlPath)"
-        ExemptionsPath="$(_SponsorCheck_ExemptionsPath)"
+        ThePackageId="$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)"
+        SponsorHashListPath="$(_SponsorCheck___SC_PACKAGE_ID___HashListPath)"
+        PackDatePath="$(_SponsorCheck___SC_PACKAGE_ID___PackDatePath)"
+        AuthorAccountsPath="$(_SponsorCheck___SC_PACKAGE_ID___AuthorAccountsPath)"
+        SeverityOverridesPath="$(_SponsorCheck___SC_PACKAGE_ID___SeverityOverridesPath)"
+        MessageOverridesPath="$(_SponsorCheck___SC_PACKAGE_ID___MessageOverridesPath)"
+        LandingUrlPath="$(_SponsorCheck___SC_PACKAGE_ID___LandingUrlPath)"
+        ExemptionsPath="$(_SponsorCheck___SC_PACKAGE_ID___ExemptionsPath)"
         IsCpm="$(ManagePackageVersionsCentrally)"
         ConsumerProjectPath="$(MSBuildProjectFullPath)"
         DirectoryPackagesPropsPath="$(DirectoryPackagesPropsPath)"
