@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
-    <PackageVersion Include="TUnit" Version="1.65.0" />
+    <PackageVersion Include="TUnit" Version="1.65.38" />
     <PackageVersion Include="Verify" Version="31.28.0" />
     <PackageVersion Include="Verify.TUnit" Version="31.28.0" />
     <PackageVersion Include="Verify.DiffPlex" Version="3.3.1" />
