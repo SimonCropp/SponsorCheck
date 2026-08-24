@@ -50,7 +50,8 @@ public class SponsorHasherTests
     {
         // Locked baseline; if this changes, every previously bundled package becomes invalid.
         var hash = SponsorHasher.Hash("GitHubSponsors", "alice");
-        await Verify(hash);
+        await Verify(hash)
+            .Snapshot("559b6b66f4b3");
     }
 
     [Test]

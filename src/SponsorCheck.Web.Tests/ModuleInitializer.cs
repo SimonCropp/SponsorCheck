@@ -8,6 +8,7 @@ static class ModuleInitializer
         VerifyPlaywright.Initialize();
         VerifyDiffPlex.Initialize(OutputType.Compact);
         VerifierSettings.InitializePlugins();
+        VerifierSettings.Inline(maxLines: 10, applyMaxLinesToExisting: true);
 
         // Playwright hands back the page markup as one long line, which makes a snapshot diff
         // unreadable and hides where a change actually landed. AngleSharp re-serializes it as an

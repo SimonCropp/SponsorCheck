@@ -13,5 +13,6 @@ public static class ModuleInitializer
             "Subcategory",
             "Timestamp");
         VerifierSettings.IgnoreMember<BuildEventArgs>(_ => _.ThreadId);
+        VerifierSettings.Inline(maxLines: 10, applyMaxLinesToExisting: true);
     }
 }
