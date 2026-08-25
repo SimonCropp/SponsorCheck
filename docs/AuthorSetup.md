@@ -343,6 +343,10 @@ flowchart TD
             Hashes["SponsorCheck.SponsorHashes.txt"]
             PackDate["SponsorCheck.PackDate.txt"]
             Accounts["SponsorCheck.AuthorAccounts.txt"]
+            Severities["SponsorCheck.SeverityOverrides.txt"]
+            Messages["SponsorCheck.MessageOverrides.json"]
+            Landing["SponsorCheck.LandingUrl.txt"]
+            Exemptions["SponsorCheck.Exemptions.json"]
             Targets["&lt;PackageId&gt;.targets — the generated verifier"]
         end
         TaskDll["tasks/ — SponsorCheck.dll (netstandard2.0 + net472)<br/>unaffected by the folder choice"]
@@ -354,7 +358,22 @@ The bundler runs at the OSS author's pack time (Release config, `IsPackable=true
 1. Reads `<Platform>Account` metadata from the SponsorCheck `PackageReference` / `PackageVersion`.
 1. For each enabled platform, calls the platform's API (or reads `SponsorListOverride` if set) to get the list of sponsor accounts.
 1. Hashes each as the first 12 hex chars (48 bits) of `SHA256(utf8("{platform-id}:{lowercase(account)}"))`. Platform-id prefix prevents cross-platform spoofing.
-1. Writes four files into the produced nupkg's `build/` folder: the sorted, deduped hashes (`SponsorCheck.SponsorHashes.txt`), the UTC pack date that powers the `SponsorshipStart` bypass (`SponsorCheck.PackDate.txt`), the enabled platform accounts used to render sponsor URLs in diagnostics (`SponsorCheck.AuthorAccounts.txt`), and the per-consumer verifier targets file (`<ThePackageId>.targets`). The verifier task DLL is packed under `tasks/`. When `SponsorOwner` is set, the generated targets are the owner-mode variant — they read global MSBuild properties instead of per-package metadata, with the owner id baked in. When `CheckTransitiveReferences` is set, those `build/` files ship under `buildTransitive/` instead, so NuGet imports the verifier for transitive consumers too (see [Checking transitive references](#checking-transitive-references)).
+1. Writes eight files into the produced nupkg's `build/` folder:
+
+   | File | Contents |
+   | --- | --- |
+   | `SponsorCheck.SponsorHashes.txt` | The sorted, deduped account hashes. |
+   | `SponsorCheck.PackDate.txt` | The UTC pack date that powers the `SponsorshipStart` bypass. |
+   | `SponsorCheck.AuthorAccounts.txt` | The enabled platform accounts, used to render sponsor URLs in diagnostics. |
+   | `SponsorCheck.SeverityOverrides.txt` | Author-chosen severities for the overrideable codes — [Tuning verifier severity and message text](#tuning-verifier-severity-and-message-text). |
+   | `SponsorCheck.MessageOverrides.json` | Author-supplied replacement message bodies for those same codes. |
+   | `SponsorCheck.LandingUrl.txt` | The [custom sponsor landing URL](#custom-sponsor-landing-url). |
+   | `SponsorCheck.Exemptions.json` | The [publisher-defined exemptions](#defining-exemptions). |
+   | `<ThePackageId>.targets` | The generated per-consumer verifier. |
+
+   The four optional sidecars — `SeverityOverrides`, `MessageOverrides`, `LandingUrl` and `Exemptions` — are written even when the author configured none of them, empty or `{}` as the format requires, so the verifier can read them unconditionally instead of probing for each. A ninth file, `<ThePackageId>.SponsorCheckInner.targets`, appears only for [packages that ship their own MSBuild targets](#packages-that-ship-their-own-msbuild-targets).
+
+   The verifier task DLL is packed under `tasks/`. When `SponsorOwner` is set, the generated targets are the owner-mode variant — they read global MSBuild properties instead of per-package metadata, with the owner id baked in. When `CheckTransitiveReferences` is set, those `build/` files ship under `buildTransitive/` instead, so NuGet imports the verifier for transitive consumers too (see [Checking transitive references](#checking-transitive-references)).
 
 
 ## Private and incognito sponsors
