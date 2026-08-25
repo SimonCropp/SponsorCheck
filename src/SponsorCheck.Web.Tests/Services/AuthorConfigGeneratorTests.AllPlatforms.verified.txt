@@ -24,7 +24,7 @@ PolarToken   # required
 #   <SponsorCheckBundleInPullRequest>true</SponsorCheckBundleInPullRequest>
 
 # Token notes:
-# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.
+# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise the sponsorships query returns nothing. Private sponsors are never bundled either way; they verify with SponsorshipPrivateUntil.
 # - Open Collective: Optional. Public collectives are queryable anonymously; a Personal Token (https://opencollective.com/applications, no scopes) gives rate-limit headroom.
 # - Polar: Required. Create an organization access token (https://docs.polar.sh/integrate/authentication/personal-access-token) with scopes subscriptions:read, customers:read, organizations:read.
 
@@ -141,7 +141,7 @@ PolarToken   # required
 #   <SponsorCheckBundleInPullRequest>true</SponsorCheckBundleInPullRequest>
 
 # Token notes:
-# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.
+# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise the sponsorships query returns nothing. Private sponsors are never bundled either way; they verify with SponsorshipPrivateUntil.
 # - Open Collective: Optional. Public collectives are queryable anonymously; a Personal Token (https://opencollective.com/applications, no scopes) gives rate-limit headroom.
 # - Polar: Required. Create an organization access token (https://docs.polar.sh/integrate/authentication/personal-access-token) with scopes subscriptions:read, customers:read, organizations:read.
 ```

@@ -20,6 +20,14 @@ Example format:
 
   <PackageVersion Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="mallory" SponsorshipStart="yyyy-MM-dd" />
 
+If the sponsorship is private (GitHub Sponsors) or incognito (Open Collective), it is deliberately excluded from the bundled list and cannot match. Attest to it by setting SponsorshipPrivateUntil, at most 12 months out, in:
+
+  C:/Consumer/Directory.Packages.props
+
+Example format:
+
+  <PackageVersion Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="mallory" SponsorshipPrivateUntil="yyyy-MM" />
+
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008
     }
   ]

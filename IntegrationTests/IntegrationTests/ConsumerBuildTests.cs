@@ -648,4 +648,86 @@ public class ConsumerBuildTests
         // defined exemptions at pack time.
         await Assert.That(result.Combined).Contains("Claim a publisher-defined exemption");
     }
+
+    // --- Private and incognito sponsorships (SponsorshipPrivateUntil) ---
+    //
+    // Every fixture below declares "dave", who is absent from sponsors-override.json. A private
+    // sponsor is never in the bundled hash list, so a passing build proves the hash check was
+    // skipped rather than satisfied.
+
+    [Test]
+    public async Task PrivateSponsor_BuildsCleanlyWithSC059Message()
+    {
+        var result = await BuildFixture("Consumer.PrivateSponsor");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC007");
+        await Assert.That(result.Combined).Contains("trusting unverified private sponsor declaration");
+        // The account and end month are the whole audit trail.
+        await Assert.That(result.Combined).Contains("GitHubSponsors=dave");
+    }
+
+    [Test]
+    public async Task CpmPrivateSponsor_BuildsCleanlyWithSC059Message()
+    {
+        var result = await BuildFixture("Consumer.CpmPrivateSponsor");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("trusting unverified private sponsor declaration");
+    }
+
+    [Test]
+    public async Task OwnerModePrivateSponsor_BuildsCleanlyWithSC059Message()
+    {
+        var result = await BuildFixture("Consumer.OwnerPrivateSponsor", authorFixture: "ThePackageOwnerMode");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("trusting unverified private sponsor declaration");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_Expired_FailsWithSC056()
+    {
+        // The forcing function: nothing else ever re-asks whether the sponsorship is still running.
+        var result = await BuildFixture("Consumer.PrivateSponsorExpired");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC056");
+        await Assert.That(result.Combined).Contains("2020-01-31");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_BeyondCap_FailsWithSC053()
+    {
+        var result = await BuildFixture("Consumer.PrivateSponsorBeyondCap");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC053");
+        await Assert.That(result.Combined).Contains("12 months");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_BadFormat_FailsWithSC050()
+    {
+        var result = await BuildFixture("Consumer.PrivateSponsorBadFormat");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC050");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_PublisherNarrowedCap_FailsWithSC053()
+    {
+        // 9 months out is inside the 12 month default and outside this package's cap of 6, so this
+        // only passes if PrivateSponsorMaxTermMonths actually reached the consumer's verifier
+        // through the generated targets.
+        var result = await BuildFixture("Consumer.PrivateSponsorNarrowCap", authorFixture: "ThePackagePrivateSponsorCap");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC053");
+        await Assert.That(result.Combined).Contains("6 months");
+    }
+
+    [Test]
+    public async Task InvalidSponsor_SC007BodyPointsAtThePrivateSponsorRoute()
+    {
+        // A private sponsor whose hash vanished on upgrade lands on SC007 with nothing wrong on
+        // their side, so the remediation body is their only signpost.
+        var result = await BuildFixture("Consumer.InvalidSponsor");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SponsorshipPrivateUntil");
+    }
 }

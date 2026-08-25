@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Owner mode: both halves are owner-prefixed global properties.
+         Current month for the same reason as Consumer.PrivateSponsor. -->
+    <acme_GitHubSponsorAccount>dave</acme_GitHubSponsorAccount>
+    <acme_SponsorshipPrivateUntil>$([System.DateTime]::UtcNow.ToString('yyyy-MM'))</acme_SponsorshipPrivateUntil>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerMode" Version="1.0.0" />
+  </ItemGroup>
+</Project>

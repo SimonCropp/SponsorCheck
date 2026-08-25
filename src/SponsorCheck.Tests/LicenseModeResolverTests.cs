@@ -173,4 +173,39 @@ public class LicenseModeResolverTests
         var conflict = (LicenseDecision.ConflictingModes)d;
         await Assert.That(conflict.Modes.Count).IsEqualTo(4);
     }
+
+    [Test]
+    public async Task PrivateUntilWithSponsor_CarriesUntilTrimmed()
+    {
+        var d = LicenseModeResolver.Resolve(null, null, null, null, Sponsors(("GitHubSponsors", "dave")), null, "ThePkg", "  2027-02  ");
+        var sponsor = (LicenseDecision.Sponsor)d;
+        await Assert.That(sponsor.PrivateUntilRaw).IsEqualTo("2027-02");
+    }
+
+    [Test]
+    public async Task PrivateUntilBlank_IsNull()
+    {
+        var d = LicenseModeResolver.Resolve(null, null, null, null, Sponsors(("GitHubSponsors", "dave")), null, "ThePkg", "   ");
+        var sponsor = (LicenseDecision.Sponsor)d;
+        await Assert.That(sponsor.PrivateUntilRaw).IsNull();
+    }
+
+    [Test]
+    public async Task PrivateUntilAlone_IsNotAMode()
+    {
+        // Same rule as SponsorshipExemptionUntil and SponsorshipStart: it qualifies a sponsor claim
+        // and never selects one, so on its own the consumer still gets "no license mode set" rather
+        // than a Sponsor decision with no account to attest to.
+        var d = LicenseModeResolver.Resolve(null, null, null, null, NoSponsors(), null, "ThePkg", "2027-02");
+        await Assert.That(d).IsTypeOf<LicenseDecision.MissingConfig>();
+    }
+
+    [Test]
+    public async Task PrivateUntilDoesNotConflictWithSponsorMode()
+    {
+        // A qualifier must not count towards the mode tally — pairing it with a sponsor account is
+        // the whole point, so it must not read as two modes and trip SC003.
+        var d = LicenseModeResolver.Resolve(null, null, null, null, Sponsors(("GitHubSponsors", "dave")), null, "ThePkg", "2027-02");
+        await Assert.That(d).IsTypeOf<LicenseDecision.Sponsor>();
+    }
 }

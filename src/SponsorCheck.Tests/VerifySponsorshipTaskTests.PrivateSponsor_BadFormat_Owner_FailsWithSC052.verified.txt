@@ -1,0 +1,18 @@
+﻿{
+  Errors: [
+    {
+      Code: SC052,
+      Message:
+Invalid private sponsorship end date format. Package 'MyOssLib': acme_SponsorshipPrivateUntil='nope' property is not in 'yyyy-MM' format.
+
+Fix the acme_SponsorshipPrivateUntil property in Directory.Build.props or the consuming project.
+
+Example format:
+
+  <acme_GitHubSponsorAccount>dave</acme_GitHubSponsorAccount>
+  <acme_SponsorshipPrivateUntil>yyyy-MM</acme_SponsorshipPrivateUntil>
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc052
+    }
+  ]
+}

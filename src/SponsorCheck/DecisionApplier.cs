@@ -16,7 +16,11 @@ public static class DecisionApplier
         Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
         Lazy<IReadOnlyDictionary<string, string>> messageOverrides,
         TaskLoggingHelper log,
-        DateTime utcNow)
+        DateTime utcNow,
+        // The publisher's cap on a SponsorshipPrivateUntil claim, baked into the generated verifier
+        // targets at pack time. Defaulted here so every existing caller (and every package published
+        // before the cap existed) lands on the documented 12 months.
+        int privateSponsorMaxTermMonths = PrivateSponsorTerm.DefaultMaxTermMonths)
     {
         switch (decision)
         {
@@ -101,7 +105,7 @@ public static class DecisionApplier
                 return ApplyExempt(exempt, context, exemptionsDefined, severityOverrides, messageOverrides, log, utcNow);
 
             case LicenseDecision.Sponsor sponsor:
-                return ApplySponsor(sponsor, sponsorHashListPath, packDatePath, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
+                return ApplySponsor(sponsor, sponsorHashListPath, packDatePath, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow, privateSponsorMaxTermMonths);
 
             case LicenseDecision.Licensed licensed:
                 return ApplyLicensed(licensed, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow);
@@ -270,8 +274,19 @@ public static class DecisionApplier
         Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
         Lazy<IReadOnlyDictionary<string, string>> messageOverrides,
         TaskLoggingHelper log,
-        DateTime utcNow)
+        DateTime utcNow,
+        int privateSponsorMaxTermMonths)
     {
+        // SponsorshipPrivateUntil is checked before SponsorshipStart because it is the stronger
+        // claim: a private sponsorship is never in the bundled list regardless of when it started,
+        // so a valid claim decides the build outright and never falls through to the hash check.
+        // Checking it first also means an *expired* private claim fails loudly instead of silently
+        // degrading into the SponsorshipStart path when a consumer has set both.
+        if (!string.IsNullOrWhiteSpace(sponsor.PrivateUntilRaw))
+        {
+            return ApplyPrivateSponsor(sponsor, context, log, utcNow, privateSponsorMaxTermMonths);
+        }
+
         // If consumer declared SponsorshipStart, see if they signed up after the package was packed.
         // If so, the bundled hash couldn't possibly know about them — trust the declaration.
         if (!string.IsNullOrWhiteSpace(sponsor.SponsorshipStartRaw))
@@ -386,6 +401,12 @@ public static class DecisionApplier
             lines.Add(ConsumerMetadataExamples.RenderSponsorshipStartHint(context, sponsor.AccountByPlatform));
         }
 
+        // Private and incognito sponsorships are deliberately never bundled, so this is exactly where
+        // one lands — and the only signpost they get. Unconditional: reaching here means
+        // SponsorshipPrivateUntil was unset (a set one decides the build before the hash check).
+        lines.Add("");
+        lines.Add(ConsumerMetadataExamples.RenderPrivateSponsorHint(context, sponsor.AccountByPlatform, MonthsWord(privateSponsorMaxTermMonths)));
+
         return SponsorCheckLog.Emit(
             log,
             code,
@@ -393,6 +414,95 @@ public static class DecisionApplier
             severityOverrides.Value,
             messageOverrides.Value,
             string.Join(newline, lines));
+    }
+
+    // A private (GitHub) or incognito (Open Collective) sponsorship is deliberately excluded from the
+    // bundled hash list, so there is nothing to match against and nothing to verify — the consumer's
+    // own build log is the whole audit trail. What keeps that from being a permanent opt-out is the
+    // publisher's cap: the claim names an end month, measured against the build clock, and stops
+    // working past it.
+    static bool ApplyPrivateSponsor(
+        LicenseDecision.Sponsor sponsor,
+        ConsumerContext context,
+        TaskLoggingHelper log,
+        DateTime utcNow,
+        int maxTermMonths)
+    {
+        var raw = sponsor.PrivateUntilRaw!;
+        // Computed once so the month the ceiling check compares against and the month its message
+        // names cannot drift apart — same reasoning as the exemption ceiling.
+        var ceilingMonth = AddMonths(utcNow, maxTermMonths);
+        var ceiling = RenderMonth(ceilingMonth);
+        if (!TryParseYearMonth(raw, out var year, out var month))
+        {
+            var (formatCode, formatOpener) = context.Mode switch
+            {
+                ConsumerMode.Owner => ("SC052", $"Package '{sponsor.PackageId}': {context.OwnerId}_SponsorshipPrivateUntil='{raw}' property is not in 'yyyy-MM' format."),
+                ConsumerMode.Cpm => ("SC051", $"Package '{sponsor.PackageId}': SponsorshipPrivateUntil='{raw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format."),
+                _ => ("SC050", $"Package '{sponsor.PackageId}': SponsorshipPrivateUntil='{raw}' on the <PackageReference> is not in 'yyyy-MM' format.")
+            };
+            SponsorCheckLog.Error(
+                log,
+                formatCode,
+                $"""
+                 {formatOpener}
+
+                 {ConsumerMetadataExamples.RenderPrivateUntilFormatFix(context, sponsor.AccountByPlatform)}
+                 """);
+            return false;
+        }
+
+        // Beyond-ceiling and expired are mutually exclusive (one is ahead of the cap, the other
+        // behind today), so the order between them never changes which code fires.
+        if (IsAfter(year, month, ceilingMonth))
+        {
+            var (maxCode, maxOpener) = context.Mode switch
+            {
+                ConsumerMode.Owner => ("SC055", $"Package '{sponsor.PackageId}': {context.OwnerId}_SponsorshipPrivateUntil='{raw}' property is more than {MonthsWord(maxTermMonths)} in the future (maximum {ceiling})."),
+                ConsumerMode.Cpm => ("SC054", $"Package '{sponsor.PackageId}': SponsorshipPrivateUntil='{raw}' on the <PackageVersion> in Directory.Packages.props is more than {MonthsWord(maxTermMonths)} in the future (maximum {ceiling})."),
+                _ => ("SC053", $"Package '{sponsor.PackageId}': SponsorshipPrivateUntil='{raw}' on the <PackageReference> is more than {MonthsWord(maxTermMonths)} in the future (maximum {ceiling}).")
+            };
+            SponsorCheckLog.Error(
+                log,
+                maxCode,
+                $"""
+                 {maxOpener}
+
+                 {ConsumerMetadataExamples.RenderPrivateUntilFix(context, sponsor.AccountByPlatform, ceiling)}
+                 """);
+            return false;
+        }
+
+        // Same month-granularity expiry as SponsorshipLicensedUntil and SponsorshipExemptionUntil:
+        // the named month is fully covered, and the first day of the following month is the cutoff.
+        if (IsAfter(utcNow.Year, utcNow.Month, (year, month)))
+        {
+            var lastDay = new DateTime(year, month, DateTime.DaysInMonth(year, month), 0, 0, 0, DateTimeKind.Utc);
+            var (expiredCode, expiredOpener) = context.Mode switch
+            {
+                ConsumerMode.Owner => ("SC058", $"Package '{sponsor.PackageId}': private sponsorship declaration expired — {context.OwnerId}_SponsorshipPrivateUntil='{raw}' (end of month {lastDay:yyyy-MM-dd} UTC)."),
+                ConsumerMode.Cpm => ("SC057", $"Package '{sponsor.PackageId}': private sponsorship declaration on the <PackageVersion> in Directory.Packages.props expired — SponsorshipPrivateUntil='{raw}' (end of month {lastDay:yyyy-MM-dd} UTC)."),
+                _ => ("SC056", $"Package '{sponsor.PackageId}': private sponsorship declaration on the <PackageReference> expired — SponsorshipPrivateUntil='{raw}' (end of month {lastDay:yyyy-MM-dd} UTC).")
+            };
+            SponsorCheckLog.Error(
+                log,
+                expiredCode,
+                $"""
+                 {expiredOpener}
+
+                 {ConsumerMetadataExamples.RenderPrivateUntilRenewal(context, sponsor.AccountByPlatform, ceiling)}
+                 """);
+            return false;
+        }
+
+        var attempts = string.Join(", ", sponsor.AccountByPlatform.Select(_ => $"{_.Key}={_.Value}"));
+        // Informational, not a warning: like SC017, this is a documented route the publisher offers,
+        // and nagging a paying sponsor on every build for the whole term would be the wrong trade.
+        SponsorCheckLog.HighMessage(
+            log,
+            "SC059",
+            $"Package '{sponsor.PackageId}': trusting unverified private sponsor declaration ({attempts}): SponsorshipPrivateUntil={raw}, so the bundled sponsor list is not expected to contain this account.");
+        return true;
     }
 
     static bool ApplyLicensed(

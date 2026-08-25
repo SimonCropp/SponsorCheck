@@ -33,6 +33,15 @@ public class ScCodeTests
     [Arguments("SC047", Placement.PerPackageProject)]
     [Arguments("SC048", Placement.PerPackageCpm)]
     [Arguments("SC049", Placement.OwnerMode)]
+    [Arguments("SC050", Placement.PerPackageProject)]
+    [Arguments("SC051", Placement.PerPackageCpm)]
+    [Arguments("SC052", Placement.OwnerMode)]
+    [Arguments("SC053", Placement.PerPackageProject)]
+    [Arguments("SC054", Placement.PerPackageCpm)]
+    [Arguments("SC055", Placement.OwnerMode)]
+    [Arguments("SC056", Placement.PerPackageProject)]
+    [Arguments("SC057", Placement.PerPackageCpm)]
+    [Arguments("SC058", Placement.OwnerMode)]
     public async Task ClassifiesPlacement(string code, Placement expected)
     {
         var classification = ScCode.Classify(code);
@@ -44,6 +53,7 @@ public class ScCodeTests
     [Test]
     [Arguments("SC017")]
     [Arguments("SC018")]
+    [Arguments("SC059")]
     public async Task RecognizedWithoutPlacement(string code)
     {
         var classification = ScCode.Classify(code);
@@ -69,7 +79,7 @@ public class ScCodeTests
     [Arguments("SC")]
     [Arguments("SC0")]
     [Arguments("SC000")]
-    [Arguments("SC050")]
+    [Arguments("SC060")]
     [Arguments("SC099")]
     [Arguments("SC200")]
     [Arguments("SC-01")]

@@ -33,7 +33,7 @@ At least one `<Platform>Account` must be set. Credentials per platform:
  * Env var: `GitHubToken` (auto-imported into the MSBuild property of the same name)
  * User-secrets key: `SponsorCheck:GitHubToken`
 
-Required - [classic PAT](https://github.com/settings/tokens/new) with `read:user`, plus `read:org` if sponsored as an organization. `read:user` is always required because the bundler reads per-sponsorship metadata (`isOneTimePayment`, `createdAt`, `isActive`) from `sponsorshipsAsMaintainer`, and GitHub gates those fields on `read:user` even when the maintainer is an organization. Fine-grained PATs don't expose a Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently filtered out and the bundled hash list will be incomplete.
+Required - [classic PAT](https://github.com/settings/tokens/new) with `read:user`, plus `read:org` if sponsored as an organization. `read:user` is always required because the bundler reads per-sponsorship metadata (`isOneTimePayment`, `createdAt`, `isActive`) from `sponsorshipsAsMaintainer`, and GitHub gates those fields on `read:user` even when the maintainer is an organization. Fine-grained PATs don't expose a Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise `sponsorshipsAsMaintainer` returns nothing and the bundled hash list will be empty. Private sponsors are never bundled regardless of the token ([Private and incognito sponsors](#private-and-incognito-sponsors)); the token still needs to see them so the pack log can report how many were excluded.
 
 Some organizations disable classic-PAT access in their security settings. When sponsored as such an org, a classic PAT will fail with a `FORBIDDEN` error from GitHub at pack time and the bundler emits an actionable message. The org admin needs to re-enable classic-PAT access for the sponsored org. Because that arrives as `FORBIDDEN` rather than as a 401, it is reported separately from a credential the platform does not recognize at all ([SC107](BundlerDiagnosticCodes.md#sc107)) — the two have different fixes and neither message is emitted for the other case.
 
@@ -357,16 +357,61 @@ The bundler runs at the OSS author's pack time (Release config, `IsPackable=true
 1. Writes four files into the produced nupkg's `build/` folder: the sorted, deduped hashes (`SponsorCheck.SponsorHashes.txt`), the UTC pack date that powers the `SponsorshipStart` bypass (`SponsorCheck.PackDate.txt`), the enabled platform accounts used to render sponsor URLs in diagnostics (`SponsorCheck.AuthorAccounts.txt`), and the per-consumer verifier targets file (`<ThePackageId>.targets`). The verifier task DLL is packed under `tasks/`. When `SponsorOwner` is set, the generated targets are the owner-mode variant — they read global MSBuild properties instead of per-package metadata, with the owner id baked in. When `CheckTransitiveReferences` is set, those `build/` files ship under `buildTransitive/` instead, so NuGet imports the verifier for transitive consumers too (see [Checking transitive references](#checking-transitive-references)).
 
 
+## Private and incognito sponsors
+
+Both GitHub Sponsors and Open Collective let a supporter stay out of the public list, and SponsorCheck **never bundles either of them**:
+
+| Platform | Mechanism | What the API returns |
+| --- | --- | --- |
+| GitHub Sponsors | Sponsor sets the sponsorship to private | The sponsorship carries `privacyLevel: PRIVATE`. Visible to the maintainer's own token, skipped by the bundler. |
+| Open Collective | Contributor picks the **Incognito** profile | The member is attributed to a separate generated profile with `isIncognito: true` and a slug like `incognito-8f2a1c`. Skipped by the bundler. |
+| Polar | — | No equivalent. Supporters are billing customers and there is no public list to opt out of. |
+
+Excluding them is the point. The hash is [light obfuscation, not real privacy](#hashing--what-it-protects), and the file lands in every consumer's `~/.nuget/packages/` after restore — so a private sponsor's identity would ship, worldwide, behind a speed bump. Open Collective is worse still: the incognito slug is one the real backer has never seen, so bundling it publishes a hash *and* is unmatchable.
+
+The pack log reports the count so the exclusion isn't silent:
+
+```
+GitHub Sponsors: 2 private sponsors are excluded from the bundled list. They cannot match a bundled hash, so they need SponsorshipPrivateUntil="yyyy-MM" alongside their sponsor account.
+```
+
+Never the accounts — the whole reason for excluding them is that those identities never leave the author's machine.
+
+### What the sponsor does instead
+
+They declare `SponsorshipPrivateUntil="yyyy-MM"` next to their platform account, and the verifier skips the hash check and logs an [SC059](VerifierDiagnosticCodes.md#sc059) audit message naming the account and the end month. See [Private and incognito sponsors](ConsumerUsage.md#private-and-incognito-sponsors) for the consumer side.
+
+Nothing about the claim is verifiable — it is the same honour system as `SponsorshipLicenseIgnored`, minus the "in breach" framing, and it is not a weakening of enforcement: a consumer who wanted to free-ride already had `SponsorshipLicenseIgnored="true"`. What the end month adds is a forcing function. A private sponsorship that quietly lapses would otherwise ride along forever; instead the build fails with [SC056](VerifierDiagnosticCodes.md#sc056) and a person decides again.
+
+### Capping the term
+
+The claim is capped at **12 months** from the build clock by default. Narrow it with `PrivateSponsorMaxTermMonths` on the SponsorCheck reference:
+
+```xml
+<PackageReference Include="SponsorCheck"
+                  Version="0.20.0"
+                  PrivateAssets="all"
+                  GitHubSponsorsAccount="acmecorp"
+                  PrivateSponsorMaxTermMonths="6" />
+```
+
+A consumer naming a month beyond the cap fails with [SC053](VerifierDiagnosticCodes.md#sc053). The ceiling is measured from the build clock rather than from when the value was written, so it rolls forward with time — an already-valid claim keeps working, and only the re-attestation interval is bounded. A value that isn't a positive whole number fails the pack with [SC109](BundlerDiagnosticCodes.md#sc109).
+
+The cap is baked into the generated verifier targets, so it applies from the next release onward; packages published before it existed keep the 12-month default.
+
+There is no switch to disable the route entirely. Blocking it would add no enforcement — `SponsorshipLicenseIgnored="true"` is already the universal opt-out — while breaking the one honest path a paying private sponsor has.
+
+
 ## Hashing — what it protects
 
 The hash is **light obfuscation, not real privacy.** Anyone with a wordlist of candidate usernames can reverse-engineer the published hashes by recomputing `SHA256("{platform-id}:{lowercase(login)}")` for each candidate and truncating to 12 hex chars. The hash isn't a security boundary either — `SponsorshipLicenseIgnored="true"` is the documented bypass, so anyone wanting to free-ride doesn't need to forge a match.
 
 What hashing actually buys:
 
-1. **Private GitHub sponsors don't ship as plaintext.** GitHub Sponsors lets sponsors opt to be private. The bundler still includes them (the token-owner can see them via the API), and the resulting file lands in every consumer's `~/.nuget/packages/<id>/<ver>/build/` after restore. Hashing means a private sponsor's username is not grep-able across every consumer's disk — an attacker has to specifically guess it and recompute the hash to confirm. Plaintext would effectively dox every private sponsor to every consumer.
+1. **Public sponsors aren't republished in bulk.** Every bundled account is one the sponsor already made public on the platform, so hashing protects nothing that isn't already visible — but the bundled list lands in every consumer's `~/.nuget/packages/<id>/<ver>/build/` after restore, which is a broader exposure than a page someone chose to publish. Hashing keeps the list from being grep-able across every consumer's disk. Sponsors who want real privacy use their platform's own privacy setting, and are [never bundled at all](#private-and-incognito-sponsors) — that, not the hash, is what protects them.
 1. **Friction against casual scraping.** A flat list of usernames in a published nupkg is a free dataset for anyone running `nuget restore` on public CI. Hashing doesn't stop a determined deanonymizer but does stop incidental harvesting.
 
-If a sponsor needs guarantees stronger than "annoying to reverse" — e.g. they're sponsoring under a pseudonym they're trying to keep separate from their GitHub identity — the OSS author should ask them up front and either skip the bundling entirely or accept the risk of targeted username guesses. The hash is a speed bump, not a wall.
+A sponsor who needs guarantees stronger than "annoying to reverse" — say they're sponsoring under a pseudonym they want kept separate from their GitHub identity — should make the sponsorship private on the platform. That keeps them out of the bundle entirely, and they use [`SponsorshipPrivateUntil`](#private-and-incognito-sponsors) to verify. The hash is a speed bump, not a wall, and it was never the right answer for that case.
 
 Hash length is truncated to 48 bits (12 hex chars) because the only correctness requirement is "accidental collisions are implausible" — a non-sponsor's hash falsely matching the bundled list is ≈ 1 in tens of billions even at 100k sponsors. Preimage resistance is unnecessary given `SponsorshipLicenseIgnored`.
 

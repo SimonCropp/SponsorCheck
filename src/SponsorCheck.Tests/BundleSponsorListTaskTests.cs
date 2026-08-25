@@ -1233,4 +1233,82 @@ public class BundleSponsorListTaskTests
         await Assert.That(engine.Errors[0].Message).Contains("Consulting");
         await Assert.That(engine.Errors[0].Message).Contains("MaxTermMonths");
     }
+
+    // --- PrivateSponsorMaxTermMonths ---
+    //
+    // The cap rides in the generated verifier targets rather than a sidecar file, so the
+    // substitution is the only thing carrying it to the consumer. If the placeholder ever stops
+    // being replaced, the verifier silently falls back to the default and the publisher's setting
+    // is lost without any error — these tests are what makes that loud.
+
+    static string PrivateCapTemplate(TempDirectory dir)
+    {
+        var path = Path.Combine(dir, "ConsumerVerifier.targets");
+        File.WriteAllText(
+            path,
+            """
+            <Project>
+              <PropertyGroup>
+                <_SponsorCheck_PrivateSponsorMaxTermMonths>__SC_PRIVATE_MAX_MONTHS_RAW__</_SponsorCheck_PrivateSponsorMaxTermMonths>
+              </PropertyGroup>
+            </Project>
+            """);
+        return path;
+    }
+
+    static BundleSponsorListTask PrivateCapTask(TempDirectory dir, StubBuildEngine engine, string cap) =>
+        new()
+        {
+            BuildEngine = engine,
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            VerifierTargetsTemplatePath = PrivateCapTemplate(dir),
+            ThePackageId = "MyOssLib",
+            OverrideListPath = WriteOverride(dir, "[]"),
+            PrivateSponsorMaxTermMonthsFromRef = cap,
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+    [Test]
+    public async Task PrivateSponsorMaxTermMonths_Unset_RendersTheDefault()
+    {
+        using var dir = new TempDirectory();
+        var task = PrivateCapTask(dir, new(), "");
+        await Assert.That(task.Execute()).IsTrue();
+        var rendered = await File.ReadAllTextAsync(task.OutputVerifierTargetsPath);
+        await Assert.That(rendered).Contains($">{PrivateSponsorTerm.DefaultMaxTermMonths}<");
+        await Assert.That(rendered).DoesNotContain("__SC_PRIVATE_MAX_MONTHS_RAW__");
+    }
+
+    [Test]
+    public async Task PrivateSponsorMaxTermMonths_Set_RendersTheAuthorValue()
+    {
+        using var dir = new TempDirectory();
+        var task = PrivateCapTask(dir, new(), " 6 ");
+        await Assert.That(task.Execute()).IsTrue();
+        var rendered = await File.ReadAllTextAsync(task.OutputVerifierTargetsPath);
+        await Assert.That(rendered).Contains(">6<");
+    }
+
+    [Test]
+    [Arguments("six")]
+    [Arguments("0")]
+    [Arguments("-1")]
+    [Arguments("+6")]
+    [Arguments("6.0")]
+    public async Task PrivateSponsorMaxTermMonths_Invalid_FailsWithSC109(string value)
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = PrivateCapTask(dir, engine, value);
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC109");
+        await Assert.That(engine.Errors[0].Message).Contains("PrivateSponsorMaxTermMonths");
+    }
 }

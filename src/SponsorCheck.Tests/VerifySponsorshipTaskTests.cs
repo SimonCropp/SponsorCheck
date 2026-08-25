@@ -2883,6 +2883,325 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC003");
         await Assert.That(engine.Errors[0].Message!).DoesNotContain("SponsorshipExemption");
     }
+
+    // --- Private sponsorships (SponsorshipPrivateUntil / PrivateSponsorMaxTermMonths) ---
+    //
+    // Same fixed-clock reasoning as the time-bounded exemptions above: every code here is decided
+    // against utcNow, and the ceiling month appears in the rendered messages. May 2026 with the
+    // default 12 month cap puts the ceiling at 2027-05; with a 6 month cap, at 2026-11.
+    //
+    // Every helper below writes a hash list containing "alice" and claims as "dave". A private
+    // sponsor is by definition absent from the bundled list, so if any of these passed via the hash
+    // check instead of the private-sponsor path the test would be proving nothing.
+
+    static LicenseDecision PrivateSponsorDecision(string? privateUntil, string account = "dave", string? start = null) =>
+        LicenseModeResolver.Resolve(
+            null,
+            null,
+            null,
+            null,
+            new Dictionary<string, string?>
+            {
+                ["GitHubSponsors"] = account,
+                ["OpenCollective"] = null,
+                ["Polar"] = null
+            },
+            start,
+            "MyOssLib",
+            privateUntil);
+
+    static bool ApplyPrivateSponsor(
+        StubBuildEngine engine,
+        TempDirectory dir,
+        LicenseDecision decision,
+        ConsumerContext? context = null,
+        DateTime? utcNow = null,
+        int maxTermMonths = PrivateSponsorTerm.DefaultMaxTermMonths) =>
+        DecisionApplier.Apply(
+            decision,
+            WriteHashes(dir, ("GitHubSponsors", "alice")),
+            "",
+            context ?? NonCpmContext(),
+            noAuthorAccounts,
+            noExemptions,
+            noSeverityOverrides,
+            noMessageOverrides,
+            new TaskLoggingHelperFor(engine),
+            utcNow ?? clock,
+            maxTermMonths);
+
+    [Test]
+    public async Task PrivateSponsor_WithinCap_PassesWithoutConsultingHashList()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2026-09"));
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings).IsEmpty();
+        await Assert.That(engine.Messages).HasSingleItem();
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC059");
+        // The account and the end month are the entire audit trail — nothing else records them.
+        await Assert.That(engine.Messages[0].Message!).Contains("GitHubSponsors=dave");
+        await Assert.That(engine.Messages[0].Message!).Contains("2026-09");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task PrivateSponsor_ExactlyAtCap_Passes()
+    {
+        // The ceiling is inclusive: 12 months from May 2026 is May 2027, and that value stands.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2027-05"));
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task PrivateSponsor_OneMonthPastCap_FailsWithSC053()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2027-06"));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC053");
+        await Assert.That(engine.Errors[0].Message!).Contains("maximum 2027-05");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task PrivateSponsor_PastCap_Cpm_FailsWithSC054()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2030-01"), CpmContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC054");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task PrivateSponsor_PastCap_Owner_FailsWithSC055()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2030-01"), OwnerContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC055");
+        await Verify(engine);
+    }
+
+    [Test]
+    [Arguments("2026")]
+    [Arguments("2026-13")]
+    [Arguments("2026-09-01")]
+    [Arguments("not-a-month")]
+    public async Task PrivateSponsor_BadFormat_FailsWithSC050(string value)
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision(value));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC050");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_BadFormat_Cpm_FailsWithSC051()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("nope"), CpmContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC051");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task PrivateSponsor_BadFormat_Owner_FailsWithSC052()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("nope"), OwnerContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC052");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task PrivateSponsor_Expired_FailsWithSC056()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2026-04"));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC056");
+        await Assert.That(engine.Errors[0].Message!).Contains("2026-04-30");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task PrivateSponsor_Expired_Cpm_FailsWithSC057()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2026-04"), CpmContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC057");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task PrivateSponsor_Expired_Owner_FailsWithSC058()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2026-04"), OwnerContext());
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC058");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task PrivateSponsor_LastInstantOfNamedMonth_Passes()
+    {
+        // Month granularity: the named month is fully covered.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(
+            engine,
+            dir,
+            PrivateSponsorDecision("2026-05"),
+            utcNow: new(2026, 5, 31, 23, 59, 59, DateTimeKind.Utc));
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+    }
+
+    [Test]
+    public async Task PrivateSponsor_FirstInstantOfNextMonth_FailsWithSC056()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(
+            engine,
+            dir,
+            PrivateSponsorDecision("2026-05"),
+            utcNow: new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC056");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_PublisherCapNarrowsTheCeiling()
+    {
+        // A 6 month cap moves the ceiling from 2027-05 to 2026-11, so a value the default would
+        // have accepted now fails.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2027-01"), maxTermMonths: 6);
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC053");
+        await Assert.That(engine.Errors[0].Message!).Contains("maximum 2026-11");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_ExpiredAlongsideSponsorshipStart_StillFails()
+    {
+        // Both qualifiers set: an expired private claim must fail loudly rather than quietly
+        // degrading into the SponsorshipStart path.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2026-04", start: "2025-01-01"));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC056");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_MatchingAccountStillPasses()
+    {
+        // A consumer who declares a private sponsorship for an account that *is* in the list still
+        // passes — the private path decides the build before the hash check, and the outcome is the
+        // same either way.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var ok = ApplyPrivateSponsor(engine, dir, PrivateSponsorDecision("2026-09", account: "alice"));
+        await Assert.That(ok).IsTrue();
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC059");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_ThroughTask_PassesWithSC059()
+    {
+        // End to end through the task, including the metadata merge and the
+        // PrivateSponsorMaxTermMonths property the generated targets supply.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            GitHubFromRef = "dave",
+            SponsorshipPrivateUntilFromRef = $"{DateTime.UtcNow.AddMonths(1):yyyy-MM}"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC059");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_UnparseableCapFromTargets_FallsBackToDefault()
+    {
+        // The cap comes from the publisher's packed targets, so a missing or malformed one is not
+        // something the consumer can fix — their build must keep working on the documented default.
+        // An unsubstituted placeholder is the realistic shape of that failure.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            GitHubFromRef = "dave",
+            PrivateSponsorMaxTermMonths = "__SC_PRIVATE_MAX_MONTHS_RAW__",
+            SponsorshipPrivateUntilFromRef = $"{DateTime.UtcNow.AddMonths(11):yyyy-MM}"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC059");
+    }
+
+    [Test]
+    public async Task PrivateSponsor_MisplacedOnPackageVersion_NonCpm_FailsWithSC020()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            GitHubFromRef = "dave",
+            SponsorshipPrivateUntilFromVer = "2027-01"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC020");
+        await Assert.That(engine.Errors[0].Message!).Contains("SponsorshipPrivateUntil");
+    }
 }
 
 internal sealed class TaskLoggingHelperFor(IBuildEngine engine) :

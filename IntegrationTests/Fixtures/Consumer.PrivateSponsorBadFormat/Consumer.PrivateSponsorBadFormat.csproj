@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      GitHubSponsorAccount="dave"
+      SponsorshipPrivateUntil="2027" />
+  </ItemGroup>
+</Project>

@@ -18,7 +18,7 @@ GitHubToken   # required
 #   <SponsorCheckBundleInPullRequest>true</SponsorCheckBundleInPullRequest>
 
 # Token notes:
-# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.
+# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise the sponsorships query returns nothing. Private sponsors are never bundled either way; they verify with SponsorshipPrivateUntil.
 
 === Release notes ===
 ## Sponsorship is now checked at build time
@@ -123,7 +123,7 @@ GitHubToken   # required
 #   <SponsorCheckBundleInPullRequest>true</SponsorCheckBundleInPullRequest>
 
 # Token notes:
-# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.
+# - GitHub Sponsors: Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise the sponsorships query returns nothing. Private sponsors are never bundled either way; they verify with SponsorshipPrivateUntil.
 ```
 
 ## 3. Release notes for consumers

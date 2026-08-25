@@ -5,12 +5,18 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
     // Open Collective's MemberRole enum has no SPONSOR value — both individual and organisation
     // contributors come back as role=BACKER, with org status distinguished by accountType in the
     // UI. Adding SPONSOR to the role filter is rejected server-side with a GRAPHQL_VALIDATION_FAILED.
+    //
+    // isIncognito lives on Individual, not on the Account interface the member's `account` field is
+    // typed as, so it has to come through an inline fragment. An incognito contribution is attributed
+    // to a separate generated profile, so its slug is one the real backer doesn't know and could never
+    // declare — bundling it would expose a hash nobody can match. They are dropped and told to use
+    // SponsorshipPrivateUntil instead.
     const string query = """
         query($slug: String!, $offset: Int!) {
           account(slug: $slug) {
             members(role: [BACKER], limit: 100, offset: $offset) {
               totalCount
-              nodes { account { slug } }
+              nodes { account { slug ... on Individual { isIncognito } } }
             }
           }
         }
@@ -32,6 +38,7 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
         Cancel cancel)
     {
         var slugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var incognitoCount = 0;
         var offset = 0;
         while (true)
         {
@@ -47,6 +54,8 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
                 slugs.Add(slug);
             }
 
+            incognitoCount += page.IncognitoCount;
+
             // Advance by raw node count, not filtered slug count: a node whose `account.slug`
             // is missing or empty gets dropped from MemberSlugs but still consumes one of the
             // page's `limit` rows. Using the filtered count would re-fetch overlapping ranges.
@@ -61,6 +70,11 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
         }
 
         log.LogMessage(MessageImportance.Normal, $"Open Collective: fetched {slugs.Count} backers of '{ownerAccount}'.");
+        if (incognitoCount > 0)
+        {
+            log.LogMessage(MessageImportance.High, PrivateSponsorAdvice.ExcludedMessage("Open Collective", incognitoCount, "incognito"));
+        }
+
         return [.. slugs];
     }
 
@@ -114,7 +128,7 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
         throw new MaintenanceFeeException($"Open Collective GraphQL HTTP {status}: {body}");
     }
 
-    public readonly record struct PageResult(bool AccountExists, IReadOnlyList<string> MemberSlugs, int RawItemCount, int TotalCount);
+    public readonly record struct PageResult(bool AccountExists, IReadOnlyList<string> MemberSlugs, int RawItemCount, int TotalCount, int IncognitoCount = 0);
 
     public static PageResult ParseResponse(string json)
     {
@@ -141,6 +155,7 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
                          t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0;
         var slugs = new List<string>();
         var rawItemCount = 0;
+        var incognitoCount = 0;
         if (members.TryGetProperty("nodes", out var nodes) &&
             nodes.ValueKind == JsonValueKind.Array)
         {
@@ -155,6 +170,16 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
                     continue;
                 }
 
+                // Only an explicit true marks the member incognito. The field is absent for every
+                // non-Individual member (organisations, collectives, funds), and treating absent as
+                // incognito would drop every org backer.
+                if (memberAccount.TryGetProperty("isIncognito", out var incognito) &&
+                    incognito.ValueKind == JsonValueKind.True)
+                {
+                    incognitoCount++;
+                    continue;
+                }
+
                 var value = slug.GetString();
                 if (!string.IsNullOrWhiteSpace(value))
                 {
@@ -163,6 +188,6 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
             }
         }
 
-        return new(true, slugs, rawItemCount, totalCount);
+        return new(true, slugs, rawItemCount, totalCount, incognitoCount);
     }
 }

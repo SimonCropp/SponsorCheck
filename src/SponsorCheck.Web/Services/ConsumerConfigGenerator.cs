@@ -45,6 +45,11 @@ public static class ConsumerConfigGenerator
                     attributes.Add(("SponsorshipStart", model.SponsorshipStart.Trim()));
                 }
 
+                if (model.PrivateSponsorship && !string.IsNullOrWhiteSpace(model.PrivateUntilMonth))
+                {
+                    attributes.Add(("SponsorshipPrivateUntil", model.PrivateUntilMonth.Trim()));
+                }
+
                 break;
             case ConsumerLicenseMode.License:
                 attributes.Add(("SponsorshipLicensedUntil", model.LicensedUntilMonth.Trim()));
@@ -119,6 +124,22 @@ public static class ConsumerConfigGenerator
     {
         switch (model.Mode)
         {
+            // Private first: it decides the build outright, so when both qualifiers are set the
+            // SponsorshipStart wording would describe a path that never runs.
+            case ConsumerLicenseMode.Sponsor when model.PrivateSponsorship && !string.IsNullOrWhiteSpace(model.PrivateUntilMonth):
+            {
+                var formatCode = CodeFor(placement, "SC050", "SC051", "SC052");
+                var capCode = CodeFor(placement, "SC053", "SC054", "SC055");
+                var expiredCode = CodeFor(placement, "SC056", "SC057", "SC058");
+                var months = model.PrivateSponsorMaxTermMonths;
+                var until = model.PrivateUntilMonth.Trim();
+                var capSource = model.Facts is { BundlesSponsorCheck: true }
+                    ? $"This package caps the claim at {months} month{(months == 1 ? "" : "s")}"
+                    : $"The publisher caps the claim (the default is {months} months, and this package could not be inspected to confirm)";
+                return
+                    $"Private (GitHub Sponsors) and incognito (Open Collective) sponsorships are deliberately excluded from the bundled hash list, so there is nothing for the verifier to match — the declaration is trusted instead. The build passes through the end of {until} (UTC) and logs a high-priority SC059 audit message naming the account and the end month. After that it fails with {expiredCode} until the claim is renewed, which is the point: a private sponsorship that quietly lapsed should stop working rather than ride along forever. {capSource}, so a month further out fails with {capCode}. A value that isn't 'yyyy-MM' fails with {formatCode}.";
+            }
+
             case ConsumerLicenseMode.Sponsor when model.StartedAfterRelease && !string.IsNullOrWhiteSpace(model.SponsorshipStart):
             {
                 var futureCode = CodeFor(placement, "SC015", "SC016", "SC028");
@@ -149,7 +170,7 @@ public static class ConsumerConfigGenerator
                     ? $" This version was packed on {packedOn} — a sponsorship that began after that date needs the attested start."
                     : "";
                 return
-                    $"Passes silently when any declared account was in the bundled sponsor list at the version's pack time. If the build still fails with {noMatchCode}, either the account or platform doesn't match what the author bundled, or the sponsorship began after this version was packed — in that case add SponsorshipStart=\"yyyy-MM-dd\" (re-run the wizard and answer yes to the started-after question).{packedClause}";
+                    $"Passes silently when any declared account was in the bundled sponsor list at the version's pack time. If the build still fails with {noMatchCode}, either the account or platform doesn't match what the author bundled, the sponsorship began after this version was packed — in that case add SponsorshipStart=\"yyyy-MM-dd\" — or the sponsorship is private (GitHub Sponsors) or incognito (Open Collective), which is never bundled and needs SponsorshipPrivateUntil=\"yyyy-MM\" instead. Re-run the wizard and answer yes to whichever applies.{packedClause}";
             }
 
             case ConsumerLicenseMode.License:

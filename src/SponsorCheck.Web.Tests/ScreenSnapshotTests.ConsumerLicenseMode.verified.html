@@ -97,6 +97,15 @@
                 <p class="hint">The bundled sponsor list is frozen at pack time, so a recent sponsorship can't be in it yet — an attested start date bridges the gap until the next upgrade.</p>
               </label>
             </div>
+            <div class="check" style="margin-top:1rem">
+              <input type="checkbox" id="privateSponsorship">
+              <label for="privateSponsorship">
+                The sponsorship is private or incognito
+                <p class="hint">
+                  Private sponsorships on GitHub Sponsors, and incognito contributions on Open Collective, are never bundled into the hash list — so they can never match it. Declare an end month instead and the verifier trusts it, logging an SC059 audit line naming the account.
+                </p>
+              </label>
+            </div>
           </div>
           <div class="wizard-nav">
             <span>

@@ -15,7 +15,8 @@ public class RepoContractTests
         "SponsorshipLicenseIgnored",
         "SponsorshipExemption",
         "SponsorshipExemptionUntil",
-        "SponsorshipStart"
+        "SponsorshipStart",
+        "SponsorshipPrivateUntil"
     ];
 
     static IEnumerable<string> ConsumerNames =>
@@ -60,7 +61,8 @@ public class RepoContractTests
             "CheckTransitiveReferences",
             "SponsorLandingUrl",
             "SponsorCheckBundleInPullRequest",
-            "SponsorExemption"
+            "SponsorExemption",
+            "PrivateSponsorMaxTermMonths"
         };
         names.AddRange(Platform.All.Select(_ => _.AuthorAccountMetadata));
         names.AddRange(Platform.All.Select(_ => _.TokenProperty));
@@ -151,6 +153,38 @@ public class RepoContractTests
         var legacy = Regex.Match("<_SponsorCheck_OwnerId>acme</_SponsorCheck_OwnerId>", NupkgParser.OwnerIdElementPattern);
         await Assert.That(legacy.Success).IsTrue().Because("pre-scoping packages must stay readable");
         await Assert.That(legacy.Groups[2].Value).IsEqualTo("acme");
+
+        // Same contract for the private-sponsorship cap, which also rides in the rendered targets
+        // rather than a sidecar file. Both templates carry it, so both must stay parseable.
+        foreach (var (name, content) in new[] { ("ConsumerVerifier.targets", template), ("ConsumerVerifierOwner.targets", ownerTemplate) })
+        {
+            var renderedCap = content
+                .Replace("__SC_PACKAGE_ID__", "SamplePackage_a1b2c3d4")
+                .Replace(">__SC_PRIVATE_MAX_MONTHS_RAW__<", ">6<");
+            var capMatch = Regex.Match(renderedCap, NupkgParser.PrivateSponsorMaxTermMonthsElementPattern);
+            await Assert.That(capMatch.Success).IsTrue().Because($"NupkgParser must find the private-sponsorship cap in a rendered {name}");
+            await Assert.That(capMatch.Groups[2].Value).IsEqualTo("6");
+        }
+    }
+
+    /// <summary>
+    /// The wizard can't reference the task assembly, so it carries its own copy of the default
+    /// private-sponsorship term. A drift between the two would have the wizard tell consumers a cap
+    /// the verifier doesn't enforce.
+    /// </summary>
+    [Test]
+    public async Task WizardPrivateSponsorDefaultMatchesTaskDefault()
+    {
+        var source = ReadSrc("SponsorCheck", "PrivateSponsorTerm.cs");
+        var match = Regex.Match(source, @"DefaultMaxTermMonths\s*=\s*(\d+)\s*;");
+        await Assert.That(match.Success).IsTrue().Because("PrivateSponsorTerm.DefaultMaxTermMonths should be a plain integer literal");
+        await Assert.That(PackageFacts.DefaultPrivateSponsorMaxTermMonths.ToString()).IsEqualTo(match.Groups[1].Value);
+
+        // The author metadata name is typed by the wizard's generator and read by the bundler.
+        var nameMatch = Regex.Match(source, @"AuthorMetadataName\s*=\s*""([^""]+)""");
+        await Assert.That(nameMatch.Success).IsTrue();
+        var authorGenerator = ReadSrc("SponsorCheck.Web", "Services", "AuthorConfigGenerator.cs");
+        await Assert.That(authorGenerator).Contains($"\"{nameMatch.Groups[1].Value}\"");
     }
 
     /// <summary>

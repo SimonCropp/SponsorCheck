@@ -34,7 +34,7 @@ public sealed record Platform(
         "SponsorCheck:GitHubToken",
         "https://github.com/sponsors/{0}",
         CredentialRequired: true,
-        "Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.");
+        "Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise the sponsorships query returns nothing. Private sponsors are never bundled either way; they verify with SponsorshipPrivateUntil.");
 
     public static readonly Platform OpenCollective = new(
         PlatformKind.OpenCollective,

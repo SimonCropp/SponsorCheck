@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- "dave" is deliberately absent from sponsors-override.json: a private sponsor is never in
+         the bundled hash list, so a passing build here proves the hash check was skipped rather
+         than satisfied. The current month is always inside the cap and never expired — a literal
+         would eventually turn this into a permanently red test. Consumers write a real yyyy-MM. -->
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      GitHubSponsorAccount="dave"
+      SponsorshipPrivateUntil="$([System.DateTime]::UtcNow.ToString('yyyy-MM'))" />
+  </ItemGroup>
+</Project>

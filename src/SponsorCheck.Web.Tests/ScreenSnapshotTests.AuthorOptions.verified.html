@@ -150,6 +150,13 @@
               <p class="hint">When set, every sponsor link in the verifier messages points here instead of the platform pages.</p>
               <input id="landingUrl" type="url" placeholder="https://example.com/sponsor">
             </div>
+            <div class="field" style="margin-top:1rem">
+              <label for="privateSponsorMaxTermMonths">Private sponsorship term cap (months)
+                <a class="docs-link" href="https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md#private-and-incognito-sponsors" target="_blank">docs</a>
+              </label>
+              <p class="hint">Private and incognito sponsors are never bundled, so they attest with SponsorshipPrivateUntil instead. This is how far ahead that claim may run before it has to be renewed. Leave blank for the default of 12 months.</p>
+              <input id="privateSponsorMaxTermMonths" type="text" placeholder="12">
+            </div>
           </div>
           <div class="wizard-nav">
             <span>

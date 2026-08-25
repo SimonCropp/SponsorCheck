@@ -127,6 +127,16 @@ public static class SponsorCheckLog
         "SC047" => "Exemption expired",
         "SC048" => "Exemption expired",
         "SC049" => "Exemption expired",
+        "SC050" => "Invalid private sponsorship end date format",
+        "SC051" => "Invalid private sponsorship end date format",
+        "SC052" => "Invalid private sponsorship end date format",
+        "SC053" => "Private sponsorship end date too far in the future",
+        "SC054" => "Private sponsorship end date too far in the future",
+        "SC055" => "Private sponsorship end date too far in the future",
+        "SC056" => "Private sponsorship declaration expired",
+        "SC057" => "Private sponsorship declaration expired",
+        "SC058" => "Private sponsorship declaration expired",
+        "SC059" => "Private sponsorship attestation trusted",
         "SC100" => "Platform fetch failed",
         "SC101" => "No platform account configured",
         "SC102" => "Missing platform credential",
@@ -136,6 +146,7 @@ public static class SponsorCheckLog
         "SC106" => "Invalid exemption definition",
         "SC107" => "Platform credential rejected",
         "SC108" => "Platform rate limit exhausted",
+        "SC109" => "Invalid PrivateSponsorMaxTermMonths",
         _ => code
     };
 }

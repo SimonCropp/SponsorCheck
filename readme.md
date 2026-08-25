@@ -144,7 +144,7 @@ At the author's pack time, the **bundler** fetches the sponsor accounts from eac
 
 On every consumer build — in every configuration — the **verifier** reads the consumer's declared license mode and passes, warns, or fails with an `SC0xx` code. The full decision tree is charted in [How verification works](docs/ConsumerUsage.md#how-verification-works).
 
-Accounts are hashed (first 12 hex chars of `SHA256("{platform-id}:{lowercase(account)}")`) so private sponsors don't ship in plaintext — deliberately light obfuscation, not a security boundary. See [Hashing — what it protects](docs/AuthorSetup.md#hashing--what-it-protects).
+Accounts are hashed (first 12 hex chars of `SHA256("{platform-id}:{lowercase(account)}")`) so the sponsor list isn't republished in plaintext on every consumer's disk — deliberately light obfuscation, not a security boundary. See [Hashing — what it protects](docs/AuthorSetup.md#hashing--what-it-protects). Sponsors who are private on GitHub Sponsors, or incognito on Open Collective, are [never bundled at all](docs/AuthorSetup.md#private-and-incognito-sponsors) and verify with `SponsorshipPrivateUntil="yyyy-MM"` instead.
 
 
 ## Contributing

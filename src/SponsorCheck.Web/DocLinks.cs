@@ -15,6 +15,7 @@ public static class DocLinks
     public const string SeverityOverrides = AuthorSetup + "#tuning-verifier-severity-and-message-text";
     public const string Exemptions = AuthorSetup + "#defining-exemptions";
     public const string LandingUrl = AuthorSetup + "#custom-sponsor-landing-url";
+    public const string PrivateSponsors = AuthorSetup + "#private-and-incognito-sponsors";
 
     /// <summary>
     /// Deep link to a single <c>SC0xx</c> section in the verifier code reference.

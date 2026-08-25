@@ -261,6 +261,33 @@
                                 }
                             </div>
                         }
+                        <div class="check" style="margin-top:1rem">
+                            <input type="checkbox"
+                                   id="privateSponsorship"
+                                   @bind="model.PrivateSponsorship" />
+                            <label for="privateSponsorship">
+                                The sponsorship is private or incognito
+                                <p class="hint">
+                                    Private sponsorships on GitHub Sponsors, and incognito contributions on Open Collective, are never bundled into the hash list — so they can never match it. Declare an end month instead and the verifier trusts it, logging an SC059 audit line naming the account.
+                                </p>
+                            </label>
+                        </div>
+                        @if (model.PrivateSponsorship)
+                        {
+                            <div class="field">
+                                <label for="privateUntil">Private sponsorship declared until (last covered month)</label>
+                                <p class="hint">Format yyyy-MM; valid through the end of that month (UTC). This package caps it at @model.PrivateSponsorMaxTermMonths months from the build clock, so the claim has to be renewed rather than left in place forever.</p>
+                                <input id="privateUntil"
+                                       type="text"
+                                       placeholder="yyyy-MM"
+                                       @bind="model.PrivateUntilMonth"
+                                       @bind:event="oninput" />
+                                @if (model.PrivateUntilMonth.Trim().Length > 0 && !model.IsPrivateUntilValid)
+                                {
+                                    <p class="validation-error">Use the format yyyy-MM, e.g. 2027-04.</p>
+                                }
+                            </div>
+                        }
                         break;
 
                     case ConsumerLicenseMode.License:

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 9 months out: inside the 12 month default, past this package's PrivateSponsorMaxTermMonths=6.
+         Computed rather than literal so the fixture keeps testing the cap rather than drifting into
+         testing expiry. -->
+    <PackageReference
+      Include="ThePackagePrivateSponsorCap"
+      Version="1.0.0"
+      GitHubSponsorAccount="dave"
+      SponsorshipPrivateUntil="$([System.DateTime]::UtcNow.AddMonths(9).ToString('yyyy-MM'))" />
+  </ItemGroup>
+</Project>

@@ -58,7 +58,7 @@
               <div class="account field">
                 <label for="account-GitHub">GitHubSponsorsAccount</label>
                 <input id="account-GitHub" type="text" placeholder="account or org">
-                <p class="hint">Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise private sponsors are silently missing from the bundled list.</p>
+                <p class="hint">Required. Create a classic PAT (https://github.com/settings/tokens/new) with read:user, plus read:org if sponsored as an organization. Fine-grained PATs have no Sponsorships permission, so a classic PAT is the only option. The token must be owned by the sponsored account (or an admin of the sponsored org) — otherwise the sponsorships query returns nothing. Private sponsors are never bundled either way; they verify with SponsorshipPrivateUntil.</p>
               </div>
             </div>
             <div class="platform-row">

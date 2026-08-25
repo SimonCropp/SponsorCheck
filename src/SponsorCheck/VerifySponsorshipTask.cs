@@ -35,6 +35,13 @@ public class VerifySponsorshipTask :
     public string SponsorshipExemptionUntilFromVer { get; set; } = "";
     public string SponsorshipStartFromRef { get; set; } = "";
     public string SponsorshipStartFromVer { get; set; } = "";
+    public string SponsorshipPrivateUntilFromRef { get; set; } = "";
+    public string SponsorshipPrivateUntilFromVer { get; set; } = "";
+    // The publisher's cap on a SponsorshipPrivateUntil claim, substituted into the generated
+    // verifier targets at pack time. Empty (or unparseable) means the packed targets predate the
+    // setting, so fall back to the documented default rather than failing the consumer's build for
+    // something only the publisher can fix.
+    public string PrivateSponsorMaxTermMonths { get; set; } = "";
     public string GitHubFromRef { get; set; } = "";
     public string GitHubFromVer { get; set; } = "";
     public string OpenCollectiveFromRef { get; set; } = "";
@@ -62,6 +69,7 @@ public class VerifySponsorshipTask :
             var exemption = PackageMetadataMerger.Merge("SponsorshipExemption", SponsorshipExemptionFromRef, SponsorshipExemptionFromVer);
             var exemptionUntil = PackageMetadataMerger.Merge("SponsorshipExemptionUntil", SponsorshipExemptionUntilFromRef, SponsorshipExemptionUntilFromVer);
             var sponsorshipStart = PackageMetadataMerger.Merge("SponsorshipStart", SponsorshipStartFromRef, SponsorshipStartFromVer);
+            var privateUntil = PackageMetadataMerger.Merge("SponsorshipPrivateUntil", SponsorshipPrivateUntilFromRef, SponsorshipPrivateUntilFromVer);
             var sponsors = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
             {
                 ["GitHubSponsors"] = PackageMetadataMerger.Merge("GitHubSponsorAccount", GitHubFromRef, GitHubFromVer),
@@ -69,7 +77,7 @@ public class VerifySponsorshipTask :
                 ["Polar"] = PackageMetadataMerger.Merge("PolarSponsorAccount", PolarFromRef, PolarFromVer)
             };
 
-            var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, exemption, exemptionUntil, sponsors, sponsorshipStart, ThePackageId);
+            var decision = LicenseModeResolver.Resolve(ignored, licensedUntil, exemption, exemptionUntil, sponsors, sponsorshipStart, ThePackageId, privateUntil);
             // These four sidecar files back only diagnostic rendering (and the exemption lookup), so
             // wrap each read in Lazy — a passing build (sponsor matches, or license valid) returns from
             // DecisionApplier without forcing any of them and reads only the pack date and hash list.
@@ -82,7 +90,7 @@ public class VerifySponsorshipTask :
                 () => SeverityOverrideFile.Read(SeverityOverridesPath));
             var messageOverrides = new Lazy<IReadOnlyDictionary<string, string>>(
                 () => MessageOverrideFile.Read(MessageOverridesPath));
-            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, exemptionsDefined, severityOverrides, messageOverrides, Log, DateTime.UtcNow);
+            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, exemptionsDefined, severityOverrides, messageOverrides, Log, DateTime.UtcNow, ResolvePrivateSponsorMaxTermMonths());
         }
         catch (MaintenanceFeeException exception)
         {
@@ -94,6 +102,22 @@ public class VerifySponsorshipTask :
             Log.LogErrorFromException(exception, showStackTrace: false);
             return false;
         }
+    }
+
+    // Tolerant by design: this value comes from the publisher's packed targets, not the consumer's
+    // project, so a missing or malformed one is not something the consumer can fix. Falling back to
+    // the default keeps their build working; the bundler already refuses to pack a bad value (SC109).
+    int ResolvePrivateSponsorMaxTermMonths()
+    {
+        var raw = PrivateSponsorMaxTermMonths.Trim();
+        if (raw.Length > 0 &&
+            int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var months) &&
+            months >= 1)
+        {
+            return months;
+        }
+
+        return PrivateSponsorTerm.DefaultMaxTermMonths;
     }
 
     ConsumerContext BuildConsumerContext()
@@ -128,6 +152,7 @@ public class VerifySponsorshipTask :
             ("SponsorshipExemption", SponsorshipExemptionFromRef, SponsorshipExemptionFromVer),
             ("SponsorshipExemptionUntil", SponsorshipExemptionUntilFromRef, SponsorshipExemptionUntilFromVer),
             ("SponsorshipStart", SponsorshipStartFromRef, SponsorshipStartFromVer),
+            ("SponsorshipPrivateUntil", SponsorshipPrivateUntilFromRef, SponsorshipPrivateUntilFromVer),
             ("GitHubSponsorAccount", GitHubFromRef, GitHubFromVer),
             ("OpenCollectiveSponsorAccount", OpenCollectiveFromRef, OpenCollectiveFromVer),
             ("PolarSponsorAccount", PolarFromRef, PolarFromVer)

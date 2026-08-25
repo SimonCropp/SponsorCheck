@@ -197,6 +197,100 @@ public class OpenCollectivePlatformTests
         await Assert.That(sponsors).Contains("lateBacker");
     }
 
+    // --- Incognito backers are never bundled ---
+    //
+    // An incognito contribution is attributed to a generated profile, so its slug is one the real
+    // backer doesn't know and could never declare. Bundling it would ship a hash nobody can match.
+
+    [Test]
+    public async Task ParseResponse_ExcludesIncognitoBackers()
+    {
+        var json = """
+                   {
+                     "data": {
+                       "account": {
+                         "members": {
+                           "totalCount": 3,
+                           "nodes": [
+                             { "account": { "slug": "alice" } },
+                             { "account": { "slug": "incognito-8f2a1c", "isIncognito": true } },
+                             { "account": { "slug": "acme-org", "isIncognito": false } }
+                           ]
+                         }
+                       }
+                     }
+                   }
+                   """;
+        var page = OpenCollectivePlatform.ParseResponse(json);
+        await Assert.That(page.MemberSlugs).Contains("alice");
+        await Assert.That(page.MemberSlugs).Contains("acme-org");
+        await Assert.That(page.MemberSlugs).DoesNotContain("incognito-8f2a1c");
+        await Assert.That(page.IncognitoCount).IsEqualTo(1);
+        // An excluded node still consumed one of the page's `limit` rows, so it has to keep
+        // counting towards RawItemCount or pagination would re-fetch overlapping ranges.
+        await Assert.That(page.RawItemCount).IsEqualTo(3);
+    }
+
+    [Test]
+    public async Task ParseResponse_MissingIsIncognito_ReadsAsVisible()
+    {
+        // isIncognito comes from an `... on Individual` fragment, so it is absent for every
+        // organisation, collective and fund. Treating absent as incognito would drop them all.
+        var json = """
+                   {
+                     "data": {
+                       "account": {
+                         "members": {
+                           "totalCount": 1,
+                           "nodes": [
+                             { "account": { "slug": "acme-org" } }
+                           ]
+                         }
+                       }
+                     }
+                   }
+                   """;
+        var page = OpenCollectivePlatform.ParseResponse(json);
+        await Assert.That(page.MemberSlugs).Contains("acme-org");
+        await Assert.That(page.IncognitoCount).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task FetchSponsorAccounts_RequestsIsIncognitoAndReportsExcludedCount()
+    {
+        var json = """
+                   {
+                     "data": {
+                       "account": {
+                         "members": {
+                           "totalCount": 2,
+                           "nodes": [
+                             { "account": { "slug": "alice" } },
+                             { "account": { "slug": "incognito-8f2a1c", "isIncognito": true } }
+                           ]
+                         }
+                       }
+                     }
+                   }
+                   """;
+        var capture = new CapturingHandler(json);
+        using var client = new HttpClient(capture);
+        var platform = new OpenCollectivePlatform(client);
+        var engine = new StubBuildEngine();
+
+        var sponsors = await platform.FetchSponsorAccounts("anycollective", token: null, new TaskLoggingHelperFor(engine), Cancel.None);
+
+        // isIncognito lives on Individual, not on the Account interface, so it has to travel in an
+        // inline fragment. Without it Open Collective answers GRAPHQL_VALIDATION_FAILED.
+        await Assert.That(capture.LastRequestBody!).Contains("... on Individual");
+        await Assert.That(capture.LastRequestBody!).Contains("isIncognito");
+        await Assert.That(sponsors).Contains("alice");
+        await Assert.That(sponsors).DoesNotContain("incognito-8f2a1c");
+        var notice = engine.Messages.Single(_ => _.Message!.Contains("excluded from the bundled list"));
+        await Assert.That(notice.Message!).Contains("1 incognito sponsor is");
+        await Assert.That(notice.Message!).DoesNotContain("incognito-8f2a1c");
+    }
+
     sealed class CapturingHandler(string body) : HttpMessageHandler
     {
         public string? LastRequestBody { get; private set; }

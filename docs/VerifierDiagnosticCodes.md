@@ -1,8 +1,8 @@
 # Verifier diagnostic codes
 
-Codes in the `SC0xx` range are emitted by the verifier in consumer projects. Pairs are interleaved by mode: **odd-numbered codes** fire when the consumer is **not** using Central Package Management (metadata lives on `<PackageReference>` in the consumer csproj); **even-numbered codes** fire when the consumer **is** using CPM (metadata lives on `<PackageVersion>` in `Directory.Packages.props`). Sibling = `code ± 1` — SC001/SC002, SC003/SC004, SC011/SC012, and so on. The trailing SC017–SC020 codes are unpaired (audit message, install-integrity check, and the two placement errors). Codes added from SC029 onward drop the interleaving and run as consecutive triples instead — non-CPM, CPM, owner mode — so SC029/SC030/SC031, SC032/SC033/SC034, SC035/SC036/SC037, and each triple through SC049 cover one scenario across all three placements.
+Codes in the `SC0xx` range are emitted by the verifier in consumer projects. Pairs are interleaved by mode: **odd-numbered codes** fire when the consumer is **not** using Central Package Management (metadata lives on `<PackageReference>` in the consumer csproj); **even-numbered codes** fire when the consumer **is** using CPM (metadata lives on `<PackageVersion>` in `Directory.Packages.props`). Sibling = `code ± 1` — SC001/SC002, SC003/SC004, SC011/SC012, and so on. The trailing SC017–SC020 codes are unpaired (audit message, install-integrity check, and the two placement errors). Codes added from SC029 onward drop the interleaving and run as consecutive triples instead — non-CPM, CPM, owner mode — so SC029/SC030/SC031, SC032/SC033/SC034, SC035/SC036/SC037, and each triple through SC058 cover one scenario across all three placements. SC059 is unpaired for the same reason as SC017: it is an audit message that reads the same whatever the placement.
 
-**Owner mode (SC021–SC028).** When the OSS author opts a package into *owner mode* (`SponsorOwner="<id>"` at pack time), the consumer configures sponsorship **once**, via global MSBuild **properties** (in `Directory.Build.props` or the consuming project), rather than per-package metadata. Because there is a single property source — no `<PackageReference>`/`<PackageVersion>` split — each scenario needs only one code, so SC021–SC028 are **unpaired** owner-mode counterparts of the per-package family: SC021↔SC001/SC002 (no config), SC022↔SC003/SC004 (conflicting modes), SC023↔SC005/SC006 (ignored), SC024↔SC007/SC008 (invalid account), SC025↔SC009/SC010 (expired), SC026↔SC011/SC012 (bad license date), SC027↔SC013/SC014 (bad SponsorshipStart), SC028↔SC015/SC016 (future SponsorshipStart). The placement-agnostic SC017 (attestation) and SC018 (missing hash file) are reused as-is; SC019/SC020 do not apply (no items to misplace).
+**Owner mode (SC021–SC028).** When the OSS author opts a package into *owner mode* (`SponsorOwner="<id>"` at pack time), the consumer configures sponsorship **once**, via global MSBuild **properties** (in `Directory.Build.props` or the consuming project), rather than per-package metadata. Because there is a single property source — no `<PackageReference>`/`<PackageVersion>` split — each scenario needs only one code, so SC021–SC028 are **unpaired** owner-mode counterparts of the per-package family: SC021↔SC001/SC002 (no config), SC022↔SC003/SC004 (conflicting modes), SC023↔SC005/SC006 (ignored), SC024↔SC007/SC008 (invalid account), SC025↔SC009/SC010 (expired), SC026↔SC011/SC012 (bad license date), SC027↔SC013/SC014 (bad SponsorshipStart), SC028↔SC015/SC016 (future SponsorshipStart). The placement-agnostic SC017 (attestation), SC018 (missing hash file) and SC059 (private-sponsorship attestation) are reused as-is; SC019/SC020 do not apply (no items to misplace).
 
 Each paired scenario shares one author-side override metadatum: `NoLicenseSpecifiedSeverityOverride` applies to SC001, SC002, **and** the owner-mode SC021, and similarly for the rest. The split exists so each code can be documented, linked, and triaged independently — the underlying scenario is the same.
 
@@ -32,7 +32,15 @@ flowchart TD
     UntilExpired -->|No| SC029
     SC029[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>SC029 Warning<br/>Publisher's criteria text</a>]
 
-    Which -->|Supplied sponsor account| HasStart{Sponsorship<br/>Start set?}
+    Which -->|Supplied sponsor account| HasPrivate{Sponsorship<br/>PrivateUntil set?}
+    HasPrivate -->|Yes| PrivateYM{Valid<br/>yyyy-MM?}
+    PrivateYM -->|No| SC050[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc050'>SC050 Error<br/>Invalid date format</a>]
+    PrivateYM -->|Yes| PrivateCap{Beyond the<br/>publisher's cap?}
+    PrivateCap -->|Yes| SC053[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc053'>SC053 Error<br/>Beyond the publisher's cap</a>]
+    PrivateCap -->|No| PrivateExpired{End of month<br/>in the past?}
+    PrivateExpired -->|Yes| SC056[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc056'>SC056 Error<br/>Private declaration expired</a>]
+    PrivateExpired -->|No| PassPrivate([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc059'>Build passes<br/>SC059 audit message</a>])
+    HasPrivate -->|No| HasStart{Sponsorship<br/>Start set?}
     HasStart -->|Yes| Future{Start in<br/>future?}
     Future -->|Yes| SC015[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc015'>SC015 Error<br/>Date in future</a>]
     Future -->|No| AfterPack{Start &gt;<br/>PackDate?}
@@ -52,7 +60,7 @@ flowchart TD
     Expired -->|No| PassLicense([Build passes])
 ```
 
-> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), [SC029](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029)→[SC030](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030), [SC032](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032)→[SC033](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033), [SC035](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc035)→[SC036](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc036), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent for the original modes (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028)) plus the third code of each SC029-onward triple for the exemption branch ([SC031](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031), [SC034](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034), [SC040](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc040), [SC043](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc043), [SC046](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc046), [SC049](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc049)) and [SC037](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc037) for the one-year cap; [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) is shared. The exemption branch only fires when the publisher defined `<SponsorExemption>` items at pack time — packages without any exemptions never reach `KnownName`. The `MaxTermMonths` sub-branch only fires for exemptions the publisher time-bounded; an uncapped one goes straight from `KnownName` to `SC029`, unless the consumer bound it themselves, in which case `UntilExpired` still applies.
+> The decision logic above is identical across all three placements; only the emitted code differs. Terminal codes shown are the non-CPM (`<PackageReference>`) variants. A CPM consumer (`<PackageVersion>` in `Directory.Packages.props`) emits the `+1` sibling of each ([SC005](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005)→[SC006](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc006), [SC007](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc007)→[SC008](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc008), [SC029](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029)→[SC030](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030), [SC032](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc032)→[SC033](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033), [SC035](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc035)→[SC036](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc036), …). An [owner-mode](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc021) consumer (sponsorship set via a global MSBuild property) emits the SC021–SC028 equivalent for the original modes (Ignored→[SC023](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc023), no match→[SC024](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc024), expired→[SC025](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc025), invalid date→[SC026](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc026), future start→[SC028](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc028)) plus the third code of each SC029-onward triple for the exemption and private-sponsorship branches ([SC031](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031), [SC034](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc034), [SC040](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc040), [SC043](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc043), [SC046](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc046), [SC049](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc049), [SC052](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc052), [SC055](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc055), [SC058](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc058)) and [SC037](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc037) for the one-year cap; [SC017](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017) and [SC059](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc059) are shared. The exemption branch only fires when the publisher defined `<SponsorExemption>` items at pack time — packages without any exemptions never reach `KnownName`. The `MaxTermMonths` sub-branch only fires for exemptions the publisher time-bounded; an uncapped one goes straight from `KnownName` to `SC029`, unless the consumer bound it themselves, in which case `UntilExpired` still applies. The private-sponsorship branch is checked ahead of `SponsorshipStart` because a valid declaration decides the build outright — a private or incognito sponsorship is never in the hash list regardless of when it began.
 <!-- endInclude -->
 
 ### SC001
@@ -1040,3 +1048,169 @@ flowchart TD
 - **Meaning:** Owner-mode equivalent of [SC047](#sc047)/[SC048](#sc048).
 - **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemption="{name}" expired — {OwnerId}_SponsorshipExemptionUntil='{value}' (end of month {lastDay} UTC).` (body uses the owner-mode property remediation block.)
 - **Example opener:** `Package 'Papyrine': papyrine_SponsorshipExemption="Consulting" expired — papyrine_SponsorshipExemptionUntil='2026-04' (end of month 2026-04-30 UTC).`
+
+
+### SC050
+
+- **Name:** Invalid private sponsorship end date format
+- **Level**: Error
+- **Meaning:** `SponsorshipPrivateUntil` on the `<PackageReference>` is not a `yyyy-MM` month. The attribute declares that the sponsorship is private on GitHub Sponsors, or incognito on Open Collective, and therefore deliberately absent from the bundled hash list — see [Private and incognito sponsors](ConsumerUsage.md#private-and-incognito-sponsors). Not overrideable: the value is a consumer-side configuration bug. CPM equivalent: [SC051](#sc051). Owner-mode equivalent: [SC052](#sc052).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipPrivateUntil='{value}' on the <PackageReference> is not in 'yyyy-MM' format.
+
+  Fix the SponsorshipPrivateUntil attribute in:
+
+    {csprojPath}
+
+  Example format:
+
+    <PackageReference Include="{PackageId}" Version="{version}" {platformMetadata}="{account}" SponsorshipPrivateUntil="yyyy-MM" />
+  ```
+- **Example:**
+
+  ```
+  Package 'Papyrine': SponsorshipPrivateUntil='April 2027' on the <PackageReference> is not in 'yyyy-MM' format.
+
+  Fix the SponsorshipPrivateUntil attribute in:
+
+    /work/MyApp/MyApp.csproj
+
+  Example format:
+
+    <PackageReference Include="Papyrine" Version="1.0.0" GitHubSponsorAccount="octocat" SponsorshipPrivateUntil="yyyy-MM" />
+  ```
+
+
+### SC051
+
+- **Name:** Invalid private sponsorship end date format
+- **Level**: Error
+- **Meaning:** CPM equivalent of [SC050](#sc050).
+- **Syntax:** Same structure as SC050 with `<PackageVersion> in Directory.Packages.props` substituted for `<PackageReference>`.
+- **Example opener:** `Package 'Papyrine': SponsorshipPrivateUntil='April 2027' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format.`
+
+
+### SC052
+
+- **Name:** Invalid private sponsorship end date format
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC050](#sc050)/[SC051](#sc051).
+- **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipPrivateUntil='{value}' property is not in 'yyyy-MM' format.` (body uses the owner-mode property remediation block.)
+- **Example opener:** `Package 'Papyrine': papyrine_SponsorshipPrivateUntil='April 2027' property is not in 'yyyy-MM' format.`
+
+
+### SC053
+
+- **Name:** Private sponsorship end date too far in the future
+- **Level**: Error
+- **Meaning:** `SponsorshipPrivateUntil` names a month beyond the publisher's cap, measured from the build clock. The cap defaults to 12 months and the author sets it with `PrivateSponsorMaxTermMonths` — see [Private and incognito sponsors](AuthorSetup.md#private-and-incognito-sponsors). The ceiling rolls forward with time, so an already-valid claim stays valid; what the cap prevents is one declaration becoming a permanent opt-out. Same reasoning as [SC035](#sc035) for `SponsorshipLicensedUntil` and [SC044](#sc044) for a capped exemption. Not overrideable. CPM equivalent: [SC054](#sc054). Owner-mode equivalent: [SC055](#sc055).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': SponsorshipPrivateUntil='{value}' on the <PackageReference> is more than {max} months in the future (maximum {maxMonth}).
+
+  Set the SponsorshipPrivateUntil attribute to {maxMonth} or earlier in:
+
+    {csprojPath}
+
+  Example format:
+
+    <PackageReference Include="{PackageId}" Version="{version}" {platformMetadata}="{account}" SponsorshipPrivateUntil="{maxMonth}" />
+  ```
+- **Example:**
+
+  ```
+  Package 'Papyrine': SponsorshipPrivateUntil='2030-01' on the <PackageReference> is more than 12 months in the future (maximum 2027-05).
+
+  Set the SponsorshipPrivateUntil attribute to 2027-05 or earlier in:
+
+    /work/MyApp/MyApp.csproj
+
+  Example format:
+
+    <PackageReference Include="Papyrine" Version="1.0.0" GitHubSponsorAccount="octocat" SponsorshipPrivateUntil="2027-05" />
+  ```
+
+
+### SC054
+
+- **Name:** Private sponsorship end date too far in the future
+- **Level**: Error
+- **Meaning:** CPM equivalent of [SC053](#sc053).
+- **Syntax:** Same structure as SC053 with `<PackageVersion> in Directory.Packages.props` substituted for `<PackageReference>`.
+- **Example opener:** `Package 'Papyrine': SponsorshipPrivateUntil='2030-01' on the <PackageVersion> in Directory.Packages.props is more than 12 months in the future (maximum 2027-05).`
+
+
+### SC055
+
+- **Name:** Private sponsorship end date too far in the future
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC053](#sc053)/[SC054](#sc054).
+- **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipPrivateUntil='{value}' property is more than {max} months in the future (maximum {maxMonth}).` (body uses the owner-mode property remediation block.)
+- **Example opener:** `Package 'Papyrine': papyrine_SponsorshipPrivateUntil='2030-01' property is more than 12 months in the future (maximum 2027-05).`
+
+
+### SC056
+
+- **Name:** Private sponsorship declaration expired
+- **Level**: Error
+- **Meaning:** The `SponsorshipPrivateUntil` month has passed. Nothing about a private sponsorship can be checked against the bundled list, so the expiry is the only thing that ever re-asks the question: the build fails until someone confirms the sponsorship is still running and renews the month, or switches to another license mode. Expiry is decided at month granularity, matching [SC009](#sc009) and [SC047](#sc047) — the named month is fully covered through its final instant, and the first day of the next month is the cutoff. Fires even when `SponsorshipStart` is also set: the private declaration is checked first, so an expired one fails rather than quietly falling back to the start-date path. Not overrideable. CPM equivalent: [SC057](#sc057). Owner-mode equivalent: [SC058](#sc058).
+- **Syntax:**
+
+  ```
+  Package '{PackageId}': private sponsorship declaration on the <PackageReference> expired — SponsorshipPrivateUntil='{value}' (end of month {lastDay} UTC).
+
+  Confirm the private sponsorship is still active, then set the SponsorshipPrivateUntil attribute to {maxMonth} or earlier in:
+
+    {csprojPath}
+
+  Otherwise switch to another license mode.
+
+  Example format:
+
+    <PackageReference Include="{PackageId}" Version="{version}" {platformMetadata}="{account}" SponsorshipPrivateUntil="{maxMonth}" />
+  ```
+- **Example:**
+
+  ```
+  Package 'Papyrine': private sponsorship declaration on the <PackageReference> expired — SponsorshipPrivateUntil='2026-04' (end of month 2026-04-30 UTC).
+
+  Confirm the private sponsorship is still active, then set the SponsorshipPrivateUntil attribute to 2027-05 or earlier in:
+
+    /work/MyApp/MyApp.csproj
+
+  Otherwise switch to another license mode.
+
+  Example format:
+
+    <PackageReference Include="Papyrine" Version="1.0.0" GitHubSponsorAccount="octocat" SponsorshipPrivateUntil="2027-05" />
+  ```
+
+
+### SC057
+
+- **Name:** Private sponsorship declaration expired
+- **Level**: Error
+- **Meaning:** CPM equivalent of [SC056](#sc056).
+- **Syntax:** Same structure as SC056 with `<PackageVersion> in Directory.Packages.props` substituted for `<PackageReference>`.
+- **Example opener:** `Package 'Papyrine': private sponsorship declaration on the <PackageVersion> in Directory.Packages.props expired — SponsorshipPrivateUntil='2026-04' (end of month 2026-04-30 UTC).`
+
+
+### SC058
+
+- **Name:** Private sponsorship declaration expired
+- **Level**: Error
+- **Meaning:** Owner-mode equivalent of [SC056](#sc056)/[SC057](#sc057).
+- **Syntax:** `Package '{PackageId}': private sponsorship declaration expired — {OwnerId}_SponsorshipPrivateUntil='{value}' (end of month {lastDay} UTC).` (body uses the owner-mode property remediation block.)
+- **Example opener:** `Package 'Papyrine': private sponsorship declaration expired — papyrine_SponsorshipPrivateUntil='2026-04' (end of month 2026-04-30 UTC).`
+
+
+### SC059
+
+- **Name:** Private sponsorship attestation trusted
+- **Level**: Info
+- **Meaning:** A valid `SponsorshipPrivateUntil` was declared alongside a sponsor account: the hash check is skipped and the build passes. Private sponsorships (GitHub Sponsors) and incognito contributions (Open Collective) are deliberately excluded from the bundled hash list, so there is nothing to match and the declaration is taken on trust. Emitted as a high-priority build message rather than a warning — like [SC017](#sc017), the consumer's own build log is the audit trail, and a paying sponsor should not be nagged on every build for the whole term. Placement-agnostic: the same code fires for `<PackageReference>`, `<PackageVersion>` and owner-mode property placement. Not overrideable.
+- **Syntax:** `Package '{PackageId}': trusting unverified private sponsor declaration ({attempts}): SponsorshipPrivateUntil={value}, so the bundled sponsor list is not expected to contain this account.`
+- **Example:** `Package 'Papyrine': trusting unverified private sponsor declaration (GitHubSponsors=octocat): SponsorshipPrivateUntil=2027-05, so the bundled sponsor list is not expected to contain this account.`

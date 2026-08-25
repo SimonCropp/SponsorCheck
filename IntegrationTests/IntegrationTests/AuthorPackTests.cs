@@ -567,6 +567,37 @@ public class AuthorPackTests
         await Assert.That(shared[0]).StartsWith("_SponsorCheck_OwnerVerified_");
     }
 
+    [Test]
+    public async Task PrivateSponsorMaxTermMonths_BakedIntoGeneratedTargets()
+    {
+        // The cap rides in the generated verifier rather than a sidecar, so the substitution is
+        // the only thing carrying it to the consumer. An unsubstituted placeholder would silently
+        // fall the verifier back to the default and lose the publisher's setting.
+        var feed = await ThePackageBuilder.EnsureBuilt("ThePackagePrivateSponsorCap");
+        var targets = GeneratedTargets(feed, "ThePackagePrivateSponsorCap");
+        // The property name is package-scoped with a hash suffix, so match on the tail plus value.
+        await Assert.That(targets).Contains("_PrivateSponsorMaxTermMonths>6<");
+        await Assert.That(targets).DoesNotContain("__SC_PRIVATE_MAX_MONTHS_RAW__");
+    }
+
+    [Test]
+    public async Task PrivateSponsorMaxTermMonths_DefaultsWhenUnset()
+    {
+        var feed = await ThePackageBuilder.EnsureBuilt();
+        var targets = GeneratedTargets(feed, "ThePackage");
+        await Assert.That(targets).Contains("_PrivateSponsorMaxTermMonths>12<");
+    }
+
+    // The full text of a package's generated verifier targets.
+    static string GeneratedTargets(string feed, string packageId)
+    {
+        var nupkg = Directory.GetFiles(feed, $"{packageId}.*.nupkg").Single();
+        using var zip = ZipFile.OpenRead(nupkg);
+        var entry = zip.Entries.Single(_ => _.FullName.EndsWith($"/{packageId}.targets", StringComparison.Ordinal));
+        using var reader = new StreamReader(entry.Open());
+        return reader.ReadToEnd();
+    }
+
     // The property names a package's generated verifier defines.
     static List<string> PropertyNames(string feed, string packageId)
     {

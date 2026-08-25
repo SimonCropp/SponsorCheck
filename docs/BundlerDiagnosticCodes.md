@@ -98,3 +98,12 @@ Every emitted message is prefixed with the code's short **Name** (e.g. `Platform
 **Reset time.** The absolute `x-ratelimit-reset` (epoch seconds) is preferred over the relative `Retry-After`. A reset timestamp already in the past renders as "which has already elapsed" rather than as a negative delay — clock skew between a build agent and the platform is common enough to be worth not rendering as a defect.
 
 **Open Collective.** Anonymous calls are normal there (the token is optional), and the anonymous ceiling is the one a collective with many backers actually reaches, since paging the member list costs several requests. When the rate-limited call carried no token, the message recommends creating one instead of recommending a retry.
+
+
+### SC109
+
+- **Name:** Invalid PrivateSponsorMaxTermMonths
+- **Level**: Error
+- **Meaning:** The `PrivateSponsorMaxTermMonths` metadatum on the SponsorCheck reference is not a positive whole number of months. It caps how far ahead a consumer may set `SponsorshipPrivateUntil` when attesting to a private or incognito sponsorship — see [Private and incognito sponsors](AuthorSetup.md#private-and-incognito-sponsors). Leave it unset for the default of 12 months. Parsed with `NumberStyles.None`, the same rule as `MaxTermMonths` on a `<SponsorExemption>`, so `+6`, `6.0` and hex are rejected rather than quietly reinterpreted. Failing the pack is deliberate: the value is baked into the generated verifier, so a silently ignored one would ship a cap the author did not choose.
+- **Syntax:** `SponsorCheck: PrivateSponsorMaxTermMonths='{value}' is not a positive whole number of months.`
+- **Example:** `SponsorCheck: PrivateSponsorMaxTermMonths='six' is not a positive whole number of months.`
