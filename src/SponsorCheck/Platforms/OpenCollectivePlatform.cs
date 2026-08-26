@@ -1,20 +1,22 @@
 public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsorshipPlatform
 {
     const string endpoint = "https://api.opencollective.com/graphql/v2";
+
     const int pageLimit = 100;
+
     // Open Collective's MemberRole enum has no SPONSOR value — both individual and organisation
     // contributors come back as role=BACKER, with org status distinguished by accountType in the
     // UI. Adding SPONSOR to the role filter is rejected server-side with a GRAPHQL_VALIDATION_FAILED.
     const string query = """
-        query($slug: String!, $offset: Int!) {
-          account(slug: $slug) {
-            members(role: [BACKER], limit: 100, offset: $offset) {
-              totalCount
-              nodes { account { slug } }
-            }
-          }
-        }
-        """;
+                         query($slug: String!, $offset: Int!) {
+                           account(slug: $slug) {
+                             members(role: [BACKER], limit: 100, offset: $offset) {
+                               totalCount
+                               nodes { account { slug } }
+                             }
+                           }
+                         }
+                         """;
 
     // Lazy client — see GitHubSponsorsPlatform.Client: registry construction on the verifier path
     // must not allocate an HttpClient; only a real fetch touches the network. Tests inject a stub.
@@ -71,7 +73,12 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
             ["slug"] = slug,
             ["offset"] = offset
         };
-        var payload = JsonSerializer.Serialize(new { query = query, variables });
+        var payload = JsonSerializer.Serialize(
+            new
+            {
+                query,
+                variables
+            });
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
@@ -138,7 +145,9 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
         }
 
         var totalCount = members.TryGetProperty("totalCount", out var t) &&
-                         t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0;
+                         t.ValueKind == JsonValueKind.Number
+            ? t.GetInt32()
+            : 0;
         var slugs = new List<string>();
         var rawItemCount = 0;
         if (members.TryGetProperty("nodes", out var nodes) &&
