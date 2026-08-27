@@ -32,7 +32,7 @@ A package referenced by the build bundles the SponsorCheck verifier, and the bui
 
 | Situation | Metadata to add |
 | --- | --- |
-| Sponsoring the author (or about to) | `GitHubSponsorAccount="<account>"` - or `OpenCollectiveSponsorAccount` / `PolarSponsorAccount` |
+| Sponsoring the author (or about to) | `GitHubSponsorAccount="<account>"` - or `OpenCollectiveSponsorAccount` / `PolarSponsorAccount`. Add `SponsorshipPrivateUntil="yyyy-MM"` when the sponsorship is private or incognito, `SponsorshipStart="yyyy-MM-dd"` when it began after this version was packed |
 | Private licensing arrangement with the author | `SponsorshipLicensedUntil="yyyy-MM"` (at most 1 year out) |
 | An exemption the publisher defined (consulting client, small business, ...) | `SponsorshipExemption="<name>"` - plus `SponsorshipExemptionUntil="yyyy-MM"` when the publisher time-bounds it |
 | Proceeding unlicensed | `SponsorshipLicenseIgnored="true"` - passes, with a breach-of-license warning on every build |
@@ -64,6 +64,8 @@ Where the metadata lives:
 - **Owner mode** (the author opted the package in; the error message says so) - as a global MSBuild property named `{owner}_GitHubSponsorAccount` etc., set once to cover every package from that owner. See [Owner mode](docs/ConsumerUsage.md#owner-mode).
 
 Started sponsoring after the package version was released? The bundled list is frozen at pack time and cannot contain the account yet - add `SponsorshipStart="yyyy-MM-dd"` alongside the sponsor account. See [Recent sponsors](docs/ConsumerUsage.md#recent-sponsors-sponsorshipstart).
+
+Sponsoring privately (private on GitHub Sponsors, incognito on Open Collective)? Those sponsorships are deliberately never bundled, so the hash list cannot contain the account at all - add `SponsorshipPrivateUntil="yyyy-MM"` alongside the sponsor account. See [Private and incognito sponsors](docs/ConsumerUsage.md#private-and-incognito-sponsors).
 
 The **[consumer guide](docs/ConsumerUsage.md)** covers the rest: sponsoring across multiple platforms, [what happens when sponsorship lapses](docs/ConsumerUsage.md#sponsorship-lifecycle-what-happens-after-sponsorship-lapses), [publisher-defined exemptions](docs/ConsumerUsage.md#publisher-defined-exemptions), [owner mode](docs/ConsumerUsage.md#owner-mode) and [migrating between modes](docs/ConsumerUsage.md#migrating-to-or-from-owner-mode). Every diagnostic is documented in [Verifier diagnostic codes (SC0xx)](docs/VerifierDiagnosticCodes.md).
 
