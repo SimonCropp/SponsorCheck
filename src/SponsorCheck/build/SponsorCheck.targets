@@ -115,6 +115,8 @@
       <_SponsorCheck_LicenseExpiredMsgFromVer>@(_SponsorCheck_SelfVer->'%(LicenseExpiredMessageOverride)')</_SponsorCheck_LicenseExpiredMsgFromVer>
       <_SponsorCheck_LandingUrlFromRef>@(_SponsorCheck_Self->'%(SponsorLandingUrl)')</_SponsorCheck_LandingUrlFromRef>
       <_SponsorCheck_LandingUrlFromVer>@(_SponsorCheck_SelfVer->'%(SponsorLandingUrl)')</_SponsorCheck_LandingUrlFromVer>
+      <_SponsorCheck_PrivateMaxMonthsFromRef>@(_SponsorCheck_Self->'%(PrivateSponsorMaxTermMonths)')</_SponsorCheck_PrivateMaxMonthsFromRef>
+      <_SponsorCheck_PrivateMaxMonthsFromVer>@(_SponsorCheck_SelfVer->'%(PrivateSponsorMaxTermMonths)')</_SponsorCheck_PrivateMaxMonthsFromVer>
       <_SponsorCheck_CheckTransitiveFromRef>@(_SponsorCheck_Self->'%(CheckTransitiveReferences)')</_SponsorCheck_CheckTransitiveFromRef>
       <_SponsorCheck_CheckTransitiveFromVer>@(_SponsorCheck_SelfVer->'%(CheckTransitiveReferences)')</_SponsorCheck_CheckTransitiveFromVer>
 
@@ -229,6 +231,8 @@
         LicenseExpiredMessageOverrideFromVer="$(_SponsorCheck_LicenseExpiredMsgFromVer)"
         SponsorLandingUrlFromRef="$(_SponsorCheck_LandingUrlFromRef)"
         SponsorLandingUrlFromVer="$(_SponsorCheck_LandingUrlFromVer)"
+        PrivateSponsorMaxTermMonthsFromRef="$(_SponsorCheck_PrivateMaxMonthsFromRef)"
+        PrivateSponsorMaxTermMonthsFromVer="$(_SponsorCheck_PrivateMaxMonthsFromVer)"
         GitHubToken="$(GitHubToken)"
         OpenCollectiveToken="$(OpenCollectiveToken)"
         PolarToken="$(PolarToken)"

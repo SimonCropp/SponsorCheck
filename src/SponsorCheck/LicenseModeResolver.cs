@@ -7,7 +7,8 @@ public static class LicenseModeResolver
         string? exemptionUntil,
         IReadOnlyDictionary<string, string?> sponsorAccountsByPlatform,
         string? sponsorshipStart,
-        string packageId)
+        string packageId,
+        string? privateUntil = null)
     {
         // Order matters: messages list modes in this order so SponsorshipLicenseIgnored (the
         // breach-of-license escape hatch) appears last, after the legitimate options. The
@@ -31,6 +32,8 @@ public static class LicenseModeResolver
         // SponsorshipExemptionUntil deliberately does not count as a mode of its own — it bounds an
         // exemption claim the same way SponsorshipStart qualifies a sponsor claim. Set on its own it
         // selects nothing, so the consumer still gets the MissingConfig diagnostic.
+        // SponsorshipPrivateUntil follows the same rule: it qualifies a sponsor claim by asserting
+        // the sponsorship is private, so it needs an accompanying <Platform>SponsorAccount to bound.
         var hasExemption = !string.IsNullOrWhiteSpace(exemption);
         if (hasExemption)
         {
@@ -67,7 +70,8 @@ public static class LicenseModeResolver
         if (nonEmptySponsors.Count > 0)
         {
             var startNormalized = string.IsNullOrWhiteSpace(sponsorshipStart) ? null : sponsorshipStart!.Trim();
-            return new LicenseDecision.Sponsor(packageId, nonEmptySponsors, startNormalized);
+            var privateUntilNormalized = string.IsNullOrWhiteSpace(privateUntil) ? null : privateUntil!.Trim();
+            return new LicenseDecision.Sponsor(packageId, nonEmptySponsors, startNormalized, privateUntilNormalized);
         }
 
         return new LicenseDecision.Licensed(packageId, licensedUntil!.Trim());

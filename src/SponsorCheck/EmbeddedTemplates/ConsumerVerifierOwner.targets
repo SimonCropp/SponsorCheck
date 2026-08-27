@@ -24,6 +24,8 @@ __SC_INNER_IMPORT__
     <_SponsorCheck___SC_PACKAGE_ID___MessageOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.MessageOverrides.json</_SponsorCheck___SC_PACKAGE_ID___MessageOverridesPath>
     <_SponsorCheck___SC_PACKAGE_ID___LandingUrlPath>$(MSBuildThisFileDirectory)SponsorCheck.LandingUrl.txt</_SponsorCheck___SC_PACKAGE_ID___LandingUrlPath>
     <_SponsorCheck___SC_PACKAGE_ID___ExemptionsPath>$(MSBuildThisFileDirectory)SponsorCheck.Exemptions.json</_SponsorCheck___SC_PACKAGE_ID___ExemptionsPath>
+    <!-- The publisher's cap on a SponsorshipPrivateUntil claim — see ConsumerVerifier.targets. -->
+    <_SponsorCheck___SC_PACKAGE_ID___PrivateSponsorMaxTermMonths>__SC_PRIVATE_MAX_MONTHS_RAW__</_SponsorCheck___SC_PACKAGE_ID___PrivateSponsorMaxTermMonths>
   </PropertyGroup>
 
   <!-- Version-scoped task name — see ConsumerVerifier.targets for why the bare name can't be used. -->
@@ -98,6 +100,8 @@ __SC_INNER_IMPORT__
         SponsorshipExemptionFromRef="$(__SC_OWNER_PREFIX__SponsorshipExemption)"
         SponsorshipExemptionUntilFromRef="$(__SC_OWNER_PREFIX__SponsorshipExemptionUntil)"
         SponsorshipStartFromRef="$(__SC_OWNER_PREFIX__SponsorshipStart)"
+        SponsorshipPrivateUntilFromRef="$(__SC_OWNER_PREFIX__SponsorshipPrivateUntil)"
+        PrivateSponsorMaxTermMonths="$(_SponsorCheck___SC_PACKAGE_ID___PrivateSponsorMaxTermMonths)"
         GitHubFromRef="$(__SC_OWNER_PREFIX__GitHubSponsorAccount)"
         OpenCollectiveFromRef="$(__SC_OWNER_PREFIX__OpenCollectiveSponsorAccount)"
         PolarFromRef="$(__SC_OWNER_PREFIX__PolarSponsorAccount)" />

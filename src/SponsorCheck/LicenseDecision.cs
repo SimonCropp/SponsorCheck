@@ -4,6 +4,6 @@
     public sealed record ConflictingModes(string PackageId, IReadOnlyList<string> Modes) : LicenseDecision(PackageId);
     public sealed record Ignored(string PackageId) : LicenseDecision(PackageId);
     public sealed record Exempt(string PackageId, string ExemptionName, string? ExemptionUntilRaw) : LicenseDecision(PackageId);
-    public sealed record Sponsor(string PackageId, IReadOnlyDictionary<string, string> AccountByPlatform, string? SponsorshipStartRaw) : LicenseDecision(PackageId);
+    public sealed record Sponsor(string PackageId, IReadOnlyDictionary<string, string> AccountByPlatform, string? SponsorshipStartRaw, string? PrivateUntilRaw = null) : LicenseDecision(PackageId);
     public sealed record Licensed(string PackageId, string LicensedUntilRaw) : LicenseDecision(PackageId);
 }

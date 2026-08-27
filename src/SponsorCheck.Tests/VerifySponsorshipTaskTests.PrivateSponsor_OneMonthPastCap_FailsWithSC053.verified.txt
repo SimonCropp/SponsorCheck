@@ -1,0 +1,19 @@
+﻿{
+  Errors: [
+    {
+      Code: SC053,
+      Message:
+Private sponsorship end date too far in the future. Package 'MyOssLib': SponsorshipPrivateUntil='2027-06' on the <PackageReference> is more than 12 months in the future (maximum 2027-05).
+
+Set the SponsorshipPrivateUntil attribute to 2027-05 or earlier in:
+
+  C:/Consumer/MyApp.csproj
+
+Example format:
+
+  <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="dave" SponsorshipPrivateUntil="2027-05" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc053
+    }
+  ]
+}

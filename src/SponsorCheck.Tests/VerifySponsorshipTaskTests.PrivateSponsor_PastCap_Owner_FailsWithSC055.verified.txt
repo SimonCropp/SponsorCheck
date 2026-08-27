@@ -1,0 +1,18 @@
+﻿{
+  Errors: [
+    {
+      Code: SC055,
+      Message:
+Private sponsorship end date too far in the future. Package 'MyOssLib': acme_SponsorshipPrivateUntil='2030-01' property is more than 12 months in the future (maximum 2027-05).
+
+Set the acme_SponsorshipPrivateUntil property to 2027-05 or earlier in Directory.Build.props or the consuming project.
+
+Example format:
+
+  <acme_GitHubSponsorAccount>dave</acme_GitHubSponsorAccount>
+  <acme_SponsorshipPrivateUntil>2027-05</acme_SponsorshipPrivateUntil>
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc055
+    }
+  ]
+}

@@ -186,7 +186,8 @@ public class ConsumerConfigGeneratorTests
         bool transitive = false,
         string? packDate = "2026-01-15",
         IReadOnlyList<PackageExemption>? exemptions = null,
-        IReadOnlyDictionary<string, string>? severities = null) =>
+        IReadOnlyDictionary<string, string>? severities = null,
+        int privateSponsorMaxTermMonths = PackageFacts.DefaultPrivateSponsorMaxTermMonths) =>
         new(
             "ThePackage",
             "1.2.3",
@@ -198,7 +199,8 @@ public class ConsumerConfigGeneratorTests
             LandingUrl: null,
             Platforms: [new(PlatformKind.GitHub, "acmecorp")],
             Exemptions: exemptions ?? [],
-            Severities: severities ?? new Dictionary<string, string>());
+            Severities: severities ?? new Dictionary<string, string>(),
+            PrivateSponsorMaxTermMonths: privateSponsorMaxTermMonths);
 
     [Test]
     public async Task FactsExemptionSelected()
@@ -297,5 +299,80 @@ public class ConsumerConfigGeneratorTests
         Sponsor(model, PlatformKind.GitHub, "alice");
         model.Facts = Facts(transitive: true);
         await Verify(Dump(model));
+    }
+
+    static void PrivateSponsor(ConsumerModel model, string until = "2027-05")
+    {
+        model.PrivateSponsorship = true;
+        model.PrivateUntilMonth = until;
+    }
+
+    [Test]
+    public async Task ProjectPrivateSponsor()
+    {
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.GitHub, "octocat");
+        PrivateSponsor(model);
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task CpmPrivateSponsor()
+    {
+        var model = BaseModel(Placement.PerPackageCpm);
+        Sponsor(model, PlatformKind.OpenCollective, "octocat");
+        PrivateSponsor(model);
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task OwnerPrivateSponsor()
+    {
+        var model = BaseModel(Placement.OwnerMode);
+        Sponsor(model, PlatformKind.GitHub, "octocat");
+        PrivateSponsor(model);
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task FactsPrivateSponsorWithNarrowedCap()
+    {
+        // The cap is read out of the inspected package, so the generated outcome text names the
+        // publisher's number rather than the shipped default.
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.GitHub, "octocat");
+        PrivateSponsor(model, "2026-06");
+        model.Facts = Facts(privateSponsorMaxTermMonths: 6);
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task PrivateSponsorTakesPrecedenceOverStart()
+    {
+        // Both qualifiers set: the private declaration decides the build, so the outcome text has to
+        // describe that path rather than the SponsorshipStart one.
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.GitHub, "octocat");
+        model.StartedAfterRelease = true;
+        model.SponsorshipStart = "2026-04-30";
+        PrivateSponsor(model);
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task PrivateSponsorWithoutAMonthIsIncomplete()
+    {
+        // SponsorshipPrivateUntil qualifies a sponsor claim rather than being one, so a checked box
+        // with no month is not a usable configuration.
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.GitHub, "octocat");
+        model.PrivateSponsorship = true;
+        await Assert.That(model.IsComplete).IsFalse();
+
+        model.PrivateUntilMonth = "May 2027";
+        await Assert.That(model.IsComplete).IsFalse();
+
+        model.PrivateUntilMonth = "2027-05";
+        await Assert.That(model.IsComplete).IsTrue();
     }
 }

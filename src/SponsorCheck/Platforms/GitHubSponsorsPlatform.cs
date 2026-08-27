@@ -8,6 +8,11 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
     // and one-time payments past their window; IsValidAt filters them explicitly so the one-time
     // inclusion window is driven by SponsorCheck (one month from createdAt) rather than GitHub's
     // own "active" definition for one-time payments.
+    //
+    // includePrivate stays true even though private sponsors are never bundled (IsPublic drops
+    // them). Asking for them is what makes the excluded count knowable, so the pack log can tell
+    // the author how many sponsors need SponsorshipPrivateUntil instead. includePrivate:false
+    // would filter server-side and leave nothing to count.
     const string query =
         """
         query($login: String!, $cursor: String) {
@@ -18,6 +23,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
                 isActive
                 isOneTimePayment
                 createdAt
+                privacyLevel
                 sponsorEntity {
                   __typename
                   ... on User { login }
@@ -33,6 +39,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
                 isActive
                 isOneTimePayment
                 createdAt
+                privacyLevel
                 sponsorEntity {
                   __typename
                   ... on User { login }
@@ -78,6 +85,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
         var userDone = false;
         var orgDone = false;
         var resolved = false;
+        var privateCount = 0;
         var now = DateTime.UtcNow;
 
         while (!(userDone && orgDone))
@@ -96,18 +104,34 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
 
             foreach (var entry in page.UserSponsorships)
             {
-                if (IsValidAt(entry, now))
+                if (!IsValidAt(entry, now))
                 {
-                    logins.Add(entry.Login);
+                    continue;
                 }
+
+                if (entry.IsPrivate)
+                {
+                    privateCount++;
+                    continue;
+                }
+
+                logins.Add(entry.Login);
             }
 
             foreach (var entry in page.OrgSponsorships)
             {
-                if (IsValidAt(entry, now))
+                if (!IsValidAt(entry, now))
                 {
-                    logins.Add(entry.Login);
+                    continue;
                 }
+
+                if (entry.IsPrivate)
+                {
+                    privateCount++;
+                    continue;
+                }
+
+                logins.Add(entry.Login);
             }
 
             if (page.UserHasNextPage)
@@ -146,6 +170,11 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
         }
 
         log.LogMessage(MessageImportance.Normal, $"GitHub Sponsors: fetched {logins.Count} sponsors of '{ownerAccount}'.");
+        if (privateCount > 0)
+        {
+            log.LogMessage(MessageImportance.High, PrivateSponsorAdvice.ExcludedMessage("GitHub Sponsors", privateCount, "private"));
+        }
+
         return [.. logins];
     }
 
@@ -251,7 +280,8 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
         string Login,
         bool IsOneTimePayment,
         bool IsActive,
-        DateTime CreatedAt);
+        DateTime CreatedAt,
+        bool IsPrivate);
 
     public readonly record struct PageResult(
         bool UserExists,
@@ -477,8 +507,14 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
                        active.ValueKind == JsonValueKind.True;
         var isOneTime = node.TryGetProperty("isOneTimePayment", out var oneTime) &&
                         oneTime.ValueKind == JsonValueKind.True;
+        // SponsorshipPrivacyLevel is PUBLIC or PRIVATE. Only an explicit PRIVATE marks the entry
+        // private: an absent or unrecognized value has to read as public, since treating "unknown"
+        // as private would silently drop every sponsor if GitHub ever renamed the field.
+        var isPrivate = node.TryGetProperty("privacyLevel", out var privacy) &&
+                        privacy.ValueKind == JsonValueKind.String &&
+                        string.Equals(privacy.GetString(), "PRIVATE", StringComparison.OrdinalIgnoreCase);
 
-        entry = new(loginValue!, isOneTime, isActive, when);
+        entry = new(loginValue!, isOneTime, isActive, when, isPrivate);
         return true;
     }
 }

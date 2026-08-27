@@ -321,7 +321,8 @@ public class GitHubSponsorsPlatformTests
             Login: "alice",
             IsOneTimePayment: false,
             IsActive: true,
-            CreatedAt: new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            CreatedAt: new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            IsPrivate: false);
         await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
     }
 
@@ -335,7 +336,8 @@ public class GitHubSponsorsPlatformTests
             Login: "alice",
             IsOneTimePayment: false,
             IsActive: false,
-            CreatedAt: new(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc));
+            CreatedAt: new(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc),
+            IsPrivate: false);
         await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
     }
 
@@ -349,7 +351,8 @@ public class GitHubSponsorsPlatformTests
             Login: "carol",
             IsOneTimePayment: true,
             IsActive: false,
-            CreatedAt: new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+            CreatedAt: new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc),
+            IsPrivate: false);
         await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
     }
 
@@ -360,7 +363,8 @@ public class GitHubSponsorsPlatformTests
             Login: "carol",
             IsOneTimePayment: true,
             IsActive: false,
-            CreatedAt: new(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc));
+            CreatedAt: new(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
+            IsPrivate: false);
         await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
     }
 
@@ -374,7 +378,8 @@ public class GitHubSponsorsPlatformTests
             Login: "carol",
             IsOneTimePayment: true,
             IsActive: false,
-            CreatedAt: createdAt);
+            CreatedAt: createdAt,
+            IsPrivate: false);
         await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, createdAt + GitHubSponsorsPlatform.OneTimeWindow)).IsTrue();
     }
 
@@ -552,6 +557,187 @@ public class GitHubSponsorsPlatformTests
 
             return Task.FromResult(response);
         }
+    }
+
+    // --- Private sponsors are never bundled ---
+    //
+    // includePrivate:true is kept on the query so the count stays knowable, which means the filter
+    // is entirely on this side. If privacyLevel ever stops being parsed, these are what catches it.
+
+    [Test]
+    public async Task ParseResponse_PrivacyLevel_Parsed()
+    {
+        var json = """
+        {
+          "data": {
+            "user": {
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": [
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "2024-01-15T10:00:00Z",
+                    "privacyLevel": "PUBLIC",
+                    "sponsorEntity": { "__typename": "User", "login": "alice" }
+                  },
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "2024-02-15T10:00:00Z",
+                    "privacyLevel": "PRIVATE",
+                    "sponsorEntity": { "__typename": "User", "login": "dave" }
+                  }
+                ]
+              }
+            },
+            "organization": null
+          }
+        }
+        """;
+        var page = GitHubSponsorsPlatform.ParseResponse(json);
+        await Assert.That(page.UserSponsorships.Single(_ => _.Login == "alice").IsPrivate).IsFalse();
+        await Assert.That(page.UserSponsorships.Single(_ => _.Login == "dave").IsPrivate).IsTrue();
+    }
+
+    [Test]
+    public async Task ParseResponse_MissingPrivacyLevel_ReadsAsPublic()
+    {
+        // Absent has to mean public: if an unrecognized shape read as private, a field rename on
+        // GitHub's side would silently empty the whole bundled list instead of failing loudly.
+        var json = """
+        {
+          "data": {
+            "user": {
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": [
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "2024-01-15T10:00:00Z",
+                    "sponsorEntity": { "__typename": "User", "login": "alice" }
+                  }
+                ]
+              }
+            },
+            "organization": null
+          }
+        }
+        """;
+        var page = GitHubSponsorsPlatform.ParseResponse(json);
+        await Assert.That(page.UserSponsorships.Single().IsPrivate).IsFalse();
+    }
+
+    [Test]
+    public async Task FetchSponsorAccounts_ExcludesPrivateSponsorsAndReportsTheCount()
+    {
+        var json = $$"""
+        {
+          "data": {
+            "user": {
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": [
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}",
+                    "privacyLevel": "PUBLIC",
+                    "sponsorEntity": { "__typename": "User", "login": "alice" }
+                  },
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}",
+                    "privacyLevel": "PRIVATE",
+                    "sponsorEntity": { "__typename": "User", "login": "dave" }
+                  }
+                ]
+              }
+            },
+            "organization": null
+          }
+        }
+        """;
+        using var client = new HttpClient(new StubHandler(json));
+        var platform = new GitHubSponsorsPlatform(client);
+        var engine = new StubBuildEngine();
+        var sponsors = await platform.FetchSponsorAccounts("acmecorp", token: "fake", new TaskLoggingHelperFor(engine), Cancel.None);
+        await Assert.That(sponsors).Contains("alice");
+        await Assert.That(sponsors).DoesNotContain("dave");
+        // The count is reported but never the login — the point of the exclusion is that the
+        // identity doesn't leave the author's machine.
+        var notice = engine.Messages.Single(_ => _.Message!.Contains("excluded from the bundled list"));
+        await Assert.That(notice.Message!).Contains("1 private sponsor is");
+        await Assert.That(notice.Message!).Contains("SponsorshipPrivateUntil");
+        await Assert.That(notice.Message!).DoesNotContain("dave");
+    }
+
+    [Test]
+    public async Task FetchSponsorAccounts_NoPrivateSponsors_ReportsNothing()
+    {
+        var json = $$"""
+        {
+          "data": {
+            "user": {
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": [
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}",
+                    "privacyLevel": "PUBLIC",
+                    "sponsorEntity": { "__typename": "User", "login": "alice" }
+                  }
+                ]
+              }
+            },
+            "organization": null
+          }
+        }
+        """;
+        using var client = new HttpClient(new StubHandler(json));
+        var platform = new GitHubSponsorsPlatform(client);
+        var engine = new StubBuildEngine();
+        await platform.FetchSponsorAccounts("acmecorp", token: "fake", new TaskLoggingHelperFor(engine), Cancel.None);
+        await Assert.That(engine.Messages.Any(_ => _.Message!.Contains("excluded from the bundled list"))).IsFalse();
+    }
+
+    [Test]
+    public async Task FetchSponsorAccounts_LapsedPrivateSponsor_CountedOnce()
+    {
+        // A private sponsorship that also fails the validity window is dropped by IsValidAt first,
+        // so it must not inflate the private count — the author would be told to chase a sponsor
+        // who isn't sponsoring any more.
+        var json = """
+        {
+          "data": {
+            "user": {
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": [
+                  {
+                    "isActive": false,
+                    "isOneTimePayment": false,
+                    "createdAt": "2020-01-15T10:00:00Z",
+                    "privacyLevel": "PRIVATE",
+                    "sponsorEntity": { "__typename": "User", "login": "dave" }
+                  }
+                ]
+              }
+            },
+            "organization": null
+          }
+        }
+        """;
+        using var client = new HttpClient(new StubHandler(json));
+        var platform = new GitHubSponsorsPlatform(client);
+        var engine = new StubBuildEngine();
+        var sponsors = await platform.FetchSponsorAccounts("acmecorp", token: "fake", new TaskLoggingHelperFor(engine), Cancel.None);
+        await Assert.That(sponsors).IsEmpty();
+        await Assert.That(engine.Messages.Any(_ => _.Message!.Contains("excluded from the bundled list"))).IsFalse();
     }
 
     sealed class StubHandler(string body) : HttpMessageHandler

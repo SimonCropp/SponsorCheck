@@ -25,6 +25,8 @@ public sealed class ConsumerModel
         Platform.All.ToDictionary(_ => _.Kind, _ => new PlatformSelection());
     public bool StartedAfterRelease { get; set; }
     public string SponsorshipStart { get; set; } = "";
+    public bool PrivateSponsorship { get; set; }
+    public string PrivateUntilMonth { get; set; } = "";
     public string LicensedUntilMonth { get; set; } = "";
     public string ExemptionName { get; set; } = "";
     public string ExemptionUntilMonth { get; set; } = "";
@@ -51,6 +53,16 @@ public sealed class ConsumerModel
 
     public bool IsSponsorshipStartValid =>
         DateTime.TryParseExact(SponsorshipStart.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+
+    public bool IsPrivateUntilValid =>
+        DateTime.TryParseExact(PrivateUntilMonth.Trim(), "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+
+    /// <summary>How far ahead the publisher lets a private-sponsorship claim run. Taken from the
+    /// inspected package when available, otherwise the shipped default — a package the wizard could
+    /// not inspect may still have narrowed it, so the generated output says so rather than
+    /// presenting the default as certain.</summary>
+    public int PrivateSponsorMaxTermMonths =>
+        Facts is { BundlesSponsorCheck: true } facts ? facts.PrivateSponsorMaxTermMonths : PackageFacts.DefaultPrivateSponsorMaxTermMonths;
 
     public bool HasExemptionUntil => !string.IsNullOrWhiteSpace(ExemptionUntilMonth);
 
@@ -100,7 +112,10 @@ public sealed class ConsumerModel
 
     public bool ModeComplete => Mode switch
     {
-        ConsumerLicenseMode.Sponsor => HasPlatform && (!StartedAfterRelease || IsSponsorshipStartValid),
+        ConsumerLicenseMode.Sponsor =>
+            HasPlatform &&
+            (!StartedAfterRelease || IsSponsorshipStartValid) &&
+            (!PrivateSponsorship || IsPrivateUntilValid),
         ConsumerLicenseMode.License => IsLicensedUntilValid,
         ConsumerLicenseMode.Exemption =>
             !string.IsNullOrWhiteSpace(ExemptionName) &&

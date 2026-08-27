@@ -218,4 +218,30 @@ public class AuthorConfigGeneratorTests
         // Invalid rows are excluded from the generated config rather than emitted as a broken item.
         await Assert.That(model.HasExemptions).IsFalse();
     }
+
+    [Test]
+    public async Task PrivateSponsorMaxTermMonths()
+    {
+        var model = BaseModel();
+        Enable(model, PlatformKind.GitHub, "acmecorp");
+        model.PrivateSponsorMaxTermMonths = "6";
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    [Arguments("")]
+    [Arguments("   ")]
+    [Arguments("six")]
+    [Arguments("0")]
+    [Arguments("-1")]
+    public async Task PrivateSponsorMaxTermMonths_NotEmitted(string value)
+    {
+        // Blank means "use the default". A value the bundler would reject with SC109 is dropped
+        // rather than written out — emitting it would generate a reference that cannot pack.
+        var model = BaseModel();
+        Enable(model, PlatformKind.GitHub, "acmecorp");
+        model.PrivateSponsorMaxTermMonths = value;
+        var output = AuthorConfigGenerator.Generate(model);
+        await Assert.That(output.Reference).DoesNotContain("PrivateSponsorMaxTermMonths");
+    }
 }

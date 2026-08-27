@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Under CPM both halves live on the PackageVersion; splitting them across the
+         PackageReference would raise SC020. Current month for the same reason as
+         Consumer.PrivateSponsor. -->
+    <PackageVersion Include="ThePackage" Version="1.0.0"
+                    GitHubSponsorAccount="dave"
+                    SponsorshipPrivateUntil="$([System.DateTime]::UtcNow.ToString('yyyy-MM'))" />
+  </ItemGroup>
+</Project>

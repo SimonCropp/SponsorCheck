@@ -27,6 +27,15 @@ public sealed class AuthorModel
     public List<ExemptionEntry> Exemptions { get; } = [];
     public string LandingUrl { get; set; } = "";
 
+    /// <summary>Blank leaves the shipped default in place. Only a positive whole number is emitted;
+    /// anything else would fail the pack with SC109, so the wizard simply doesn't write it.</summary>
+    public string PrivateSponsorMaxTermMonths { get; set; } = "";
+
+    public int? ParsedPrivateSponsorMaxTermMonths =>
+        int.TryParse(PrivateSponsorMaxTermMonths.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var months) && months >= 1
+            ? months
+            : null;
+
     public PlatformSelection Selection(PlatformKind kind) => Platforms[kind];
 
     public OverrideSelection Selection(OverrideKind kind) => Overrides[kind];

@@ -208,6 +208,19 @@
                            @bind="model.LandingUrl"
                            @bind:event="oninput" />
                 </div>
+                <div class="field" style="margin-top:1rem">
+                    <label for="privateSponsorMaxTermMonths">Private sponsorship term cap (months) <a class="docs-link" href="@DocLinks.PrivateSponsors" target="_blank">docs</a></label>
+                    <p class="hint">Private and incognito sponsors are never bundled, so they attest with SponsorshipPrivateUntil instead. This is how far ahead that claim may run before it has to be renewed. Leave blank for the default of @PackageFacts.DefaultPrivateSponsorMaxTermMonths months.</p>
+                    <input id="privateSponsorMaxTermMonths"
+                           type="text"
+                           placeholder="@PackageFacts.DefaultPrivateSponsorMaxTermMonths"
+                           @bind="model.PrivateSponsorMaxTermMonths"
+                           @bind:event="oninput" />
+                    @if (model.PrivateSponsorMaxTermMonths.Trim().Length > 0 && model.ParsedPrivateSponsorMaxTermMonths is null)
+                    {
+                        <p class="validation-error">Use a positive whole number of months, e.g. 6. Anything else fails the pack with SC109.</p>
+                    }
+                </div>
                 break;
 
             case outputStep:

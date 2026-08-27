@@ -22,6 +22,12 @@ public sealed class BundleSponsorListTask :
     public string SponsorLandingUrlFromRef { get; set; } = "";
     public string SponsorLandingUrlFromVer { get; set; } = "";
 
+    // How far ahead a consumer may set SponsorshipPrivateUntil when attesting to a private or
+    // incognito sponsorship. Baked into the generated verifier targets rather than a sidecar file:
+    // it is one integer, and the templates already carry element-content placeholders.
+    public string PrivateSponsorMaxTermMonthsFromRef { get; set; } = "";
+    public string PrivateSponsorMaxTermMonthsFromVer { get; set; } = "";
+
     public string NoLicenseSpecifiedSeverityOverrideFromRef { get; set; } = "";
     public string NoLicenseSpecifiedSeverityOverrideFromVer { get; set; } = "";
     public string LicenseIgnoredSeverityOverrideFromRef { get; set; } = "";
@@ -83,6 +89,11 @@ public sealed class BundleSponsorListTask :
             // so the verifier can rely on the file existing.
             var landingUrl = PackageMetadataMerger.Merge("SponsorLandingUrl", SponsorLandingUrlFromRef, SponsorLandingUrlFromVer) ?? "";
             File.WriteAllText(OutputLandingUrlPath, landingUrl);
+
+            if (!TryResolvePrivateSponsorMaxTermMonths(out var privateSponsorMaxTermMonths))
+            {
+                return false;
+            }
 
             if (!TryResolveSeverityOverrides(out var severityOverrides))
             {
@@ -167,6 +178,7 @@ public sealed class BundleSponsorListTask :
             var rendered = template
                 .Replace("__SC_PACKAGE_ID__", sanitizedId)
                 .Replace(">__SC_PACKAGE_ID_RAW__<", $">{ThePackageId}<")
+                .Replace(">__SC_PRIVATE_MAX_MONTHS_RAW__<", $">{privateSponsorMaxTermMonths}<")
                 .Replace("__SC_TASK_NAME__", VersionedTaskName.Verify);
             if (isOwnerMode)
             {
@@ -261,6 +273,35 @@ public sealed class BundleSponsorListTask :
             }
         }
 
+        return true;
+    }
+
+    // Same NumberStyles.None rule as MaxTermMonths on an exemption, so "+6", "6.0" and hex are all
+    // rejected rather than quietly reinterpreted. Unset means the documented default — this is the
+    // knob's off position, not an error.
+    bool TryResolvePrivateSponsorMaxTermMonths(out int result)
+    {
+        result = PrivateSponsorTerm.DefaultMaxTermMonths;
+        var raw = (PackageMetadataMerger.Merge(
+            PrivateSponsorTerm.AuthorMetadataName,
+            PrivateSponsorMaxTermMonthsFromRef,
+            PrivateSponsorMaxTermMonthsFromVer) ?? "").Trim();
+        if (raw.Length == 0)
+        {
+            return true;
+        }
+
+        if (!int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var months) ||
+            months < 1)
+        {
+            SponsorCheckLog.Error(
+                Log,
+                "SC109",
+                $"SponsorCheck: {PrivateSponsorTerm.AuthorMetadataName}='{raw}' is not a positive whole number of months.");
+            return false;
+        }
+
+        result = months;
         return true;
     }
 

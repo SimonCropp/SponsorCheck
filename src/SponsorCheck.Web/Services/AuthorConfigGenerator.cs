@@ -82,6 +82,11 @@ public static class AuthorConfigGenerator
             attributes.Add(("SponsorLandingUrl", model.LandingUrl.Trim()));
         }
 
+        if (model.ParsedPrivateSponsorMaxTermMonths is { } privateMonths)
+        {
+            attributes.Add(("PrivateSponsorMaxTermMonths", privateMonths.ToString(CultureInfo.InvariantCulture)));
+        }
+
         return attributes;
     }
 

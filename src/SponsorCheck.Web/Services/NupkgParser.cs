@@ -27,6 +27,15 @@ public static class NupkgParser
     /// </summary>
     public const string OwnerIdElementPattern = @"<(_SponsorCheck_(?:\w+_)?OwnerId)>(.+?)</\1>";
 
+    /// <summary>
+    /// Matches the private-sponsorship cap element in a generated verifier. Same package-scoped
+    /// element-name shape as <see cref="OwnerIdElementPattern"/>, and absent from packages published
+    /// before the cap existed — those fall back to
+    /// <see cref="PackageFacts.DefaultPrivateSponsorMaxTermMonths"/>, which is what their verifier
+    /// does too.
+    /// </summary>
+    public const string PrivateSponsorMaxTermMonthsElementPattern = @"<(_SponsorCheck_(?:\w+_)?PrivateSponsorMaxTermMonths)>(.+?)</\1>";
+
     public static async Task<PackageFacts> Parse(string packageId, string version, RemoteZipArchive nupkg)
     {
         // buildTransitive/ is used when the author enabled CheckTransitiveReferences; build/ otherwise.
@@ -70,6 +79,7 @@ public static class NupkgParser
         var exemptions = ParseExemptions(Text(ExemptionsFileName));
         var severities = ParseSeverities(Text(SeverityOverridesFileName));
         var ownerId = FindOwnerId(targets, contents);
+        var privateSponsorMaxTermMonths = FindPrivateSponsorMaxTermMonths(targets, contents);
 
         return new(
             packageId,
@@ -82,7 +92,8 @@ public static class NupkgParser
             LandingUrl: landingUrl,
             Platforms: platforms,
             Exemptions: exemptions,
-            Severities: severities);
+            Severities: severities,
+            PrivateSponsorMaxTermMonths: privateSponsorMaxTermMonths);
     }
 
     static string? NullIfBlank(string? value)
@@ -212,6 +223,27 @@ public static class NupkgParser
         }
 
         return result;
+    }
+
+    static int FindPrivateSponsorMaxTermMonths(List<string> targets, IReadOnlyDictionary<string, string> contents)
+    {
+        foreach (var name in targets)
+        {
+            if (!contents.TryGetValue(name, out var content))
+            {
+                continue;
+            }
+
+            var match = Regex.Match(content, PrivateSponsorMaxTermMonthsElementPattern);
+            if (match.Success &&
+                int.TryParse(match.Groups[2].Value.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var months) &&
+                months >= 1)
+            {
+                return months;
+            }
+        }
+
+        return PackageFacts.DefaultPrivateSponsorMaxTermMonths;
     }
 
     static string? FindOwnerId(List<string> targets, IReadOnlyDictionary<string, string> contents)

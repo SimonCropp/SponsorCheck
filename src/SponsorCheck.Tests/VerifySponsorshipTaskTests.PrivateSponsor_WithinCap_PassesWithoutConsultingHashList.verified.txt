@@ -1,0 +1,11 @@
+﻿{
+  Messages: [
+    {
+      Code: SC059,
+      Message:
+Private sponsorship attestation trusted. Package 'MyOssLib': trusting unverified private sponsor declaration (GitHubSponsors=dave): SponsorshipPrivateUntil=2026-09, so the bundled sponsor list is not expected to contain this account.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc059
+    }
+  ]
+}

@@ -22,6 +22,10 @@ __SC_INNER_IMPORT__
     <_SponsorCheck___SC_PACKAGE_ID___MessageOverridesPath>$(MSBuildThisFileDirectory)SponsorCheck.MessageOverrides.json</_SponsorCheck___SC_PACKAGE_ID___MessageOverridesPath>
     <_SponsorCheck___SC_PACKAGE_ID___LandingUrlPath>$(MSBuildThisFileDirectory)SponsorCheck.LandingUrl.txt</_SponsorCheck___SC_PACKAGE_ID___LandingUrlPath>
     <_SponsorCheck___SC_PACKAGE_ID___ExemptionsPath>$(MSBuildThisFileDirectory)SponsorCheck.Exemptions.json</_SponsorCheck___SC_PACKAGE_ID___ExemptionsPath>
+    <!-- The publisher's cap on a SponsorshipPrivateUntil claim, substituted at pack time. A value
+         rather than a sidecar file: it is one integer, and the element-content placeholder form is
+         what the bundler's substitution is anchored to. -->
+    <_SponsorCheck___SC_PACKAGE_ID___PrivateSponsorMaxTermMonths>__SC_PRIVATE_MAX_MONTHS_RAW__</_SponsorCheck___SC_PACKAGE_ID___PrivateSponsorMaxTermMonths>
   </PropertyGroup>
 
   <!-- __SC_TASK_NAME__ renders to the version-scoped task type (VerifySponsorshipTask_<version>).
@@ -89,6 +93,8 @@ __SC_INNER_IMPORT__
       <_SponsorCheck___SC_PACKAGE_ID___ExemptionUntilFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipExemptionUntil)')</_SponsorCheck___SC_PACKAGE_ID___ExemptionUntilFromVer>
       <_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipStart)')</_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromRef>
       <_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipStart)')</_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromVer>
+      <_SponsorCheck___SC_PACKAGE_ID___PrivateUntilFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(SponsorshipPrivateUntil)')</_SponsorCheck___SC_PACKAGE_ID___PrivateUntilFromRef>
+      <_SponsorCheck___SC_PACKAGE_ID___PrivateUntilFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(SponsorshipPrivateUntil)')</_SponsorCheck___SC_PACKAGE_ID___PrivateUntilFromVer>
       <_SponsorCheck___SC_PACKAGE_ID___GitHubFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(GitHubSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___GitHubFromRef>
       <_SponsorCheck___SC_PACKAGE_ID___GitHubFromVer>@(_SponsorCheck___SC_PACKAGE_ID___Ver->'%(GitHubSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___GitHubFromVer>
       <_SponsorCheck___SC_PACKAGE_ID___OpenCollectiveFromRef>@(_SponsorCheck___SC_PACKAGE_ID___Ref->'%(OpenCollectiveSponsorAccount)')</_SponsorCheck___SC_PACKAGE_ID___OpenCollectiveFromRef>
@@ -122,6 +128,9 @@ __SC_INNER_IMPORT__
         SponsorshipExemptionUntilFromVer="$(_SponsorCheck___SC_PACKAGE_ID___ExemptionUntilFromVer)"
         SponsorshipStartFromRef="$(_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromRef)"
         SponsorshipStartFromVer="$(_SponsorCheck___SC_PACKAGE_ID___SponsorshipStartFromVer)"
+        SponsorshipPrivateUntilFromRef="$(_SponsorCheck___SC_PACKAGE_ID___PrivateUntilFromRef)"
+        SponsorshipPrivateUntilFromVer="$(_SponsorCheck___SC_PACKAGE_ID___PrivateUntilFromVer)"
+        PrivateSponsorMaxTermMonths="$(_SponsorCheck___SC_PACKAGE_ID___PrivateSponsorMaxTermMonths)"
         GitHubFromRef="$(_SponsorCheck___SC_PACKAGE_ID___GitHubFromRef)"
         GitHubFromVer="$(_SponsorCheck___SC_PACKAGE_ID___GitHubFromVer)"
         OpenCollectiveFromRef="$(_SponsorCheck___SC_PACKAGE_ID___OpenCollectiveFromRef)"

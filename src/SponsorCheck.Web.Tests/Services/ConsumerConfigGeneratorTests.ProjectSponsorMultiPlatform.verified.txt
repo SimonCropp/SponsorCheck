@@ -11,7 +11,7 @@ The consuming project's .csproj — the file holding the <PackageReference> for 
 Add the new attribute(s) to the existing <PackageReference Include="ThePackage"> element — do not create a second reference.
 
 === Build outcome ===
-Passes silently when any declared account was in the bundled sponsor list at the version's pack time. If the build still fails with SC007, either the account or platform doesn't match what the author bundled, or the sponsorship began after this version was packed — in that case add SponsorshipStart="yyyy-MM-dd" (re-run the wizard and answer yes to the started-after question).
+Passes silently when any declared account was in the bundled sponsor list at the version's pack time. If the build still fails with SC007, either the account or platform doesn't match what the author bundled, the sponsorship began after this version was packed — in that case add SponsorshipStart="yyyy-MM-dd" — or the sponsorship is private (GitHub Sponsors) or incognito (Open Collective), which is never bundled and needs SponsorshipPrivateUntil="yyyy-MM" instead. Re-run the wizard and answer yes to whichever applies.
 
 === Notes ===
 - The verifier passes on any single match — declaring accounts for several platforms is one cheap hash lookup each, and keeps builds green if the author migrates platforms.
@@ -43,7 +43,7 @@ Add the new attribute(s) to the existing <PackageReference Include="ThePackage">
 
 ## Expected build outcome
 
-Passes silently when any declared account was in the bundled sponsor list at the version's pack time. If the build still fails with SC007, either the account or platform doesn't match what the author bundled, or the sponsorship began after this version was packed — in that case add SponsorshipStart="yyyy-MM-dd" (re-run the wizard and answer yes to the started-after question).
+Passes silently when any declared account was in the bundled sponsor list at the version's pack time. If the build still fails with SC007, either the account or platform doesn't match what the author bundled, the sponsorship began after this version was packed — in that case add SponsorshipStart="yyyy-MM-dd" — or the sponsorship is private (GitHub Sponsors) or incognito (Open Collective), which is never bundled and needs SponsorshipPrivateUntil="yyyy-MM" instead. Re-run the wizard and answer yes to whichever applies.
 
 Notes:
 

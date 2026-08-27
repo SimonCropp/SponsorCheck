@@ -1,0 +1,21 @@
+﻿{
+  Errors: [
+    {
+      Code: SC056,
+      Message:
+Private sponsorship declaration expired. Package 'MyOssLib': private sponsorship declaration on the <PackageReference> expired — SponsorshipPrivateUntil='2026-04' (end of month 2026-04-30 UTC).
+
+Confirm the private sponsorship is still active, then set the SponsorshipPrivateUntil attribute to 2027-05 or earlier in:
+
+  C:/Consumer/MyApp.csproj
+
+Otherwise switch to another license mode.
+
+Example format:
+
+  <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="dave" SponsorshipPrivateUntil="2027-05" />
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc056
+    }
+  ]
+}

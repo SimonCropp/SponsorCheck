@@ -17,10 +17,15 @@ public sealed record PackageFacts(
     string? LandingUrl,
     IReadOnlyList<PackagePlatformAccount> Platforms,
     IReadOnlyList<PackageExemption> Exemptions,
-    IReadOnlyDictionary<string, string> Severities)
+    IReadOnlyDictionary<string, string> Severities,
+    int PrivateSponsorMaxTermMonths)
 {
+    /// <summary>Mirrors PrivateSponsorTerm.DefaultMaxTermMonths in the task assembly, which the
+    /// wizard cannot reference. RepoContractTests keeps the two in step.</summary>
+    public const int DefaultPrivateSponsorMaxTermMonths = 12;
+
     public static PackageFacts WithoutSponsorCheck(string packageId, string version) =>
-        new(packageId, version, false, false, false, null, null, null, [], [], new Dictionary<string, string>());
+        new(packageId, version, false, false, false, null, null, null, [], [], new Dictionary<string, string>(), DefaultPrivateSponsorMaxTermMonths);
 
     public PackageExemption? FindExemption(string name) =>
         Exemptions.FirstOrDefault(_ => string.Equals(_.Name, name.Trim(), StringComparison.OrdinalIgnoreCase));

@@ -241,6 +241,137 @@ public static class ConsumerMetadataExamples
              """;
     }
 
+    // Appended to the SC007/SC008/SC024 body. A private or incognito sponsorship is deliberately
+    // never bundled, so a genuine private sponsor lands on "no account matches the bundled list"
+    // with nothing wrong on their side — this is the only place that tells them so.
+    //
+    // Names the cap as a duration ("at most 12 months out") rather than rendering the ceiling month
+    // the way the SponsorshipPrivateUntil-specific blocks do. This block rides on a message the
+    // build clock doesn't otherwise touch, and baking today+N into it would make the SC007/SC008/
+    // SC024 text — and every snapshot of it — change every month for no behavioural reason.
+    public static string RenderPrivateSponsorHint(
+        ConsumerContext context,
+        IReadOnlyDictionary<string, string> attemptedAccounts,
+        string maxTermWords)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 If the sponsorship is private (GitHub Sponsors) or incognito (Open Collective), it is deliberately excluded from the bundled list and cannot match. Attest to it by setting the {context.OwnerId}_SponsorshipPrivateUntil property, at most {maxTermWords} out, in Directory.Build.props or the consuming project.
+
+                 Example format:
+
+                   {RenderPrivateUntilExample(context, attemptedAccounts, null)}
+                 """;
+        }
+
+        return
+            $"""
+             If the sponsorship is private (GitHub Sponsors) or incognito (Open Collective), it is deliberately excluded from the bundled list and cannot match. Attest to it by setting SponsorshipPrivateUntil, at most {maxTermWords} out, in:
+
+               {context.TargetFilePath}
+
+             Example format:
+
+               {RenderPrivateUntilExample(context, attemptedAccounts, null)}
+             """;
+    }
+
+    // Body of SC053/SC054/SC055 (an end month past the publisher's ceiling). Like
+    // RenderExemptionUntilFix the example renders the real ceiling rather than a yyyy-MM
+    // placeholder, so it is directly pasteable.
+    public static string RenderPrivateUntilFix(
+        ConsumerContext context,
+        IReadOnlyDictionary<string, string> attemptedAccounts,
+        string maxMonth) =>
+        context.IsOwner
+            ? $"""
+               Set the {context.OwnerId}_SponsorshipPrivateUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
+
+               Example format:
+
+                 {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
+               """
+            : $"""
+               Set the SponsorshipPrivateUntil attribute to {maxMonth} or earlier in:
+
+                 {context.TargetFilePath}
+
+               Example format:
+
+                 {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
+               """;
+
+    // Body of SC050/SC051/SC052. The value isn't a month at all, so there is nothing to compare
+    // against a ceiling — the example shows the shape.
+    public static string RenderPrivateUntilFormatFix(
+        ConsumerContext context,
+        IReadOnlyDictionary<string, string> attemptedAccounts) =>
+        context.IsOwner
+            ? $"""
+               Fix the {context.OwnerId}_SponsorshipPrivateUntil property in Directory.Build.props or the consuming project.
+
+               Example format:
+
+                 {RenderPrivateUntilExample(context, attemptedAccounts, null)}
+               """
+            : $"""
+               Fix the SponsorshipPrivateUntil attribute in:
+
+                 {context.TargetFilePath}
+
+               Example format:
+
+                 {RenderPrivateUntilExample(context, attemptedAccounts, null)}
+               """;
+
+    // Body of SC056/SC057/SC058. As with an expired exemption the lead line is deliberately not
+    // "extend it" — an expired bound is the prompt to confirm the sponsorship is still running,
+    // which is the entire reason the claim is time-bounded.
+    public static string RenderPrivateUntilRenewal(
+        ConsumerContext context,
+        IReadOnlyDictionary<string, string> attemptedAccounts,
+        string maxMonth) =>
+        context.IsOwner
+            ? $"""
+               Confirm the private sponsorship is still active, then set the {context.OwnerId}_SponsorshipPrivateUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project. Otherwise switch to another license mode.
+
+               Example format:
+
+                 {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
+               """
+            : $"""
+               Confirm the private sponsorship is still active, then set the SponsorshipPrivateUntil attribute to {maxMonth} or earlier in:
+
+                 {context.TargetFilePath}
+
+               Otherwise switch to another license mode.
+
+               Example format:
+
+                 {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
+               """;
+
+    // The copy-pasteable snippet shared by every SponsorshipPrivateUntil block: whichever platform
+    // account the consumer already supplied, plus the end month. Same approach as
+    // RenderSponsorshipStartHint — show the existing line with the new attribute added, rather than
+    // a standalone attribute the consumer has to work out where to put.
+    static string RenderPrivateUntilExample(
+        ConsumerContext context,
+        IReadOnlyDictionary<string, string> attemptedAccounts,
+        string? maxMonth)
+    {
+        var pair = attemptedAccounts.FirstOrDefault();
+        var existing = pair.Key is null
+            ? Array.Empty<(string, string)>()
+            : [(ConsumerMetadataNames.For(pair.Key), pair.Value)];
+        var attributes = existing
+            .Append(("SponsorshipPrivateUntil", maxMonth ?? "yyyy-MM"))
+            .ToArray();
+        return RenderItem(context, attributes);
+    }
+
     // Renders the "Sponsor at..." block used in SC007-SC010 messages. Single-platform collapses
     // to an inline "Sponsor at {url}" line; multiple platforms use a "Sponsor at:\n  {url1}\n  {url2}" block.
     // Returns an empty string when there are no platforms (caller is responsible for not adding a
