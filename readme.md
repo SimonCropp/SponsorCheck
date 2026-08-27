@@ -34,7 +34,7 @@ A package referenced by the build bundles the SponsorCheck verifier, and the bui
 | --- | --- |
 | Sponsoring the author (or about to) | `GitHubSponsorAccount="<account>"` — or `OpenCollectiveSponsorAccount` / `PolarSponsorAccount` |
 | Private licensing arrangement with the author | `SponsorshipLicensedUntil="yyyy-MM"` (at most 1 year out) |
-| Claiming an exemption the publisher defined (consulting client, small business, ...) | `SponsorshipExemption="<name>"` — plus `SponsorshipExemptionUntil="yyyy-MM"` when the publisher time-bounds it |
+| An exemption the publisher defined (consulting client, small business, ...) | `SponsorshipExemption="<name>"` — plus `SponsorshipExemptionUntil="yyyy-MM"` when the publisher time-bounds it |
 | Proceeding unlicensed | `SponsorshipLicenseIgnored="true"` — passes, with a breach-of-license warning on every build |
 
 For example:
