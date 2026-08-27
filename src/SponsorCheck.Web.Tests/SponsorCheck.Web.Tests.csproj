@@ -32,6 +32,7 @@
     <PackageReference Include="Microsoft.Playwright" />
     <PackageReference Include="Verify.Playwright" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <PackageReference Include="DiffEngine" />
   </ItemGroup>
 
 </Project>

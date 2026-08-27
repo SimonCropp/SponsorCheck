@@ -626,8 +626,8 @@ public static class DecisionApplier
     // ever compared against another (year, month) pair or formatted, never materialized as a date.
     static (int Year, int Month) AddMonths(DateTime utcNow, int months)
     {
-        var total = (utcNow.Year * 12) + (utcNow.Month - 1) + months;
-        return (total / 12, (total % 12) + 1);
+        var total = utcNow.Year * 12 + (utcNow.Month - 1) + months;
+        return (total / 12, total % 12 + 1);
     }
 
     static bool IsAfter(int year, int month, (int Year, int Month) other) =>
