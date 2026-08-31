@@ -127,7 +127,7 @@ Pack-time diagnostics are documented in [Bundler diagnostic codes (SC1xx)](docs/
 ## How it works
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph Author["OSS author - pack time"]
         Platforms["GitHub Sponsors /<br/>Open Collective / Polar"] -->|fetch sponsor list| Bundler[bundler]
         Bundler -->|"hashed accounts + pack date<br/>+ embedded verifier"| Nupkg[("produced nupkg")]
