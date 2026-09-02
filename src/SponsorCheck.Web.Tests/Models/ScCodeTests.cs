@@ -51,6 +51,24 @@ public class ScCodeTests
     }
 
     [Test]
+    [Arguments("SC007", Placement.PerPackageProject)]
+    [Arguments("SC008", Placement.PerPackageCpm)]
+    [Arguments("SC024", Placement.OwnerMode)]
+    public async Task NoMatchCodesNameTheTwoUnbundledCases(string code, Placement expected)
+    {
+        // The one family a consumer reaches having already declared an account, so unlike its
+        // neighbours the placement alone is not the useful answer. The note has to reach the private
+        // route specifically: that is the case where the account is correct and still cannot match,
+        // and the one a consumer has no way to guess at.
+        var classification = ScCode.Classify(code);
+        await Assert.That(classification.Recognized).IsTrue();
+        await Assert.That(classification.Placement).IsEqualTo(expected);
+        await Assert.That(classification.AuthorSide).IsFalse();
+        await Assert.That(classification.Note).IsNotNull();
+        await Assert.That(classification.Note!).Contains("private");
+    }
+
+    [Test]
     [Arguments("SC017")]
     [Arguments("SC018")]
     [Arguments("SC059")]

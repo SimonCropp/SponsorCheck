@@ -1,7 +1,6 @@
 ﻿=== Snippet (PackageReference (consuming .csproj)) ===
 <PackageReference Include="ThePackage" Version="1.2.3"
-                  GitHubSponsorAccount="octocat"
-                  SponsorshipPrivateUntil="2027-05" />
+                  GitHubSponsorAccount="bob" />
 
 === File to edit ===
 The consuming project's .csproj — the file holding the <PackageReference> for 'ThePackage'.
@@ -10,7 +9,7 @@ The consuming project's .csproj — the file holding the <PackageReference> for 
 Add the new attribute(s) to the existing <PackageReference Include="ThePackage"> element — do not create a second reference.
 
 === Build outcome ===
-Private (GitHub Sponsors) and incognito (Open Collective) sponsorships are deliberately excluded from the bundled hash list, so there is nothing for the verifier to match — the declaration is trusted instead. The build passes through the end of 2027-05 (UTC) and logs a high-priority SC059 audit message naming the account and the end month. After that it fails with SC056 until the claim is renewed, which is the point: a private sponsorship that quietly lapsed should stop working rather than ride along forever. The publisher caps the claim (the default is 12 months, and this package could not be inspected to confirm), so a month further out fails with SC053. A value that isn't 'yyyy-MM' fails with SC050.
+Fails with SC007: no account declared here is in ThePackage 1.2.3's bundled list, which was checked directly against the package. Three things put a real sponsor in that position — the account or platform is not the one the sponsorship is under; the sponsorship began after this version was packed (2026-01-15), which needs SponsorshipStart="yyyy-MM-dd"; or it is private on GitHub Sponsors or incognito on Open Collective, which is never bundled at all and needs SponsorshipPrivateUntil="yyyy-MM". Re-run the wizard and answer yes to whichever applies.
 
 === Notes ===
 - The bundled list is frozen per package version: versions that pass keep passing even if sponsorship later lapses; a lapse surfaces when upgrading to a version packed after it.
@@ -25,6 +24,7 @@ Context: the build references `ThePackage` 1.2.3, which bundles the [SponsorChec
 
 - Chosen mode: sponsor account match
 - Placement: per-package metadata on the <PackageReference> (no Central Package Management)
+- Package facts (read from the published nupkg): version 1.2.3, packed 2026-01-15, transitive checking off
 
 ## Change to make
 
@@ -34,13 +34,12 @@ Add the new attribute(s) to the existing <PackageReference Include="ThePackage">
 
 ```xml
 <PackageReference Include="ThePackage" Version="1.2.3"
-                  GitHubSponsorAccount="octocat"
-                  SponsorshipPrivateUntil="2027-05" />
+                  GitHubSponsorAccount="bob" />
 ```
 
 ## Expected build outcome
 
-Private (GitHub Sponsors) and incognito (Open Collective) sponsorships are deliberately excluded from the bundled hash list, so there is nothing for the verifier to match — the declaration is trusted instead. The build passes through the end of 2027-05 (UTC) and logs a high-priority SC059 audit message naming the account and the end month. After that it fails with SC056 until the claim is renewed, which is the point: a private sponsorship that quietly lapsed should stop working rather than ride along forever. The publisher caps the claim (the default is 12 months, and this package could not be inspected to confirm), so a month further out fails with SC053. A value that isn't 'yyyy-MM' fails with SC050.
+Fails with SC007: no account declared here is in ThePackage 1.2.3's bundled list, which was checked directly against the package. Three things put a real sponsor in that position — the account or platform is not the one the sponsorship is under; the sponsorship began after this version was packed (2026-01-15), which needs SponsorshipStart="yyyy-MM-dd"; or it is private on GitHub Sponsors or incognito on Open Collective, which is never bundled at all and needs SponsorshipPrivateUntil="yyyy-MM". Re-run the wizard and answer yes to whichever applies.
 
 Notes:
 

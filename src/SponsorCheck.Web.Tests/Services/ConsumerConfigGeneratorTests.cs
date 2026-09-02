@@ -187,7 +187,9 @@ public class ConsumerConfigGeneratorTests
         string? packDate = "2026-01-15",
         IReadOnlyList<PackageExemption>? exemptions = null,
         IReadOnlyDictionary<string, string>? severities = null,
-        int privateSponsorMaxTermMonths = PackageFacts.DefaultPrivateSponsorMaxTermMonths) =>
+        int privateSponsorMaxTermMonths = PackageFacts.DefaultPrivateSponsorMaxTermMonths,
+        IReadOnlyList<PackagePlatformAccount>? platforms = null,
+        IReadOnlyList<string>? sponsorHashes = null) =>
         new(
             "ThePackage",
             "1.2.3",
@@ -197,10 +199,13 @@ public class ConsumerConfigGeneratorTests
             OwnerId: null,
             PackDate: packDate,
             LandingUrl: null,
-            Platforms: [new(PlatformKind.GitHub, "acmecorp")],
+            Platforms: platforms ?? [new(PlatformKind.GitHub, "acmecorp")],
             Exemptions: exemptions ?? [],
             Severities: severities ?? new Dictionary<string, string>(),
-            PrivateSponsorMaxTermMonths: privateSponsorMaxTermMonths);
+            PrivateSponsorMaxTermMonths: privateSponsorMaxTermMonths,
+            // Null rather than empty when a test doesn't care: that is the "list not read" state
+            // every pre-existing test here is written against.
+            SponsorHashes: sponsorHashes is null ? null : new HashSet<string>(sponsorHashes, StringComparer.Ordinal));
 
     [Test]
     public async Task FactsExemptionSelected()
@@ -357,6 +362,63 @@ public class ConsumerConfigGeneratorTests
         model.SponsorshipStart = "2026-04-30";
         PrivateSponsor(model);
         await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task FactsAccountKnownMissingFromTheBundledList()
+    {
+        // The list was read, so the outcome is not a forecast. Telling someone the build "passes when
+        // the account was in the list" while holding proof that it is not would be the wizard sitting
+        // on the answer.
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.GitHub, "bob");
+        model.Facts = Facts(sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")]);
+        await Assert.That(model.NoEnteredAccountIsBundled).IsTrue();
+        await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task AKnownGoodAccountKeepsTheForecastWording()
+    {
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.GitHub, "alice");
+        model.Facts = Facts(sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")]);
+        await Assert.That(model.NoEnteredAccountIsBundled).IsFalse();
+    }
+
+    [Test]
+    public async Task AVersionEditedAfterLookupWithdrawsTheHashAnswer()
+    {
+        // The facts describe the version that was inspected. Once the consumer points the build at a
+        // different one they describe a different package, and "that account is not a sponsor" is a
+        // claim far too confident to make about a package never looked at.
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.GitHub, "bob");
+        model.Facts = Facts(sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")]);
+        await Assert.That(model.NoEnteredAccountIsBundled).IsTrue();
+
+        model.PackageVersion = "2.0.0";
+
+        await Assert.That(model.BundlesAccount(Platform.GitHub)).IsNull();
+        await Assert.That(model.NoEnteredAccountIsBundled).IsFalse();
+    }
+
+    [Test]
+    public async Task LookupOfAPolarOnlyPackageDropsAPrivateAnswer()
+    {
+        // A consumer can tick the private box before looking the package up. If the lookup then shows
+        // a package with no private-capable platform the wizard stops offering the route, so the
+        // stale answer must go with it rather than surviving as an attribute nothing on screen
+        // explains.
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.Polar, "acme");
+        PrivateSponsor(model);
+        await Assert.That(model.PrivateDeclared).IsTrue();
+
+        model.ApplyFacts(Facts(platforms: [new(PlatformKind.Polar, "acme")]));
+
+        await Assert.That(model.PrivateDeclared).IsFalse();
+        await Assert.That(ConsumerConfigGenerator.Generate(model).Snippet).DoesNotContain("SponsorshipPrivateUntil");
     }
 
     [Test]

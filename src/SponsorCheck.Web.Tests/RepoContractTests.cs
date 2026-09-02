@@ -168,6 +168,71 @@ public class RepoContractTests
     }
 
     /// <summary>
+    /// SponsorAccountHash restates the bundler's hash, which the wizard cannot reference. This is the
+    /// one piece of restated logic where a drift is silent and personal: the wizard would tell a real
+    /// sponsor their account is missing from a list it is actually in. The shared known vector in
+    /// SponsorAccountHashTests catches a changed result; this catches a changed recipe, including the
+    /// truncation length, which no single vector distinguishes from a different digest.
+    /// </summary>
+    [Test]
+    public async Task WizardSponsorHashMatchesTheBundlers()
+    {
+        var bundler = ReadSrc("SponsorCheck", "SponsorHasher.cs");
+        var wizard = ReadSrc("SponsorCheck.Web", "Models", "SponsorAccountHash.cs");
+
+        foreach (var fragment in new[]
+                 {
+                     "const int hashByteLength = 6;",
+                     "$\"{platformId}:{account.Trim().ToLowerInvariant()}\"",
+                     "Convert.ToHexStringLower(digest, 0, hashByteLength)"
+                 })
+        {
+            await Assert.That(bundler).Contains(fragment);
+            await Assert.That(wizard).Contains(fragment);
+        }
+
+        // The wizard hashes through Platform.WireId, so those ids are what has to reach the file the
+        // bundler writes. AuthorAccountsFile keys on the same strings the verifier hashes.
+        var verifier = ReadSrc("SponsorCheck", "VerifySponsorshipTask.cs");
+        foreach (var platform in Platform.All)
+        {
+            await Assert.That(verifier).Contains($"[\"{platform.WireId}\"]");
+        }
+    }
+
+    /// <summary>
+    /// MonthBound restates the verifier's month arithmetic, which the wizard cannot reference. The
+    /// wizard uses it to tell a consumer which months a build will accept, so a drift means the
+    /// wizard names a ceiling the verifier disagrees with — the exact class of bug those callouts
+    /// exist to catch.
+    /// </summary>
+    [Test]
+    public async Task WizardMonthArithmeticMatchesTheVerifiers()
+    {
+        var verifier = ReadSrc("SponsorCheck", "DecisionApplier.cs");
+        var wizard = ReadSrc("SponsorCheck.Web", "Models", "MonthBound.cs");
+
+        // Calendar-field arithmetic rather than DateTime.AddMonths, so a claim at the calendar
+        // extreme cannot overflow. Compared verbatim because both copies are one expression.
+        foreach (var line in new[]
+                 {
+                     "var total = utcNow.Year * 12 + (utcNow.Month - 1) + months;",
+                     "return (total / 12, total % 12 + 1);"
+                 })
+        {
+            await Assert.That(verifier).Contains(line);
+            await Assert.That(wizard).Contains(line);
+        }
+
+        // Expiry is month-granular in both: the named month is valid through its own end.
+        foreach (var fragment in new[] { "utcNow.Year > year", "utcNow.Year == year && utcNow.Month > month" })
+        {
+            await Assert.That(verifier).Contains(fragment);
+            await Assert.That(wizard).Contains(fragment);
+        }
+    }
+
+    /// <summary>
     /// The wizard can't reference the task assembly, so it carries its own copy of the default
     /// private-sponsorship term. A drift between the two would have the wizard tell consumers a cap
     /// the verifier doesn't enforce.

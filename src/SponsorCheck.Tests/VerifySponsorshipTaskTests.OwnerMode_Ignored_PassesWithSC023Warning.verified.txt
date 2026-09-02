@@ -10,6 +10,10 @@ Set ONE of the following properties (in a <PropertyGroup> in Directory.Build.pro
 Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
   <acme_GitHubSponsorAccount><your-github-account></acme_GitHubSponsorAccount>
 
+Option — Sponsor privately (a private or incognito sponsorship is never bundled, so declare an end month alongside the account; at most 12 months out):
+  <acme_GitHubSponsorAccount><your-github-account></acme_GitHubSponsorAccount>
+  <acme_SponsorshipPrivateUntil>yyyy-MM</acme_SponsorshipPrivateUntil>
+
 Option — Time-bounded license (replace yyyy-MM with the last covered month):
   <acme_SponsorshipLicensedUntil>yyyy-MM</acme_SponsorshipLicensedUntil>
 

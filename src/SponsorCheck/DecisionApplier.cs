@@ -41,7 +41,7 @@ public static class DecisionApplier
                     $"""
                      {opener}
 
-                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts.Value, exemptionsDefined.Value)}
+                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts.Value, exemptionsDefined.Value, privateSponsorMaxTermMonths: privateSponsorMaxTermMonths)}
                      """);
             }
 
@@ -97,7 +97,7 @@ public static class DecisionApplier
                     $"""
                      {opener}
 
-                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts.Value, exemptionsDefined.Value, includeIgnoreOption: false)}
+                     {ConsumerMetadataExamples.RenderLicenseModeOptions(context, authorAccounts.Value, exemptionsDefined.Value, includeIgnoreOption: false, privateSponsorMaxTermMonths: privateSponsorMaxTermMonths)}
                      """);
             }
 
@@ -162,9 +162,9 @@ public static class DecisionApplier
             {
                 var (missingCode, missingOpener) = context.Mode switch
                 {
-                    ConsumerMode.Owner => ("SC040", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemption=\"{exempt.ExemptionName}\" property is set, but the publisher time-bounds this exemption to {MonthsWord(required)}, so {context.OwnerId}_SponsorshipExemptionUntil must be set too."),
-                    ConsumerMode.Cpm => ("SC039", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageVersion> in Directory.Packages.props is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to {MonthsWord(required)}."),
-                    _ => ("SC038", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageReference> is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to {MonthsWord(required)}.")
+                    ConsumerMode.Owner => ("SC040", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemption=\"{exempt.ExemptionName}\" property is set, but the publisher time-bounds this exemption to {ConsumerMetadataExamples.MonthsWord(required)}, so {context.OwnerId}_SponsorshipExemptionUntil must be set too."),
+                    ConsumerMode.Cpm => ("SC039", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageVersion> in Directory.Packages.props is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to {ConsumerMetadataExamples.MonthsWord(required)}."),
+                    _ => ("SC038", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" on the <PackageReference> is missing SponsorshipExemptionUntil — the publisher time-bounds this exemption to {ConsumerMetadataExamples.MonthsWord(required)}.")
                 };
                 SponsorCheckLog.Error(
                     log,
@@ -205,9 +205,9 @@ public static class DecisionApplier
             {
                 var (maxCode, maxOpener) = context.Mode switch
                 {
-                    ConsumerMode.Owner => ("SC046", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' property is more than {MonthsWord(max)} in the future (maximum {ceiling})."),
-                    ConsumerMode.Cpm => ("SC045", $"Package '{exempt.PackageId}': SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' on the <PackageVersion> in Directory.Packages.props is more than {MonthsWord(max)} in the future (maximum {ceiling})."),
-                    _ => ("SC044", $"Package '{exempt.PackageId}': SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' on the <PackageReference> is more than {MonthsWord(max)} in the future (maximum {ceiling}).")
+                    ConsumerMode.Owner => ("SC046", $"Package '{exempt.PackageId}': {context.OwnerId}_SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' property is more than {ConsumerMetadataExamples.MonthsWord(max)} in the future (maximum {ceiling})."),
+                    ConsumerMode.Cpm => ("SC045", $"Package '{exempt.PackageId}': SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' on the <PackageVersion> in Directory.Packages.props is more than {ConsumerMetadataExamples.MonthsWord(max)} in the future (maximum {ceiling})."),
+                    _ => ("SC044", $"Package '{exempt.PackageId}': SponsorshipExemptionUntil='{exempt.ExemptionUntilRaw}' on the <PackageReference> is more than {ConsumerMetadataExamples.MonthsWord(max)} in the future (maximum {ceiling}).")
                 };
                 SponsorCheckLog.Error(
                     log,
@@ -405,7 +405,7 @@ public static class DecisionApplier
         // one lands — and the only signpost they get. Unconditional: reaching here means
         // SponsorshipPrivateUntil was unset (a set one decides the build before the hash check).
         lines.Add("");
-        lines.Add(ConsumerMetadataExamples.RenderPrivateSponsorHint(context, sponsor.AccountByPlatform, MonthsWord(privateSponsorMaxTermMonths)));
+        lines.Add(ConsumerMetadataExamples.RenderPrivateSponsorHint(context, sponsor.AccountByPlatform, privateSponsorMaxTermMonths));
 
         return SponsorCheckLog.Emit(
             log,
@@ -458,9 +458,9 @@ public static class DecisionApplier
         {
             var (maxCode, maxOpener) = context.Mode switch
             {
-                ConsumerMode.Owner => ("SC055", $"Package '{sponsor.PackageId}': {context.OwnerId}_SponsorshipPrivateUntil='{raw}' property is more than {MonthsWord(maxTermMonths)} in the future (maximum {ceiling})."),
-                ConsumerMode.Cpm => ("SC054", $"Package '{sponsor.PackageId}': SponsorshipPrivateUntil='{raw}' on the <PackageVersion> in Directory.Packages.props is more than {MonthsWord(maxTermMonths)} in the future (maximum {ceiling})."),
-                _ => ("SC053", $"Package '{sponsor.PackageId}': SponsorshipPrivateUntil='{raw}' on the <PackageReference> is more than {MonthsWord(maxTermMonths)} in the future (maximum {ceiling}).")
+                ConsumerMode.Owner => ("SC055", $"Package '{sponsor.PackageId}': {context.OwnerId}_SponsorshipPrivateUntil='{raw}' property is more than {ConsumerMetadataExamples.MonthsWord(maxTermMonths)} in the future (maximum {ceiling})."),
+                ConsumerMode.Cpm => ("SC054", $"Package '{sponsor.PackageId}': SponsorshipPrivateUntil='{raw}' on the <PackageVersion> in Directory.Packages.props is more than {ConsumerMetadataExamples.MonthsWord(maxTermMonths)} in the future (maximum {ceiling})."),
+                _ => ("SC053", $"Package '{sponsor.PackageId}': SponsorshipPrivateUntil='{raw}' on the <PackageReference> is more than {ConsumerMetadataExamples.MonthsWord(maxTermMonths)} in the future (maximum {ceiling}).")
             };
             SponsorCheckLog.Error(
                 log,
@@ -636,9 +636,6 @@ public static class DecisionApplier
 
     static string RenderMonth((int Year, int Month) month) =>
         $"{month.Year:0000}-{month.Month:00}";
-
-    static string MonthsWord(int months) =>
-        months == 1 ? "1 month" : $"{months} months";
 
     static bool TryParseDate(string value, out DateTime date) =>
         DateTime.TryParseExact(

@@ -3181,6 +3181,57 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Messages[0].Code).IsEqualTo("SC059");
     }
 
+    // The two below cover the private route appearing as a first-class option in the license-mode
+    // menu, rather than only as the hint on the SC007/SC008/SC024 no-match error a private sponsor
+    // would otherwise have to reach by first pasting an account that can never match. Both assert on
+    // the cap wording rather than the option header: the menu is rendered from two independent call
+    // sites in DecisionApplier, and a call site that dropped the cap would still render the option —
+    // just always at the default 12, silently ignoring what the publisher packed.
+
+    [Test]
+    public async Task MissingConfig_OffersThePrivateSponsorOptionWithThePublisherCap()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            PrivateSponsorMaxTermMonths = "6"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+        await Assert.That(engine.Errors[0].Message!).Contains("at most 6 months out");
+        await Assert.That(engine.Errors[0].Message!).Contains("SponsorshipPrivateUntil=\"yyyy-MM\"");
+    }
+
+    [Test]
+    public async Task Ignored_OffersThePrivateSponsorOptionWithThePublisherCap()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromRef = "true",
+            PrivateSponsorMaxTermMonths = "6"
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC005");
+        await Assert.That(engine.Warnings[0].Message!).Contains("at most 6 months out");
+    }
+
     [Test]
     public async Task PrivateSponsor_MisplacedOnPackageVersion_NonCpm_FailsWithSC020()
     {

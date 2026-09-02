@@ -40,12 +40,20 @@ public static class ConsumerConfigGenerator
                     attributes.Add((platform.ConsumerAccountMetadata, account));
                 }
 
-                if (model.StartedAfterRelease && !string.IsNullOrWhiteSpace(model.SponsorshipStart))
+                // A private declaration decides the build outright — ApplySponsor checks it first, and
+                // an expired one fails with SC056 rather than falling through to the start-date path.
+                // So SponsorshipStart alongside it is never read. Emitting it anyway put a dead
+                // attribute in the consumer's project that reads like a fallback for when the claim
+                // lapses, which is the one thing it is not. BuildOutcome already leads with the
+                // private wording for this case; the snippet now agrees with it.
+                if (model.StartedAfterRelease &&
+                    !string.IsNullOrWhiteSpace(model.SponsorshipStart) &&
+                    !model.PrivateDeclared)
                 {
                     attributes.Add(("SponsorshipStart", model.SponsorshipStart.Trim()));
                 }
 
-                if (model.PrivateSponsorship && !string.IsNullOrWhiteSpace(model.PrivateUntilMonth))
+                if (model.PrivateDeclared)
                 {
                     attributes.Add(("SponsorshipPrivateUntil", model.PrivateUntilMonth.Trim()));
                 }
@@ -126,7 +134,7 @@ public static class ConsumerConfigGenerator
         {
             // Private first: it decides the build outright, so when both qualifiers are set the
             // SponsorshipStart wording would describe a path that never runs.
-            case ConsumerLicenseMode.Sponsor when model.PrivateSponsorship && !string.IsNullOrWhiteSpace(model.PrivateUntilMonth):
+            case ConsumerLicenseMode.Sponsor when model.PrivateDeclared:
             {
                 var formatCode = CodeFor(placement, "SC050", "SC051", "SC052");
                 var capCode = CodeFor(placement, "SC053", "SC054", "SC055");
@@ -169,6 +177,20 @@ public static class ConsumerConfigGenerator
                 var packedClause = model.Facts?.PackDate is { } packedOn
                     ? $" This version was packed on {packedOn} — a sponsorship that began after that date needs the attested start."
                     : "";
+
+                // When the bundled list was actually read, the outcome is not a forecast. Saying
+                // "passes silently when the account was in the list" to someone whose account
+                // demonstrably is not would be the wizard withholding an answer it already has.
+                if (model.NoEnteredAccountIsBundled)
+                {
+                    // The pack date belongs inside the sentence here rather than appended as
+                    // packedClause does: this branch already says "began after this version was
+                    // packed", so the tail would repeat it back.
+                    var packedOnClause = model.Facts?.PackDate is { } date ? $" ({date})" : "";
+                    return
+                        $"Fails with {noMatchCode}: no account declared here is in {model.PackageId} {model.PackageVersion}'s bundled list, which was checked directly against the package. Three things put a real sponsor in that position — the account or platform is not the one the sponsorship is under; the sponsorship began after this version was packed{packedOnClause}, which needs SponsorshipStart=\"yyyy-MM-dd\"; or it is private on GitHub Sponsors or incognito on Open Collective, which is never bundled at all and needs SponsorshipPrivateUntil=\"yyyy-MM\". Re-run the wizard and answer yes to whichever applies.";
+                }
+
                 return
                     $"Passes silently when any declared account was in the bundled sponsor list at the version's pack time. If the build still fails with {noMatchCode}, either the account or platform doesn't match what the author bundled, the sponsorship began after this version was packed — in that case add SponsorshipStart=\"yyyy-MM-dd\" — or the sponsorship is private (GitHub Sponsors) or incognito (Open Collective), which is never bundled and needs SponsorshipPrivateUntil=\"yyyy-MM\" instead. Re-run the wizard and answer yes to whichever applies.{packedClause}";
             }

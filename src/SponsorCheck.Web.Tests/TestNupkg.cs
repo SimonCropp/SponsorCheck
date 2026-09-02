@@ -15,7 +15,9 @@ public static class TestNupkg
         IReadOnlyDictionary<string, (string Message, int? MaxTermMonths)>? boundedExemptions = null,
         IReadOnlyDictionary<string, string>? accounts = null,
         IReadOnlyDictionary<string, string>? severities = null,
-        int paddingBytes = 0)
+        int paddingBytes = 0,
+        IReadOnlyList<string>? sponsorHashes = null,
+        int hashPaddingLines = 0)
     {
         using var memory = new MemoryStream();
         using (var archive = new ZipArchive(memory, ZipArchiveMode.Create, leaveOpen: true))
@@ -34,7 +36,14 @@ public static class TestNupkg
                 var folder = transitive ? "buildTransitive/" : "build/";
                 var enabledAccounts = accounts ?? new Dictionary<string, string> { ["GitHubSponsors"] = "acmecorp" };
 
-                Write(folder + "SponsorCheck.SponsorHashes.txt", "001122334455\n66778899aabb\n");
+                // Default is two hashes of nothing in particular: the parser only ever compares, so
+                // most callers just need a well-formed file. `sponsorHashes` supplies real ones when
+                // a test needs an account to actually match, and `hashPaddingLines` inflates the file
+                // past MaxSponsorHashBytes to exercise the give-no-answer path.
+                var hashLines = sponsorHashes ?? ["001122334455", "66778899aabb"];
+                var hashPadding = Enumerable.Range(0, hashPaddingLines).Select(_ => _.ToString("x12"));
+                Write(folder + "SponsorCheck.SponsorHashes.txt",
+                    string.Join('\n', hashLines.Concat(hashPadding)) + "\n");
                 Write(folder + "SponsorCheck.PackDate.txt", packDate);
                 Write(folder + "SponsorCheck.LandingUrl.txt", landingUrl);
                 Write(folder + "SponsorCheck.AuthorAccounts.txt",

@@ -102,6 +102,43 @@ public class NupkgParserTests
     }
 
     [Test]
+    public async Task SponsorHashesAreReadAndMatchable()
+    {
+        // The whole point of reading the list: an account the consumer types can be answered against
+        // the same hashes the verifier will consult, before the build rather than after it.
+        var facts = await Parse(TestNupkg.Build(
+            sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")]));
+
+        await Assert.That(facts.SponsorHashes).IsNotNull();
+        await Assert.That(facts.Bundles("GitHubSponsors", "alice")).IsTrue();
+        // Folded on the way in, as the bundler folded it on the way out.
+        await Assert.That(facts.Bundles("GitHubSponsors", "  Alice ")).IsTrue();
+        await Assert.That(facts.Bundles("GitHubSponsors", "bob")).IsFalse();
+        // The same account on another platform is a different sponsorship.
+        await Assert.That(facts.Bundles("OpenCollective", "alice")).IsFalse();
+    }
+
+    [Test]
+    public async Task ABlankAccountHasNoAnswer() =>
+        await Assert.That((await Parse(TestNupkg.Build())).Bundles("GitHubSponsors", "  ")).IsNull();
+
+    [Test]
+    public async Task AnOversizedHashListIsNotRead()
+    {
+        // Past the cap the file stops being worth downloading, and the wizard has to fall back to
+        // giving no answer rather than to guessing one. Null, never empty: an empty set would read as
+        // "this package bundles nobody" and tell every sponsor they are missing.
+        var lines = (int)(NupkgParser.MaxSponsorHashBytes / 13) + 1000;
+        var facts = await Parse(TestNupkg.Build(
+            sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")],
+            hashPaddingLines: lines));
+
+        await Assert.That(facts.BundlesSponsorCheck).IsTrue();
+        await Assert.That(facts.SponsorHashes).IsNull();
+        await Assert.That(facts.Bundles("GitHubSponsors", "alice")).IsNull();
+    }
+
+    [Test]
     public async Task NoSponsorCheckFiles()
     {
         var facts = await Parse(TestNupkg.Build(sponsorCheck: false));

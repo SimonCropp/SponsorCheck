@@ -17,6 +17,9 @@ Option — Sponsor on Open Collective (https://opencollective.com/acme-org):
 Option — Sponsor on Polar (https://polar.sh/acme):
   <PackageReference Include="MyOssLib" Version="1.2.3" PolarSponsorAccount="<your-polar-account>" />
 
+Option — Sponsor privately (a private or incognito sponsorship is never bundled, so declare an end month alongside the account; at most 12 months out):
+  <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" SponsorshipPrivateUntil="yyyy-MM" />
+
 Option — Time-bounded license (replace yyyy-MM with the last covered month):
   <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 

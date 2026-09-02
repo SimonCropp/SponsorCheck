@@ -14,7 +14,8 @@ public static class ConsumerMetadataExamples
         IReadOnlyList<AuthorAccount> authorAccounts,
         IReadOnlyDictionary<string, ExemptionDefinition>? exemptionsDefined = null,
         bool includeIgnoreOption = true,
-        bool includeExemptionOption = true)
+        bool includeExemptionOption = true,
+        int privateSponsorMaxTermMonths = PrivateSponsorTerm.DefaultMaxTermMonths)
     {
         // Sponsor options come first, then time-bounded license, then publisher-defined exemptions
         // (when any are defined), then the breach-of-license ignore hatch last — same ordering
@@ -35,6 +36,22 @@ public static class ConsumerMetadataExamples
             lines.Add("");
             lines.Add($"Option — Sponsor on {FriendlyPlatformName(account.PlatformId)} ({account.SponsorUrl}):");
             lines.Add($"  {RenderItem(context, (account.MetadataName, $"<your-{LowerHyphen(account.PlatformId)}-account>"))}");
+        }
+
+        // A private (GitHub Sponsors) or incognito (Open Collective) sponsorship is deliberately
+        // never bundled, so pasting a sponsor account on its own only trades this diagnostic for
+        // SC007/SC008/SC024. Rendered as its own option rather than a footnote on the options
+        // above: like the capped-exemption option, the pair is a complete pasteable configuration,
+        // and the pair — not SponsorshipPrivateUntil alone, which is a qualifier that selects no
+        // mode — is what LicenseModeResolver accepts. Rendered once off the first platform so the
+        // block does not double with every platform the author enabled, and suppressed entirely
+        // when none are: with nowhere to sponsor there is no sponsorship to declare private.
+        if (authorAccounts.Count > 0)
+        {
+            var firstAccount = authorAccounts[0];
+            lines.Add("");
+            lines.Add($"Option — Sponsor privately (a private or incognito sponsorship is never bundled, so declare an end month alongside the account; at most {MonthsWord(privateSponsorMaxTermMonths)} out):");
+            lines.Add($"  {RenderItem(context, (firstAccount.MetadataName, $"<your-{LowerHyphen(firstAccount.PlatformId)}-account>"), ("SponsorshipPrivateUntil", "yyyy-MM"))}");
         }
 
         lines.Add("");
@@ -252,8 +269,9 @@ public static class ConsumerMetadataExamples
     public static string RenderPrivateSponsorHint(
         ConsumerContext context,
         IReadOnlyDictionary<string, string> attemptedAccounts,
-        string maxTermWords)
+        int maxTermMonths)
     {
+        var maxTermWords = MonthsWord(maxTermMonths);
         if (context.IsOwner)
         {
             return
@@ -565,6 +583,11 @@ public static class ConsumerMetadataExamples
         builder.Append(" />");
         return builder.ToString();
     }
+
+    // Lives here rather than in DecisionApplier because both message renderers and the SC0xx
+    // openers phrase the same cap, and a second copy would let the two drift.
+    public static string MonthsWord(int months) =>
+        months == 1 ? "1 month" : $"{months} months";
 
     static string FriendlyPlatformName(string platformId) => platformId switch
     {
