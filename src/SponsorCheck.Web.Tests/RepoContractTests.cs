@@ -181,7 +181,11 @@ public class RepoContractTests
         await Assert.That(PackageFacts.DefaultPrivateSponsorMaxTermMonths.ToString()).IsEqualTo(match.Groups[1].Value);
 
         // The author metadata name is typed by the wizard's generator and read by the bundler.
-        var nameMatch = Regex.Match(source, @"AuthorMetadataName\s*=\s*""([^""]+)""");
+        var nameMatch = Regex.Match(
+            source,
+            """
+            AuthorMetadataName\s*=\s*"([^"]+)"
+            """);
         await Assert.That(nameMatch.Success).IsTrue();
         var authorGenerator = ReadSrc("SponsorCheck.Web", "Services", "AuthorConfigGenerator.cs");
         await Assert.That(authorGenerator).Contains($"\"{nameMatch.Groups[1].Value}\"");
