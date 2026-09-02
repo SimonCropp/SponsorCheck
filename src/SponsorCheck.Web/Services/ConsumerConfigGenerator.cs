@@ -40,12 +40,20 @@ public static class ConsumerConfigGenerator
                     attributes.Add((platform.ConsumerAccountMetadata, account));
                 }
 
-                if (model.StartedAfterRelease && !string.IsNullOrWhiteSpace(model.SponsorshipStart))
+                // A private declaration decides the build outright — ApplySponsor checks it first, and
+                // an expired one fails with SC056 rather than falling through to the start-date path.
+                // So SponsorshipStart alongside it is never read. Emitting it anyway put a dead
+                // attribute in the consumer's project that reads like a fallback for when the claim
+                // lapses, which is the one thing it is not. BuildOutcome already leads with the
+                // private wording for this case; the snippet now agrees with it.
+                if (model.StartedAfterRelease &&
+                    !string.IsNullOrWhiteSpace(model.SponsorshipStart) &&
+                    !model.PrivateDeclared)
                 {
                     attributes.Add(("SponsorshipStart", model.SponsorshipStart.Trim()));
                 }
 
-                if (model.PrivateSponsorship && !string.IsNullOrWhiteSpace(model.PrivateUntilMonth))
+                if (model.PrivateDeclared)
                 {
                     attributes.Add(("SponsorshipPrivateUntil", model.PrivateUntilMonth.Trim()));
                 }
@@ -126,7 +134,7 @@ public static class ConsumerConfigGenerator
         {
             // Private first: it decides the build outright, so when both qualifiers are set the
             // SponsorshipStart wording would describe a path that never runs.
-            case ConsumerLicenseMode.Sponsor when model.PrivateSponsorship && !string.IsNullOrWhiteSpace(model.PrivateUntilMonth):
+            case ConsumerLicenseMode.Sponsor when model.PrivateDeclared:
             {
                 var formatCode = CodeFor(placement, "SC050", "SC051", "SC052");
                 var capCode = CodeFor(placement, "SC053", "SC054", "SC055");

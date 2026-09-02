@@ -168,6 +168,38 @@ public class RepoContractTests
     }
 
     /// <summary>
+    /// MonthBound restates the verifier's month arithmetic, which the wizard cannot reference. The
+    /// wizard uses it to tell a consumer which months a build will accept, so a drift means the
+    /// wizard names a ceiling the verifier disagrees with — the exact class of bug those callouts
+    /// exist to catch.
+    /// </summary>
+    [Test]
+    public async Task WizardMonthArithmeticMatchesTheVerifiers()
+    {
+        var verifier = ReadSrc("SponsorCheck", "DecisionApplier.cs");
+        var wizard = ReadSrc("SponsorCheck.Web", "Models", "MonthBound.cs");
+
+        // Calendar-field arithmetic rather than DateTime.AddMonths, so a claim at the calendar
+        // extreme cannot overflow. Compared verbatim because both copies are one expression.
+        foreach (var line in new[]
+                 {
+                     "var total = utcNow.Year * 12 + (utcNow.Month - 1) + months;",
+                     "return (total / 12, total % 12 + 1);"
+                 })
+        {
+            await Assert.That(verifier).Contains(line);
+            await Assert.That(wizard).Contains(line);
+        }
+
+        // Expiry is month-granular in both: the named month is valid through its own end.
+        foreach (var fragment in new[] { "utcNow.Year > year", "utcNow.Year == year && utcNow.Month > month" })
+        {
+            await Assert.That(verifier).Contains(fragment);
+            await Assert.That(wizard).Contains(fragment);
+        }
+    }
+
+    /// <summary>
     /// The wizard can't reference the task assembly, so it carries its own copy of the default
     /// private-sponsorship term. A drift between the two would have the wizard tell consumers a cap
     /// the verifier doesn't enforce.

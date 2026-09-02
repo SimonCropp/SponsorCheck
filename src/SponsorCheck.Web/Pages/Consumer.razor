@@ -259,20 +259,25 @@
                                 {
                                     <p class="callout">That date is in the future — the verifier rejects it (SC015 family). Use the real start date.</p>
                                 }
+                                else if (model.PrivateDeclared)
+                                {
+                                    <p class="callout">A private declaration decides the build on its own, so the verifier never reads a start date set alongside it — and an expired declaration fails outright rather than falling back to one. The output below leaves this attribute out.</p>
+                                }
                             </div>
                         }
-                        <div class="check" style="margin-top:1rem">
-                            <input type="checkbox"
-                                   id="privateSponsorship"
-                                   @bind="model.PrivateSponsorship" />
-                            <label for="privateSponsorship">
-                                The sponsorship is private or incognito
-                                <p class="hint">
-                                    Private sponsorships on GitHub Sponsors, and incognito contributions on Open Collective, are never bundled into the hash list — so they can never match it. Declare an end month instead and the verifier trusts it, logging an SC059 audit line naming the account.
-                                </p>
-                            </label>
-                        </div>
-                        @if (model.PrivateSponsorship)
+                        @if (PrivateSponsorshipOffered)
+                        {
+                            <div class="check" style="margin-top:1rem">
+                                <input type="checkbox"
+                                       id="privateSponsorship"
+                                       @bind="model.PrivateSponsorship" />
+                                <label for="privateSponsorship">
+                                    The sponsorship is private or incognito
+                                    <p class="hint">@PrivateSponsorshipHint</p>
+                                </label>
+                            </div>
+                        }
+                        @if (model.PrivateSponsorship && PrivateSponsorshipOffered)
                         {
                             <div class="field">
                                 <label for="privateUntil">Private sponsorship declared until (last covered month)</label>
@@ -285,6 +290,18 @@
                                 @if (model.PrivateUntilMonth.Trim().Length > 0 && !model.IsPrivateUntilValid)
                                 {
                                     <p class="validation-error">Use the format yyyy-MM, e.g. 2027-04.</p>
+                                }
+                                else if (PrivateUntilExpired)
+                                {
+                                    <p class="callout">That month has already passed — the verifier rejects it on the first build (@CodeFor("SC056", "SC057", "SC058")). Use the month the declaration should run to.</p>
+                                }
+                                else if (PrivateUntilBeyondCap)
+                                {
+                                    <p class="callout">
+                                        @(CapIsFromPackage
+                                            ? $"That is past the {model.PrivateSponsorMaxTermMonths}-month cap this package sets — the verifier rejects it ({CodeFor("SC053", "SC054", "SC055")}). Use {PrivateUntilCeiling} or earlier."
+                                            : $"That is past the default {model.PrivateSponsorMaxTermMonths}-month cap. This package could not be inspected, so it may set its own — if it has not, the verifier rejects this ({CodeFor("SC053", "SC054", "SC055")}) and {PrivateUntilCeiling} is the latest month it accepts.")
+                                    </p>
                                 }
                             </div>
                         }
@@ -302,6 +319,14 @@
                             @if (model.LicensedUntilMonth.Trim().Length > 0 && !model.IsLicensedUntilValid)
                             {
                                 <p class="validation-error">Use the format yyyy-MM, e.g. 2027-06.</p>
+                            }
+                            else if (LicensedUntilExpired)
+                            {
+                                <p class="callout">That month has already passed — the verifier rejects it on the first build (@CodeFor("SC009", "SC010", "SC025")). Use the month the arrangement runs to.</p>
+                            }
+                            else if (LicensedUntilBeyondCap)
+                            {
+                                <p class="callout">That is more than a year out — the verifier rejects it (@CodeFor("SC035", "SC036", "SC037")). Use @LicensedUntilCeiling or earlier and renew when it lapses.</p>
                             }
                         </div>
                         break;
@@ -375,6 +400,14 @@
                                          })
                                 {
                                     <p class="validation-error">This exemption is time-bounded — an end month is required.</p>
+                                }
+                                else if (ExemptionUntilExpired)
+                                {
+                                    <p class="callout">That month has already passed — the verifier rejects it on the first build (@CodeFor("SC047", "SC048", "SC049")). Use the month the carve-out should be re-checked.</p>
+                                }
+                                else if (ExemptionUntilBeyondCap)
+                                {
+                                    <p class="callout">That is past the @(model.ClaimedExemption!.MaxTermMonths)-month bound the publisher put on this exemption — the verifier rejects it (@CodeFor("SC044", "SC045", "SC046")). Use @ExemptionUntilCeiling or earlier.</p>
                                 }
                             </div>
                         }

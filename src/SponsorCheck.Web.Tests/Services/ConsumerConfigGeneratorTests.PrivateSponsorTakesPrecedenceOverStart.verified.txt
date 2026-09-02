@@ -1,7 +1,6 @@
 ﻿=== Snippet (PackageReference (consuming .csproj)) ===
 <PackageReference Include="ThePackage" Version="1.2.3"
                   GitHubSponsorAccount="octocat"
-                  SponsorshipStart="2026-04-30"
                   SponsorshipPrivateUntil="2027-05" />
 
 === File to edit ===
@@ -36,7 +35,6 @@ Add the new attribute(s) to the existing <PackageReference Include="ThePackage">
 ```xml
 <PackageReference Include="ThePackage" Version="1.2.3"
                   GitHubSponsorAccount="octocat"
-                  SponsorshipStart="2026-04-30"
                   SponsorshipPrivateUntil="2027-05" />
 ```
 

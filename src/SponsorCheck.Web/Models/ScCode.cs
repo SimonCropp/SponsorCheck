@@ -7,6 +7,9 @@ namespace SponsorCheck.Web.Models;
 /// </summary>
 public static class ScCode
 {
+    const string NoMatchNote =
+        "The declared account is not in the package's bundled sponsor list. Pick \"Sponsor account\" below, then say whether the sponsorship started after this version was released, or is private/incognito — a private or incognito sponsorship is never bundled, so it can never match no matter how correct the account is.";
+
     public static ScCodeClassification Classify(string? input)
     {
         var trimmed = input?.Trim() ?? "";
@@ -19,6 +22,15 @@ public static class ScCode
 
         return number switch
         {
+            // Ahead of the ranges below, which would otherwise swallow these three. This is the only
+            // family a consumer reaches by having already done the obvious thing — an account is
+            // declared and it simply is not in the bundled list — so unlike the rest of SC001-SC028
+            // the placement alone is not the useful answer. The two reasons a real sponsor lands here
+            // are both further down the same screen, and the build message names them; the wizard
+            // said nothing.
+            7 => new(true, Placement.PerPackageProject, false, NoMatchNote),
+            8 => new(true, Placement.PerPackageCpm, false, NoMatchNote),
+            24 => new(true, Placement.OwnerMode, false, NoMatchNote),
             >= 1 and <= 16 when number % 2 == 1 => new(true, Placement.PerPackageProject, false, null),
             >= 1 and <= 16 => new(true, Placement.PerPackageCpm, false, null),
             17 => new(true, null, false,

@@ -187,7 +187,8 @@ public class ConsumerConfigGeneratorTests
         string? packDate = "2026-01-15",
         IReadOnlyList<PackageExemption>? exemptions = null,
         IReadOnlyDictionary<string, string>? severities = null,
-        int privateSponsorMaxTermMonths = PackageFacts.DefaultPrivateSponsorMaxTermMonths) =>
+        int privateSponsorMaxTermMonths = PackageFacts.DefaultPrivateSponsorMaxTermMonths,
+        IReadOnlyList<PackagePlatformAccount>? platforms = null) =>
         new(
             "ThePackage",
             "1.2.3",
@@ -197,7 +198,7 @@ public class ConsumerConfigGeneratorTests
             OwnerId: null,
             PackDate: packDate,
             LandingUrl: null,
-            Platforms: [new(PlatformKind.GitHub, "acmecorp")],
+            Platforms: platforms ?? [new(PlatformKind.GitHub, "acmecorp")],
             Exemptions: exemptions ?? [],
             Severities: severities ?? new Dictionary<string, string>(),
             PrivateSponsorMaxTermMonths: privateSponsorMaxTermMonths);
@@ -357,6 +358,24 @@ public class ConsumerConfigGeneratorTests
         model.SponsorshipStart = "2026-04-30";
         PrivateSponsor(model);
         await Verify(Dump(model));
+    }
+
+    [Test]
+    public async Task LookupOfAPolarOnlyPackageDropsAPrivateAnswer()
+    {
+        // A consumer can tick the private box before looking the package up. If the lookup then shows
+        // a package with no private-capable platform the wizard stops offering the route, so the
+        // stale answer must go with it rather than surviving as an attribute nothing on screen
+        // explains.
+        var model = BaseModel(Placement.PerPackageProject);
+        Sponsor(model, PlatformKind.Polar, "acme");
+        PrivateSponsor(model);
+        await Assert.That(model.PrivateDeclared).IsTrue();
+
+        model.ApplyFacts(Facts(platforms: [new(PlatformKind.Polar, "acme")]));
+
+        await Assert.That(model.PrivateDeclared).IsFalse();
+        await Assert.That(ConsumerConfigGenerator.Generate(model).Snippet).DoesNotContain("SponsorshipPrivateUntil");
     }
 
     [Test]

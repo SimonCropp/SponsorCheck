@@ -54,6 +54,11 @@ public sealed class ConsumerModel
     public bool IsSponsorshipStartValid =>
         DateTime.TryParseExact(SponsorshipStart.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 
+    /// <summary>A private sponsorship is declared only when the box is ticked *and* an end month is
+    /// supplied — the month is the whole mechanism, so the box alone declares nothing. Shared because
+    /// the same predicate decides which attributes are emitted and which outcome prose is written.</summary>
+    public bool PrivateDeclared => PrivateSponsorship && !string.IsNullOrWhiteSpace(PrivateUntilMonth);
+
     public bool IsPrivateUntilValid =>
         DateTime.TryParseExact(PrivateUntilMonth.Trim(), "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 
@@ -91,6 +96,17 @@ public sealed class ConsumerModel
 
         OwnerMode = facts.OwnerMode;
         OwnerId = facts.OwnerId ?? "";
+
+        // Polar has no private/incognito notion, so a Polar-only package offers no private route and
+        // the wizard stops showing the box. An answer given before the lookup would otherwise survive
+        // as a hidden attribute in the generated snippet.
+        if (facts.Platforms.Count > 0 &&
+            !facts.Platforms.Any(_ => _.Kind is PlatformKind.GitHub or PlatformKind.OpenCollective))
+        {
+            PrivateSponsorship = false;
+            PrivateUntilMonth = "";
+        }
+
         if (string.IsNullOrWhiteSpace(PackageVersion))
         {
             PackageVersion = facts.Version;
