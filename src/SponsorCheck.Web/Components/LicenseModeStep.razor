@@ -1,0 +1,290 @@
+@namespace SponsorCheck.Web.Components
+
+<h2>License mode</h2>
+<p class="hint">The modes are mutually exclusive — pick exactly one.</p>
+<div class="mode-cards">
+    <button type="button"
+            class="mode-card @CardClass(ConsumerLicenseMode.Sponsor)"
+            @onclick="() => SetMode(ConsumerLicenseMode.Sponsor)">
+        <strong>Sponsor account</strong>
+        <span>Sponsoring the author (or about to)</span>
+    </button>
+    <button type="button"
+            class="mode-card @CardClass(ConsumerLicenseMode.License)"
+            @onclick="() => SetMode(ConsumerLicenseMode.License)">
+        <strong>Private license</strong>
+        <span>A licensing arrangement with the author</span>
+    </button>
+    @if (ExemptionModeAvailable)
+    {
+        <button type="button"
+                class="mode-card @CardClass(ConsumerLicenseMode.Exemption)"
+                @onclick="() => SetMode(ConsumerLicenseMode.Exemption)">
+            <strong>Exemption</strong>
+            <span>Claiming a carve-out the publisher defined</span>
+        </button>
+    }
+    <button type="button"
+            class="mode-card @CardClass(ConsumerLicenseMode.Ignore)"
+            @onclick="() => SetMode(ConsumerLicenseMode.Ignore)">
+        <strong>Ignore</strong>
+        <span>Proceed unlicensed, warning accepted</span>
+    </button>
+</div>
+
+@switch (Model.Mode)
+{
+    case ConsumerLicenseMode.Sponsor:
+        <p class="hint">Enable each platform the sponsorship runs on and enter the sponsoring account. The verifier passes on any single match.</p>
+        @foreach (var platform in SponsorPlatforms)
+        {
+            var selection = Model.Selection(platform.Kind);
+            <div class="platform-row">
+                <div class="check">
+                    <input type="checkbox"
+                           id="@($"sponsor-{platform.Kind}")"
+                           @bind="selection.Enabled"
+                           @bind:after="NotifyChanged" />
+                    <label for="@($"sponsor-{platform.Kind}")">@platform.DisplayName</label>
+                </div>
+                @if (selection.Enabled)
+                {
+                    <div class="account field">
+                        <label for="@($"sponsor-account-{platform.Kind}")">@platform.ConsumerAccountMetadata</label>
+                        <input id="@($"sponsor-account-{platform.Kind}")"
+                               type="text"
+                               placeholder="the sponsoring account"
+                               @bind="selection.Account"
+                               @bind:event="oninput"
+                               @bind:after="NotifyChanged" />
+                        @if (SponsorHint(platform) is { } sponsorHint)
+                        {
+                            <p class="hint">@sponsorHint</p>
+                        }
+                        @switch (Model.BundlesAccount(platform))
+                        {
+                            case true:
+                                <p class="hint match-confirmed">Found in @Model.PackageId @Model.PackageVersion's bundled list — this account passes the check.</p>
+                                break;
+                            case false:
+                                <p class="callout">
+                                    Not in @Model.PackageId @Model.PackageVersion's bundled list, so the build fails with @CodeFor("SC007", "SC008", "SC024") as it stands.
+                                    That is expected — and answered below — if the sponsorship began after this version was packed@(Model.Facts?.PackDate is { } packedDate ? $" ({packedDate})" : ""), or is private or incognito, which is never bundled at all.
+                                    Otherwise the account or the platform is not the one the sponsorship is under.
+                                </p>
+                                break;
+                        }
+                    </div>
+                }
+            </div>
+        }
+        <div class="check" style="margin-top:1rem">
+            <input type="checkbox"
+                   id="startedAfter"
+                   @bind="Model.StartedAfterRelease"
+                   @bind:after="NotifyChanged" />
+            <label for="startedAfter">
+                The sponsorship started after this package version was released
+                <p class="hint">
+                    @(Model.Facts?.PackDate is { } packedOn
+                        ? $"This version was packed on {packedOn} — the bundled sponsor list is frozen at that date, so a later sponsorship can't be in it yet."
+                        : "The bundled sponsor list is frozen at pack time, so a recent sponsorship can't be in it yet — an attested start date bridges the gap until the next upgrade.")
+                </p>
+            </label>
+        </div>
+        @if (Model.StartedAfterRelease)
+        {
+            <div class="field">
+                <label for="sponsorshipStart">Sponsorship start date</label>
+                <input id="sponsorshipStart"
+                       type="text"
+                       placeholder="yyyy-MM-dd"
+                       @bind="Model.SponsorshipStart"
+                       @bind:event="oninput"
+                       @bind:after="NotifyChanged" />
+                @if (Model.SponsorshipStart.Trim().Length > 0 && !Model.IsSponsorshipStartValid)
+                {
+                    <p class="validation-error">Use the format yyyy-MM-dd, e.g. 2026-04-30.</p>
+                }
+                else if (StartIsInFuture)
+                {
+                    <p class="callout">That date is in the future — the verifier rejects it (SC015 family). Use the real start date.</p>
+                }
+                else if (Model.PrivateDeclared)
+                {
+                    <p class="callout">A private declaration decides the build on its own, so the verifier never reads a start date set alongside it — and an expired declaration fails outright rather than falling back to one. The output below leaves this attribute out.</p>
+                }
+            </div>
+        }
+        @if (PrivateSponsorshipOffered)
+        {
+            <div class="check" style="margin-top:1rem">
+                <input type="checkbox"
+                       id="privateSponsorship"
+                       @bind="Model.PrivateSponsorship"
+                       @bind:after="NotifyChanged" />
+                <label for="privateSponsorship">
+                    The sponsorship is private or incognito
+                    <p class="hint">@PrivateSponsorshipHint</p>
+                </label>
+            </div>
+        }
+        @if (Model.PrivateSponsorship && PrivateSponsorshipOffered)
+        {
+            <div class="field">
+                <label for="privateUntil">Private sponsorship declared until (last covered month)</label>
+                <p class="hint">Format yyyy-MM; valid through the end of that month (UTC). This package caps it at @Model.PrivateSponsorMaxTermMonths months from the build clock, so the claim has to be renewed rather than left in place forever.</p>
+                <input id="privateUntil"
+                       type="text"
+                       placeholder="yyyy-MM"
+                       @bind="Model.PrivateUntilMonth"
+                       @bind:event="oninput"
+                       @bind:after="NotifyChanged" />
+                @if (Model.PrivateUntilMonth.Trim().Length > 0 && !Model.IsPrivateUntilValid)
+                {
+                    <p class="validation-error">Use the format yyyy-MM, e.g. 2027-04.</p>
+                }
+                else if (PrivateUntilExpired)
+                {
+                    <p class="callout">That month has already passed — the verifier rejects it on the first build (@CodeFor("SC056", "SC057", "SC058")). Use the month the declaration should run to.</p>
+                }
+                else if (PrivateUntilBeyondCap)
+                {
+                    <p class="callout">
+                        @(CapIsFromPackage
+                            ? $"That is past the {Model.PrivateSponsorMaxTermMonths}-month cap this package sets — the verifier rejects it ({CodeFor("SC053", "SC054", "SC055")}). Use {PrivateUntilCeiling} or earlier."
+                            : $"That is past the default {Model.PrivateSponsorMaxTermMonths}-month cap. This package could not be inspected, so it may set its own — if it has not, the verifier rejects this ({CodeFor("SC053", "SC054", "SC055")}) and {PrivateUntilCeiling} is the latest month it accepts.")
+                    </p>
+                }
+            </div>
+        }
+        break;
+
+    case ConsumerLicenseMode.License:
+        <div class="field">
+            <label for="licensedUntil">Licensed until (last covered month)</label>
+            <p class="hint">Format yyyy-MM; valid through the end of that month (UTC). Capped at one year out — a longer arrangement is renewed with a one-line edit.</p>
+            <input id="licensedUntil"
+                   type="text"
+                   placeholder="yyyy-MM"
+                   @bind="Model.LicensedUntilMonth"
+                   @bind:event="oninput"
+                   @bind:after="NotifyChanged" />
+            @if (Model.LicensedUntilMonth.Trim().Length > 0 && !Model.IsLicensedUntilValid)
+            {
+                <p class="validation-error">Use the format yyyy-MM, e.g. 2027-06.</p>
+            }
+            else if (LicensedUntilExpired)
+            {
+                <p class="callout">That month has already passed — the verifier rejects it on the first build (@CodeFor("SC009", "SC010", "SC025")). Use the month the arrangement runs to.</p>
+            }
+            else if (LicensedUntilBeyondCap)
+            {
+                <p class="callout">That is more than a year out — the verifier rejects it (@CodeFor("SC035", "SC036", "SC037")). Use @LicensedUntilCeiling or earlier and renew when it lapses.</p>
+            }
+        </div>
+        break;
+
+    case ConsumerLicenseMode.Exemption:
+        <div class="field">
+            <label for="exemptionName">Exemption</label>
+            @if (Model.Facts is { BundlesSponsorCheck: true, Exemptions.Count: > 0 } factsWithExemptions)
+            {
+                <p class="hint">The publisher defined these exemptions — pick the one that applies.</p>
+                <select id="exemptionName"
+                        @bind="Model.ExemptionName"
+                        @bind:after="NotifyChanged">
+                    <option value="">Pick an exemption…</option>
+                    @foreach (var exemption in factsWithExemptions.Exemptions)
+                    {
+                        <option value="@exemption.Name">@exemption.Name</option>
+                    }
+                </select>
+                @if (factsWithExemptions.FindExemption(Model.ExemptionName) is { } selected)
+                {
+                    <p class="hint">Criteria: @selected.Message</p>
+                }
+            }
+            else
+            {
+                <p class="hint">Exemptions are defined by the publisher at pack time — the failing build's error message lists the available names when an unknown one is claimed.</p>
+                <input id="exemptionName"
+                       type="text"
+                       placeholder="Consulting"
+                       @bind="Model.ExemptionName"
+                       @bind:event="oninput"
+                       @bind:after="NotifyChanged" />
+            }
+        </div>
+        @if (Model.ExemptionName.Trim().Length > 0)
+        {
+            <div class="field">
+                <label for="exemptionUntil">Exemption until (last covered month)</label>
+                @if (Model.ClaimedExemption?.MaxTermMonths is { } maxTermMonths)
+                {
+                    <p class="hint">
+                        Required: the publisher time-bounds this exemption to @maxTermMonths month@(maxTermMonths == 1 ? "" : "s").
+                        Format yyyy-MM, no more than @maxTermMonths month@(maxTermMonths == 1 ? "" : "s") past the build date.
+                        The build fails once that month ends, so the claim gets re-checked instead of outliving whatever made it apply.
+                    </p>
+                }
+                else
+                {
+                    <p class="hint">
+                        Optional — this publisher does not require an end date. Setting one still binds:
+                        the build fails after that month until the claim is renewed. Format yyyy-MM.
+                    </p>
+                }
+
+                <input id="exemptionUntil"
+                       type="text"
+                       placeholder="yyyy-MM"
+                       @bind="Model.ExemptionUntilMonth"
+                       @bind:event="oninput"
+                       @bind:after="NotifyChanged" />
+                @if (Model is
+                     {
+                         HasExemptionUntil: true,
+                         IsExemptionUntilValid: false
+                     })
+                {
+                    <p class="validation-error">Use the format yyyy-MM, e.g. 2027-02.</p>
+                }
+                else if (Model is
+                         {
+                             IsExemptionUntilRequired: true,
+                             HasExemptionUntil: false
+                         })
+                {
+                    <p class="validation-error">This exemption is time-bounded — an end month is required.</p>
+                }
+                else if (ExemptionUntilExpired)
+                {
+                    <p class="callout">That month has already passed — the verifier rejects it on the first build (@CodeFor("SC047", "SC048", "SC049")). Use the month the carve-out should be re-checked.</p>
+                }
+                else if (ExemptionUntilBeyondCap)
+                {
+                    <p class="callout">That is past the @(Model.ClaimedExemption!.MaxTermMonths)-month bound the publisher put on this exemption — the verifier rejects it (@CodeFor("SC044", "SC045", "SC046")). Use @ExemptionUntilCeiling or earlier.</p>
+                }
+            </div>
+        }
+        break;
+
+    case ConsumerLicenseMode.Ignore:
+        @if (Model.FactSeverity("SC005", "SC006", "SC023") == "error")
+        {
+            <p class="callout">
+                This publisher escalated the opt-out to an <strong>error</strong> at pack time —
+                <code>SponsorshipLicenseIgnored</code> fails the build for this package instead of warning.
+                Pick one of the other modes.
+            </p>
+        }
+        else
+        {
+            <p class="callout">
+                The build will pass but log a breach-of-license warning on every build — visible in CI and code review.
+                Publishers can also raise it to an error at pack time.
+            </p>
+        }
+        break;
+}

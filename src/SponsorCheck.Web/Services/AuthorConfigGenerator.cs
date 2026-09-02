@@ -21,7 +21,7 @@ public static class AuthorConfigGenerator
     const string authorDocs = DocLinks.AuthorSetup;
     const string bundlerDocs = DocLinks.BundlerCodes;
     const string verifierDocs = DocLinks.VerifierCodes;
-    const string wizardUrl = "https://simoncropp.github.io/SponsorCheck/author";
+    const string wizardUrl = WizardLinks.Author;
 
     public static AuthorOutput Generate(AuthorModel model)
     {
@@ -281,6 +281,10 @@ public static class AuthorConfigGenerator
         Line("### What you need to do");
         Line();
         Line(PlacementSentence(model));
+        Line();
+        // The package-specific wizard is the one link these notes can carry into another project's
+        // docs: it reads the published package, so the reader is never asked what it already knows.
+        Line($"Prefer a guided setup? The [SponsorCheck setup wizard for `{id}`]({WizardLinks.Package(id)}) reads this package's published configuration from nuget.org and generates the exact snippet and the file it belongs in.");
         Line();
 
         var optionNumber = 1;

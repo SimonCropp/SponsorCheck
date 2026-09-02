@@ -90,4 +90,52 @@ public class EndToEndTests
         var heading = await page.TextContentAsync("h2");
         await Assert.That(heading).IsEqualTo("The package");
     }
+
+    [Test]
+    public async Task PackageDeepLinkJourney()
+    {
+        // A dotted id: the common shape of a real package id, and the one the SPA fallback has to
+        // serve without treating it as a file request.
+        var page = await wizard.NewPage();
+        var feed = await FakeNuGetFeed.Route(page, TestNupkg.Build(ownerId: "acme"), "1.2.3");
+        await page.GotoAsync(wizard.Url("/package/Acme.Widgets"));
+        await page.WaitForSelectorAsync(".mode-cards");
+
+        await Assert.That(await page.TextContentAsync(".facts-summary")).Contains("Read from Acme.Widgets 1.2.3");
+        await Assert.That((await page.QuerySelectorAllAsync(".stepper li")).Count).IsEqualTo(2);
+
+        // sponsor
+        await page.ClickAsync("button.mode-card >> nth=0");
+        await page.CheckAsync("#sponsor-GitHub");
+        await page.FillAsync("#sponsor-account-GitHub", "alice");
+        // license mode -> output
+        await page.ClickAsync("button.primary");
+
+        await page.WaitForSelectorAsync(".code-box");
+        var body = await page.TextContentAsync("body");
+
+        await Assert.That(body).Contains("<acme_GitHubSponsorAccount>alice</acme_GitHubSponsorAccount>");
+        await Assert.That(body).Contains("Directory.Build.props");
+        // Every byte the runtime consumed came through the fake: nothing reached api.nuget.org.
+        await Assert.That(feed.Requests.Any(_ => _.EndsWith("/v3-flatcontainer/acme.widgets/index.json", StringComparison.Ordinal))).IsTrue();
+        await Assert.That(feed.Requests.Any(_ => _.EndsWith("/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg", StringComparison.Ordinal))).IsTrue();
+    }
+
+    [Test]
+    public async Task PackageDeepLinkNotFoundLinksToTheConsumerFlow()
+    {
+        var page = await wizard.NewPage();
+        await FakeNuGetFeed.RouteNotFound(page);
+        await page.GotoAsync(wizard.Url("/package/NoSuchPackage"));
+        await page.WaitForSelectorAsync("a[href='consumer']");
+
+        var body = await page.TextContentAsync("body");
+        await Assert.That(body).Contains("Package 'NoSuchPackage' was not found on nuget.org.");
+
+        // A relative href resolves against <base href>, which is what keeps it working under the
+        // /SponsorCheck/ base GitHub Pages serves from; an absolute /consumer would not.
+        await page.ClickAsync("a[href='consumer']");
+        await page.WaitForSelectorAsync("#packageId");
+        await Assert.That(new Uri(page.Url).AbsolutePath).IsEqualTo("/consumer");
+    }
 }

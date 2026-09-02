@@ -435,6 +435,13 @@ A sponsor who needs guarantees stronger than "annoying to reverse" — say they'
 Hash length is truncated to 48 bits (12 hex chars) because the only correctness requirement is "accidental collisions are implausible" — a non-sponsor's hash falsely matching the bundled list is ≈ 1 in tens of billions even at 100k sponsors. Preimage resistance is unnecessary given `SponsorshipLicenseIgnored`.
 
 
+## Linking consumers to the setup wizard
+
+The wizard has an entry point per package: `https://simoncropp.github.io/SponsorCheck/package/<PackageId>`, for example https://simoncropp.github.io/SponsorCheck/package/ThePackage. It looks up the package's newest version on nuget.org (prerelease included), reads the bundled SponsorCheck configuration from the nupkg in the browser, and opens on the first question the package leaves open. Owner mode, the accepted platforms, the defined exemptions and the pack date are all taken from the package, so an owner-mode package lands directly on the license-mode choice and a per-package one only has to answer whether the solution uses Central Package Management.
+
+Link it from the readme and from the release notes of the version that adopts SponsorCheck. The release notes the [author flow](https://simoncropp.github.io/SponsorCheck/author) generates already include it.
+
+
 ## Diagnostic codes
 
 [Bundler diagnostic codes (SC1xx)](BundlerDiagnosticCodes.md) — every code the bundler can emit at pack time.

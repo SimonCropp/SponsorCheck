@@ -11,9 +11,11 @@ public static class ConsumerConfigGenerator
     const string docsBase = DocLinks.Base;
     const string consumerDocs = DocLinks.ConsumerUsage;
     const string verifierDocs = DocLinks.VerifierCodes;
-    const string wizardUrl = "https://simoncropp.github.io/SponsorCheck/consumer";
 
-    public static ConsumerOutput Generate(ConsumerModel model)
+    // wizardUrl: The flow that produced the output. Named in the markdown so a reader
+    // can re-run it: the consumer flow by default, the package-specific flow when that is where the
+    // visitor came in.
+    public static ConsumerOutput Generate(ConsumerModel model, string wizardUrl = WizardLinks.Consumer)
     {
         var id = string.IsNullOrWhiteSpace(model.PackageId) ? "ThePackage" : model.PackageId.Trim();
         var version = model.PackageVersion.Trim();
@@ -24,7 +26,7 @@ public static class ConsumerConfigGenerator
         var (title, snippet, fileToEdit, instruction) = Placement(placement, id, version, owner, attributes);
         var outcome = BuildOutcome(model, placement);
         var notes = Notes(model, placement, owner);
-        var markdown = BuildMarkdown(model, placement, id, version, owner, snippet, fileToEdit, instruction, outcome, notes);
+        var markdown = BuildMarkdown(model, placement, id, version, owner, snippet, fileToEdit, instruction, outcome, notes, wizardUrl);
 
         return new(title, snippet, fileToEdit, instruction, outcome, notes, markdown);
     }
@@ -346,7 +348,8 @@ public static class ConsumerConfigGenerator
         string fileToEdit,
         string instruction,
         string outcome,
-        IReadOnlyList<string> notes)
+        IReadOnlyList<string> notes,
+        string wizardUrl)
     {
         var versioned = version.Length == 0 ? $"`{id}`" : $"`{id}` {version}";
 

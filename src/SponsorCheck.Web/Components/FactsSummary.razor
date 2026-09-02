@@ -1,0 +1,26 @@
+<div class="callout facts-summary">
+    <strong>Read from @Facts.PackageId @Facts.Version:</strong>
+    <ul>
+        <li>@(Facts.OwnerMode ? $"Owner mode — configured once via '{Facts.OwnerId}_…' properties" : "Per-package configuration")</li>
+        <li>Sponsorship platforms: @string.Join(", ", Facts.Platforms.Select(_ => Platform.All.First(known => known.Kind == _.Kind).DisplayName))</li>
+        <li>@(Facts.Exemptions.Count > 0 ? $"Publisher-defined exemptions: {string.Join(", ", Facts.Exemptions.Select(ExemptionLabel))}" : "No publisher-defined exemptions")</li>
+        @if (Facts.PackDate is { } packDate)
+        {
+            <li>Packed on @packDate</li>
+        }
+        <li>Transitive checking: @(Facts.CheckTransitive ? "on" : "off")</li>
+    </ul>
+</div>
+
+@code {
+    /// <summary>What the nupkg inspection read. Shown wherever facts pre-answer questions, so the
+    /// visitor sees the seed rather than a wizard that silently knows things.</summary>
+    [Parameter, EditorRequired] public PackageFacts Facts { get; set; } = PackageFacts.WithoutSponsorCheck("", "");
+
+    /// <summary>Flags a time-bounded exemption in the package summary, so the cap is visible while
+    /// choosing a mode rather than only after picking the name.</summary>
+    static string ExemptionLabel(PackageExemption exemption) =>
+        exemption.MaxTermMonths is { } months
+            ? $"{exemption.Name} (max {months}mo)"
+            : exemption.Name;
+}

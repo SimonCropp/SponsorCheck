@@ -430,29 +430,4 @@ public class ConsumerPageTests : WebTestContext
         await Assert.That(cut.FindAll("#scCode").Count).IsEqualTo(1);
         await Assert.That(cut.FindAll("#style-owner").Count).IsEqualTo(1);
     }
-
-    sealed class StubNuGetHandler(byte[] nupkg, string version) : HttpMessageHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
-        {
-            var url = request.RequestUri!.ToString();
-            if (url.EndsWith("/index.json", StringComparison.Ordinal))
-            {
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent($"{{\"versions\":[\"{version}\"]}}")
-                });
-            }
-
-            if (url.EndsWith(".nupkg", StringComparison.Ordinal))
-            {
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new ByteArrayContent(nupkg)
-                });
-            }
-
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
-        }
-    }
 }

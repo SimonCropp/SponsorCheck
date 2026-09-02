@@ -45,4 +45,20 @@ public class ConsumerOutputPanelTests : WebTestContext
         var cut = Render<ConsumerOutputPanel>(_ => _.Add(_ => _.Model, SponsorModel()));
         await Verify(cut.Markup);
     }
+
+    [Test]
+    public async Task CopyMarkdownLinksTheGivenWizardUrl()
+    {
+        var packageUrl = WizardLinks.Package("ThePackage");
+        var cut = Render<ConsumerOutputPanel>(_ => _
+            .Add(_ => _.Model, SponsorModel())
+            .Add(_ => _.WizardUrl, packageUrl));
+
+        await cut.Find("button.copy-markdown").ClickAsync();
+
+        var invocation = JSInterop.Invocations.Single(_ => _.Identifier == "sponsorCheck.copyToClipboard");
+        var copied = (string) invocation.Arguments[0]!;
+        await Assert.That(copied).Contains($"({packageUrl})");
+        await Assert.That(copied).DoesNotContain($"({WizardLinks.Consumer})");
+    }
 }
