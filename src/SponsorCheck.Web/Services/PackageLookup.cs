@@ -27,7 +27,7 @@ public sealed class PackageLookup(HttpClient http)
     {
         var id = packageId.Trim();
         var idLower = id.ToLowerInvariant();
-        var resolved = string.IsNullOrWhiteSpace(version) ? await LatestStableVersion(id, idLower) : version.Trim();
+        var resolved = string.IsNullOrWhiteSpace(version) ? await LatestVersion(id, idLower) : version.Trim();
         var versionLower = resolved.ToLowerInvariant();
 
         try
@@ -55,7 +55,7 @@ public sealed class PackageLookup(HttpClient http)
         }
     }
 
-    async Task<string> LatestStableVersion(string id, string idLower)
+    async Task<string> LatestVersion(string id, string idLower)
     {
         using var response = await http.GetAsync($"{flatContainer}/{idLower}/index.json");
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -79,8 +79,10 @@ public sealed class PackageLookup(HttpClient http)
             throw new PackageLookupException($"Package '{id}' has no versions on nuget.org.");
         }
 
-        // The flat-container index is ordered ascending; prefer the newest stable, else newest overall.
-        var stable = versions.LastOrDefault(_ => !_.Contains('-'));
-        return stable ?? versions[^1];
+        // Prerelease included: an author adopting SponsorCheck usually ships it in a prerelease
+        // first, and that is the version a consumer hitting the new diagnostic is on. The
+        // flat-container index is ordered ascending with a prerelease ahead of the release it
+        // precedes, so the newest published version is last either way.
+        return versions[^1];
     }
 }

@@ -74,7 +74,7 @@ public class PackageLookupTests
     }
 
     [Test]
-    public async Task BlankVersionResolvesLatestStable()
+    public async Task BlankVersionResolvesNewestIncludingPrerelease()
     {
         var handler = new Handler(request =>
             request.RequestUri!.ToString().EndsWith("/index.json", StringComparison.Ordinal)
@@ -84,8 +84,25 @@ public class PackageLookupTests
 
         var facts = await lookup.Inspect("ThePackage", null);
 
-        await Assert.That(facts.Version).IsEqualTo("1.0.0");
-        await Assert.That(handler.Requested[^1]).Contains("/thepackage/1.0.0/thepackage.1.0.0.nupkg");
+        await Assert.That(facts.Version).IsEqualTo("2.0.0-beta.1");
+        await Assert.That(handler.Requested[^1]).Contains("/thepackage/2.0.0-beta.1/thepackage.2.0.0-beta.1.nupkg");
+    }
+
+    [Test]
+    public async Task BlankVersionResolvesNewestStableWhenItLeadsThePrereleases()
+    {
+        // The flat-container index puts a prerelease ahead of the release it precedes, so the
+        // last entry is the newest either way.
+        var handler = new Handler(request =>
+            request.RequestUri!.ToString().EndsWith("/index.json", StringComparison.Ordinal)
+                ? Json("""{"versions":["1.0.0","2.0.0-beta.1","2.0.0"]}""")
+                : Bytes(TestNupkg.Build()));
+        var lookup = Lookup(handler);
+
+        var facts = await lookup.Inspect("ThePackage", null);
+
+        await Assert.That(facts.Version).IsEqualTo("2.0.0");
+        await Assert.That(handler.Requested[^1]).Contains("/thepackage/2.0.0/thepackage.2.0.0.nupkg");
     }
 
     [Test]
