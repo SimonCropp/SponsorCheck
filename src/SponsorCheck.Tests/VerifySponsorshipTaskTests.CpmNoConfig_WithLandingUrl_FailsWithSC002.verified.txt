@@ -11,6 +11,9 @@ Add ONE of the following attributes to the existing <PackageVersion> for 'MyOssL
 Option — Sponsor on GitHub Sponsors (https://acme.example.com/sponsor):
   <PackageVersion Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
 
+Option — Sponsor privately (a private or incognito sponsorship is never bundled, so declare an end month alongside the account; at most 12 months out):
+  <PackageVersion Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" SponsorshipPrivateUntil="yyyy-MM" />
+
 Option — Time-bounded license (replace yyyy-MM with the last covered month):
   <PackageVersion Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
 

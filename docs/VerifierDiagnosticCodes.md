@@ -79,6 +79,9 @@ flowchart TD
   Option — Sponsor on {PlatformName} ({sponsorUrl}):
     <PackageReference Include="{PackageId}" Version="{version}" {PlatformMetadataName}="<your-{platform}-account>" />
 
+  Option — Sponsor privately (a private or incognito sponsorship is never bundled, so declare an end month alongside the account; at most {maxTermMonths} months out):
+    <PackageReference Include="{PackageId}" Version="{version}" {PlatformMetadataName}="<your-{platform}-account>" SponsorshipPrivateUntil="yyyy-MM" />
+
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
 
@@ -90,6 +93,8 @@ flowchart TD
   ```
 
   One "Sponsor on..." option is rendered per platform the author has enabled. SponsorshipLicenseIgnored is listed last so the breach-of-license escape hatch sits after the legitimate options. When only one platform is configured the "Sponsor at:" block collapses to a single inline line: `Sponsor at {sponsorUrl}`.
+
+  The "Sponsor privately" option renders once, off the first platform, rather than per platform — a private or incognito sponsorship is never bundled, so pasting a sponsor account on its own only trades this error for [SC007](#sc007). Both settings are shown because `SponsorshipPrivateUntil` is a qualifier, not a mode: on its own it selects nothing and lands back here. `{maxTermMonths}` is the publisher's [`PrivateSponsorMaxTermMonths`](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/AuthorSetup.md#capping-the-term) (default 12). The option is omitted only when the author enabled no platforms — a state [SC101](https://github.com/SimonCropp/SponsorCheck/blob/main/docs/BundlerDiagnosticCodes.md#sc101) prevents at pack time.
 - **Example:**
 
   ```
@@ -100,6 +105,9 @@ flowchart TD
 
   Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
     <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" />
+
+  Option — Sponsor privately (a private or incognito sponsorship is never bundled, so declare an end month alongside the account; at most 12 months out):
+    <PackageReference Include="MyOssLib" Version="1.2.3" GitHubSponsorAccount="<your-github-account>" SponsorshipPrivateUntil="yyyy-MM" />
 
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
     <PackageReference Include="MyOssLib" Version="1.2.3" SponsorshipLicensedUntil="yyyy-MM" />
@@ -509,6 +517,10 @@ flowchart TD
   Option — Sponsor on {PlatformName} ({sponsorUrl}):
     <{OwnerId}_{PlatformMetadataName}><your-{platform}-account></{OwnerId}_{PlatformMetadataName}>
 
+  Option — Sponsor privately (a private or incognito sponsorship is never bundled, so declare an end month alongside the account; at most {maxTermMonths} months out):
+    <{OwnerId}_{PlatformMetadataName}><your-{platform}-account></{OwnerId}_{PlatformMetadataName}>
+    <{OwnerId}_SponsorshipPrivateUntil>yyyy-MM</{OwnerId}_SponsorshipPrivateUntil>
+
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
     <{OwnerId}_SponsorshipLicensedUntil>yyyy-MM</{OwnerId}_SponsorshipLicensedUntil>
 
@@ -520,6 +532,8 @@ flowchart TD
   ```
 
   One "Sponsor on..." option is rendered per platform the author has enabled. The property names are the per-package metadata names prefixed with the package's owner id (e.g. `<acme_GitHubSponsorAccount>` when `SponsorOwner="acme"`) — this keeps two owner-mode packages from different authors independently configurable in the same consumer project. The "Sponsor at:" block collapses to a single inline line when only one platform is configured.
+
+  The "Sponsor privately" option follows the same rules as in [SC001](#sc001): rendered once off the first platform, showing both properties because `{OwnerId}_SponsorshipPrivateUntil` is a qualifier that selects no mode on its own, and capped by the publisher's `PrivateSponsorMaxTermMonths` (default 12).
 - **Example:**
 
   ```
@@ -529,6 +543,10 @@ flowchart TD
 
   Option — Sponsor on GitHub Sponsors (https://github.com/sponsors/acmecorp):
     <acme_GitHubSponsorAccount><your-github-account></acme_GitHubSponsorAccount>
+
+  Option — Sponsor privately (a private or incognito sponsorship is never bundled, so declare an end month alongside the account; at most 12 months out):
+    <acme_GitHubSponsorAccount><your-github-account></acme_GitHubSponsorAccount>
+    <acme_SponsorshipPrivateUntil>yyyy-MM</acme_SponsorshipPrivateUntil>
 
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
     <acme_SponsorshipLicensedUntil>yyyy-MM</acme_SponsorshipLicensedUntil>
