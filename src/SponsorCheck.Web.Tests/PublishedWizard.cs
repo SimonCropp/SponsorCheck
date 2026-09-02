@@ -100,7 +100,7 @@ public sealed class PublishedWizard : IAsyncDisposable
         // has picked an endpoint, so routing has to run after the static files rather than at the start
         // of the pipeline where WebApplication would otherwise put it.
         app.UseRouting();
-        app.MapFallbackToFile("{*path}", "index.html", new StaticFileOptions {FileProvider = files});
+        app.MapFallbackToFile("{*path}", "index.html", new() {FileProvider = files});
 
         await app.StartAsync();
 
