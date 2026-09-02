@@ -435,6 +435,14 @@ select {
     margin: .2rem 0;
 }
 
+/* The positive half of the bundled-list answer. Deliberately a hint rather than a second callout:
+   the negative case is the one that needs the reader to stop, and giving both the same weight would
+   train the eye to skip past it. --accent is the only affirmative colour in the palette and carries
+   a dark-mode value. */
+.match-confirmed {
+    color: var(--accent);
+}
+
 .callout {
     border: 1px solid var(--warn-border);
     background: var(--warn-bg);

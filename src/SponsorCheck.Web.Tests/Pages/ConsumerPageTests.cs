@@ -199,6 +199,82 @@ public class ConsumerPageTests : WebTestContext
         await Assert.That(cut.Markup).Contains("SC035");
     }
 
+    async Task<IRenderedComponent<SponsorCheck.Web.Pages.Consumer>> LookedUpSponsorMode(byte[] nupkg)
+    {
+        Services.AddScoped(_ => new HttpClient(new StubNuGetHandler(nupkg, "1.2.3")));
+        var cut = Render<SponsorCheck.Web.Pages.Consumer>();
+        await cut.Find("#packageId").InputAsync("ThePackage");
+        await cut.Find("button.lookup").ClickAsync();
+        await cut.WaitForStateAsync(() => cut.Markup.Contains("Read from ThePackage 1.2.3"));
+        // package -> situation
+        await cut.Find("button.primary").ClickAsync();
+        // situation -> license mode
+        await cut.Find("button.primary").ClickAsync();
+        await cut.FindAll("button.mode-card")[0].ClickAsync();
+        await cut.Find("#sponsor-GitHub").ChangeAsync(true);
+        return cut;
+    }
+
+    [Test]
+    public async Task AnAccountInTheBundledListIsConfirmed()
+    {
+        var cut = await LookedUpSponsorMode(TestNupkg.Build(
+            sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")]));
+
+        await cut.Find("#sponsor-account-GitHub").InputAsync("alice");
+
+        await Assert.That(cut.Markup).Contains("Found in ThePackage 1.2.3's bundled list");
+        await Assert.That(cut.Markup).DoesNotContain("SC007");
+    }
+
+    [Test]
+    public async Task AnAccountMissingFromTheBundledListIsAnsweredBeforeTheBuild()
+    {
+        // The point of the whole check: SC007 is knowable at the moment the account is typed, and so
+        // are the two reasons a real sponsor lands there.
+        var cut = await LookedUpSponsorMode(TestNupkg.Build(
+            sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")]));
+
+        await cut.Find("#sponsor-account-GitHub").InputAsync("bob");
+
+        await Assert.That(cut.Markup).Contains("Not in ThePackage 1.2.3's bundled list");
+        await Assert.That(cut.Markup).Contains("SC007");
+        await Assert.That(cut.Markup).Contains("private or incognito");
+        // A wrong account is not a blocked wizard — the consumer may well be the recent or private
+        // sponsor the callout describes, and only they can say.
+        await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsFalse();
+    }
+
+    [Test]
+    public async Task OwnerModeReportsTheOwnerScopedNoMatchCode()
+    {
+        // The no-match codes run as a triple, so the callout has to name the one this consumer will
+        // actually see rather than the non-CPM default.
+        var cut = await LookedUpSponsorMode(TestNupkg.Build(
+            ownerId: "acme",
+            sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")]));
+
+        await cut.Find("#sponsor-account-GitHub").InputAsync("bob");
+
+        await Assert.That(cut.Markup).Contains("SC024");
+        await Assert.That(cut.Markup).DoesNotContain("SC007");
+    }
+
+    [Test]
+    public async Task AnUnreadableHashListSaysNothingEitherWay()
+    {
+        // No answer beats a wrong one: the list was never read, so neither confirming nor denying is
+        // honest here.
+        var lines = (int)(NupkgParser.MaxSponsorHashBytes / 13) + 1000;
+        var cut = await LookedUpSponsorMode(TestNupkg.Build(
+            sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")],
+            hashPaddingLines: lines));
+
+        await cut.Find("#sponsor-account-GitHub").InputAsync("bob");
+
+        await Assert.That(cut.Markup).DoesNotContain("bundled list");
+    }
+
     [Test]
     public async Task ExemptionUntilBeyondThePublishersBoundIsCalledOut()
     {

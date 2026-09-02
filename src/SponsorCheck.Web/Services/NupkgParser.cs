@@ -5,12 +5,22 @@ namespace SponsorCheck.Web.Services;
 /// <see cref="RemoteZipArchive"/>. The file names and formats mirror what
 /// BundleSponsorListTask writes; RepoContractTests pin them against the shipped targets
 /// templates so this parser can't silently rot. Only the tiny sidecar files and the
-/// verifier targets are ever downloaded — SponsorHashes.txt is existence-checked from the
-/// central directory alone — so cost is independent of package and sponsor-list size.
+/// verifier targets are ever downloaded, so cost is independent of package size. SponsorHashes.txt
+/// is the one file whose size tracks the author's sponsor count, so it is read only when the central
+/// directory says it is small enough to be free in practice (see <see cref="MaxSponsorHashBytes"/>);
+/// past that it is existence-checked as before and the wizard simply has no hash answer to give.
 /// </summary>
 public static class NupkgParser
 {
     public const string HashesFileName = "SponsorCheck.SponsorHashes.txt";
+
+    /// <summary>
+    /// The point past which the bundled hash list stops being worth downloading to answer one
+    /// question. Each sponsor is one 12-hex-char line plus a newline, so this is roughly 80,000
+    /// sponsors — orders of magnitude above any real list, which is the point: the cap exists so a
+    /// pathological package cannot turn a lookup into a large download, not to exclude anyone real.
+    /// </summary>
+    public const long MaxSponsorHashBytes = 1024 * 1024;
     public const string PackDateFileName = "SponsorCheck.PackDate.txt";
     public const string AuthorAccountsFileName = "SponsorCheck.AuthorAccounts.txt";
     public const string SeverityOverridesFileName = "SponsorCheck.SeverityOverrides.txt";
@@ -51,7 +61,7 @@ public static class NupkgParser
             }
         }
 
-        var sidecars = new[]
+        var sidecars = new List<string>
         {
             PackDateFileName,
             LandingUrlFileName,
@@ -59,6 +69,17 @@ public static class NupkgParser
             ExemptionsFileName,
             SeverityOverridesFileName
         };
+
+        // Joins the same coalesced batch below rather than costing a request of its own — the bundler
+        // packs these adjacently. The Length here is the central directory's, already in hand from
+        // the archive open, so the decision costs nothing.
+        var hashesEntry = nupkg.Find(folder + HashesFileName);
+        var hashesReadable = hashesEntry is { Length: <= MaxSponsorHashBytes };
+        if (hashesReadable)
+        {
+            sidecars.Add(HashesFileName);
+        }
+
         var targets = nupkg.Entries
             .Where(_ => _.FullName.StartsWith(folder, StringComparison.OrdinalIgnoreCase) &&
                         _.FullName.EndsWith(".targets", StringComparison.OrdinalIgnoreCase) &&
@@ -79,6 +100,7 @@ public static class NupkgParser
         var exemptions = ParseExemptions(Text(ExemptionsFileName));
         var severities = ParseSeverities(Text(SeverityOverridesFileName));
         var ownerId = FindOwnerId(targets, contents);
+        var sponsorHashes = hashesReadable ? ParseHashes(Text(HashesFileName)) : null;
         var privateSponsorMaxTermMonths = FindPrivateSponsorMaxTermMonths(targets, contents);
 
         return new(
@@ -93,7 +115,32 @@ public static class NupkgParser
             Platforms: platforms,
             Exemptions: exemptions,
             Severities: severities,
-            PrivateSponsorMaxTermMonths: privateSponsorMaxTermMonths);
+            PrivateSponsorMaxTermMonths: privateSponsorMaxTermMonths,
+            SponsorHashes: sponsorHashes);
+    }
+
+    /// <summary>One lowercase hex hash per line, as SponsorHasher writes them. Compared ordinally and
+    /// case-sensitively, exactly as the verifier compares them, so a file that somehow carried mixed
+    /// case would fail to match here in the same way it fails to match there — better a wizard that
+    /// gives no answer than one that disagrees with the build.</summary>
+    static IReadOnlySet<string>? ParseHashes(string? content)
+    {
+        if (content == null)
+        {
+            return null;
+        }
+
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var line in content.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Length > 0)
+            {
+                result.Add(trimmed);
+            }
+        }
+
+        return result;
     }
 
     static string? NullIfBlank(string? value)

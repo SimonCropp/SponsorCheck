@@ -74,6 +74,33 @@ public sealed class ConsumerModel
     public bool IsExemptionUntilValid =>
         DateTime.TryParseExact(ExemptionUntilMonth.Trim(), "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 
+    /// <summary>Whether the account entered for <paramref name="platform"/> is in the inspected
+    /// package's bundled list — the same check the verifier runs, done here so the answer arrives at
+    /// the point the account is typed rather than on the build after this one. Null when there is no
+    /// answer: nothing looked up, a list too large to have been read, or no account entered yet.
+    ///
+    /// Guarded on the version because a hash answer is far more assertive than the rest of the facts.
+    /// If the consumer edits the version after the lookup, the facts describe a different package
+    /// than the one they will build against, and a confidently wrong "that account is not a sponsor"
+    /// is worse than no answer at all.</summary>
+    public bool? BundlesAccount(Platform platform)
+    {
+        if (Facts is not { BundlesSponsorCheck: true } facts ||
+            !string.Equals(facts.Version, PackageVersion.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var selection = Platforms[platform.Kind];
+        return selection.Enabled ? facts.Bundles(platform.WireId, selection.Account) : null;
+    }
+
+    /// <summary>True when a lookup gave a definite "no" for every account entered. That is the
+    /// SC007/SC008/SC024 the next build would emit, known before it happens.</summary>
+    public bool NoEnteredAccountIsBundled =>
+        EnabledPlatforms.Any() &&
+        EnabledPlatforms.All(_ => BundlesAccount(_.Platform) == false);
+
     /// <summary>The inspected package's definition of the claimed exemption, when the package was
     /// looked up and the name matches one it defines.</summary>
     public PackageExemption? ClaimedExemption =>

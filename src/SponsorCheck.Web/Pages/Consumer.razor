@@ -225,6 +225,19 @@
                                         {
                                             <p class="hint">@sponsorHint</p>
                                         }
+                                        @switch (model.BundlesAccount(platform))
+                                        {
+                                            case true:
+                                                <p class="hint match-confirmed">Found in @model.PackageId @model.PackageVersion's bundled list — this account passes the check.</p>
+                                                break;
+                                            case false:
+                                                <p class="callout">
+                                                    Not in @model.PackageId @model.PackageVersion's bundled list, so the build fails with @CodeFor("SC007", "SC008", "SC024") as it stands.
+                                                    That is expected — and answered below — if the sponsorship began after this version was packed@(model.Facts?.PackDate is { } packedDate ? $" ({packedDate})" : ""), or is private or incognito, which is never bundled at all.
+                                                    Otherwise the account or the platform is not the one the sponsorship is under.
+                                                </p>
+                                                break;
+                                        }
                                     </div>
                                 }
                             </div>
