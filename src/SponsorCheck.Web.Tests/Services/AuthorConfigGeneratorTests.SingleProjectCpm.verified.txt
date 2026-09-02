@@ -35,6 +35,8 @@ After upgrading, every build looks for one of the options below. If none is conf
 
 Pick exactly one of the following and add it where the package is referenced (on the `<PackageReference>`, or on the `<PackageVersion>` in `Directory.Packages.props` if you use Central Package Management).
 
+Prefer a guided setup? The [SponsorCheck setup wizard for `MyOssLib`](https://simoncropp.github.io/SponsorCheck/package/MyOssLib) reads this package's published configuration from nuget.org and generates the exact snippet and the file it belongs in.
+
 #### Option 1 — Sponsor
 
 Sponsor the author, then declare the account you sponsor under:
@@ -148,6 +150,8 @@ After upgrading, every build looks for one of the options below. If none is conf
 ### What you need to do
 
 Pick exactly one of the following and add it where the package is referenced (on the `<PackageReference>`, or on the `<PackageVersion>` in `Directory.Packages.props` if you use Central Package Management).
+
+Prefer a guided setup? The [SponsorCheck setup wizard for `MyOssLib`](https://simoncropp.github.io/SponsorCheck/package/MyOssLib) reads this package's published configuration from nuget.org and generates the exact snippet and the file it belongs in.
 
 #### Option 1 — Sponsor
 

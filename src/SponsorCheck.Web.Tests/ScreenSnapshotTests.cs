@@ -178,4 +178,68 @@ public class ScreenSnapshotTests
         await page.WaitForSelectorAsync(".output");
         await VerifyScreen(page);
     }
+
+    // ---- package deep-link screens ----
+
+    /// <summary>The package page fetches on landing, so the fake feed is routed before navigating.</summary>
+    static async Task<IPage> OpenPackage(byte[] nupkg, string readySelector, string id = "ThePackage")
+    {
+        var page = await wizard.NewPage();
+        await FakeNuGetFeed.Route(page, nupkg, "1.2.3");
+        await page.GotoAsync(wizard.Url($"/package/{id}"));
+        await page.WaitForSelectorAsync(readySelector);
+        return page;
+    }
+
+    static Task<IPage> PackageSituationScreen() =>
+        OpenPackage(TestNupkg.Build(), "#cpm-yes");
+
+    static async Task<IPage> PackageLicenseModeScreen()
+    {
+        // The bundled hash for the entered account makes this the one screen that captures the green
+        // "found in the bundled list" verdict; the consumer screens never look anything up.
+        var nupkg = TestNupkg.Build(
+            ownerId: "acme",
+            sponsorHashes: [SponsorAccountHash.For("GitHubSponsors", "alice")]);
+        var page = await OpenPackage(nupkg, ".mode-cards");
+        // sponsor
+        await page.ClickAsync("button.mode-card >> nth=0");
+        await page.CheckAsync("#sponsor-GitHub");
+        await page.FillAsync("#sponsor-account-GitHub", "alice");
+        await page.WaitForSelectorAsync(".match-confirmed");
+        return page;
+    }
+
+    [Test]
+    public async Task PackageSituation()
+    {
+        var page = await PackageSituationScreen();
+        await VerifyScreen(page);
+    }
+
+    [Test]
+    public async Task PackageLicenseMode()
+    {
+        var page = await PackageLicenseModeScreen();
+        await VerifyScreen(page);
+    }
+
+    [Test]
+    public async Task PackageOutput()
+    {
+        var page = await PackageLicenseModeScreen();
+        await page.ClickAsync("button.primary");
+        await page.WaitForSelectorAsync(".output");
+        await VerifyScreen(page);
+    }
+
+    [Test]
+    public async Task PackageNotFound()
+    {
+        var page = await wizard.NewPage();
+        await FakeNuGetFeed.RouteNotFound(page);
+        await page.GotoAsync(wizard.Url("/package/NoSuchPackage"));
+        await page.WaitForSelectorAsync("text=not found on nuget.org");
+        await VerifyScreen(page);
+    }
 }

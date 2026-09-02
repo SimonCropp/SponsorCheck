@@ -391,4 +391,27 @@ public class RepoContractTests
         text = Regex.Replace(text, @"[^\w\- ]", "");
         return text.Replace(' ', '-');
     }
+
+    [Test]
+    public async Task WizardLinksMatchTheDeployedSite()
+    {
+        // The deploy workflow rewrites <base href> to the Pages project path; the urls the wizard
+        // prints into other projects' docs have to point at that same path.
+        var workflow = await File.ReadAllTextAsync(RepoPaths.RepoFile(".github", "workflows", "deploy-blazor.yml"));
+        var baseHref = Regex.Match(workflow, "<base href=\"(/[^\"]+/)\" />").Groups[1].Value;
+        await Assert.That(new Uri(WizardLinks.Base).AbsolutePath + "/").IsEqualTo(baseHref);
+
+        // And the docs link the urls literally, so a moved site shows up as a failing test here
+        // rather than as dead links.
+        var packagePattern = $"{WizardLinks.Base}/package/<PackageId>";
+        var readme = await File.ReadAllTextAsync(RepoPaths.RepoFile("readme.md"));
+        var consumerDocs = await File.ReadAllTextAsync(RepoPaths.RepoFile("docs", "ConsumerUsage.md"));
+        var authorDocs = await File.ReadAllTextAsync(RepoPaths.RepoFile("docs", "AuthorSetup.md"));
+        await Assert.That(readme).Contains(WizardLinks.Base + "/");
+        await Assert.That(readme).Contains(packagePattern);
+        await Assert.That(consumerDocs).Contains(WizardLinks.Consumer);
+        await Assert.That(consumerDocs).Contains(packagePattern);
+        await Assert.That(authorDocs).Contains(WizardLinks.Author);
+        await Assert.That(authorDocs).Contains(packagePattern);
+    }
 }

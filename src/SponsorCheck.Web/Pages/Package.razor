@@ -1,0 +1,82 @@
+@page "/package/{PackageId}"
+@namespace SponsorCheck.Web.Pages
+<PageTitle>SponsorCheck Setup Wizard — @Title</PageTitle>
+
+<div class="wizard">
+    @if (facts is { BundlesSponsorCheck: true })
+    {
+        <Stepper Labels="stepLabels"
+                 Active="stepIndex"
+                 StepSelected="GoToStep" />
+    }
+
+    <div class="step-body">
+        @if (loading)
+        {
+            <h2>The package</h2>
+            <div class="spinner"></div>
+            <p class="hint">Inspecting <code>@requestedId</code> on nuget.org: the newest release, prerelease included. The download and inspection happen in the browser; nothing is uploaded anywhere.</p>
+        }
+        else if (error is { } message)
+        {
+            <h2>The package</h2>
+            <p class="validation-error">@message</p>
+            <p class="hint">The <a href="consumer">consumer flow</a> asks the same questions without the lookup, and can inspect a specific version.</p>
+        }
+        else if (facts is { BundlesSponsorCheck: false } unbundled)
+        {
+            <h2>The package</h2>
+            <p class="callout">
+                No SponsorCheck files found in <code>@unbundled.PackageId</code> @unbundled.Version, its newest release — that version may predate SponsorCheck adoption. Use the <a href="consumer">consumer flow</a> to look up the version the diagnostic came from, or to answer the questions manually.
+            </p>
+        }
+        else if (facts is { } knownFacts)
+        {
+            @if (stepIndex == 0)
+            {
+                <FactsSummary Facts="knownFacts" />
+            }
+            @switch (steps[stepIndex])
+            {
+                case PackageStep.Situation:
+                    <h2>Your situation</h2>
+                    <p class="callout facts-summary">This package uses per-package configuration — detected from the package.</p>
+                    <CpmChoice Model="model" />
+                    break;
+                case PackageStep.LicenseMode:
+                    <LicenseModeStep Model="model" Changed="StateHasChanged" />
+                    break;
+                case PackageStep.Output:
+                    <ConsumerOutputPanel Model="model" WizardUrl="@WizardLinks.Package(model.PackageId)" />
+                    break;
+            }
+        }
+    </div>
+
+    @if (facts is { BundlesSponsorCheck: true })
+    {
+        <div class="wizard-nav">
+            <span>
+                @if (stepIndex > 0)
+                {
+                    <button type="button" @onclick="Back">Back</button>
+                }
+            </span>
+            <span>
+                @if (steps[stepIndex] != PackageStep.Output)
+                {
+                    <button type="button"
+                            class="primary"
+                            disabled="@(!CanAdvance)"
+                            @onclick="Next">
+                        @(steps[stepIndex + 1] == PackageStep.Output ? "Generate" : "Next")
+                    </button>
+                }
+                else
+                {
+                    <button type="button" @onclick="Restart">Start over</button>
+                }
+            </span>
+        </div>
+    }
+</div>

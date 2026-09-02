@@ -93,7 +93,14 @@ public sealed class PublishedWizard : IAsyncDisposable
                 ContentTypeProvider = contentTypes,
                 ServeUnknownFileTypes = true
             });
-        app.MapFallbackToFile("index.html", new StaticFileOptions {FileProvider = files});
+        // The pattern-less MapFallbackToFile registers {*path:nonfile}, which treats a dotted last
+        // segment such as /package/Verify.Xunit as a file request and 404s it. GitHub Pages serves
+        // 404.html for any missing path, so the host matches that with an unconstrained pattern. That
+        // pattern also matches every asset url, and the static file middleware steps aside once routing
+        // has picked an endpoint, so routing has to run after the static files rather than at the start
+        // of the pipeline where WebApplication would otherwise put it.
+        app.UseRouting();
+        app.MapFallbackToFile("{*path}", "index.html", new StaticFileOptions {FileProvider = files});
 
         await app.StartAsync();
 

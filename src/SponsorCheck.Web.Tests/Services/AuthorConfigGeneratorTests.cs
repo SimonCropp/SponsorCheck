@@ -244,4 +244,16 @@ public class AuthorConfigGeneratorTests
         var output = AuthorConfigGenerator.Generate(model);
         await Assert.That(output.Reference).DoesNotContain("PrivateSponsorMaxTermMonths");
     }
+
+    [Test]
+    public async Task ReleaseNotesLinkThePackageWizard()
+    {
+        var model = BaseModel();
+        Enable(model, PlatformKind.GitHub, "acmecorp");
+
+        var output = AuthorConfigGenerator.Generate(model);
+
+        await Assert.That(output.ReleaseNotes).Contains(WizardLinks.Package("MyOssLib"));
+        await Assert.That(output.Markdown).Contains(WizardLinks.Package("MyOssLib"));
+    }
 }

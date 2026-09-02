@@ -12,7 +12,7 @@ Pick the path that applies:
 
 - **A build is asking for sponsorship metadata** (an `SC0xx` error or warning) - [Consumer usage](#consumer-usage) below; full detail in the [consumer guide](docs/ConsumerUsage.md).
 - **Considering SponsorCheck for a library** - [OSS author setup](#oss-author-setup) below; full detail in the [author guide](docs/AuthorSetup.md).
-- **Prefer answering a few questions** - the [setup wizard](https://simoncropp.github.io/SponsorCheck/) generates tailored, copy-pasteable configuration for either role; given a package id it inspects the published nupkg and pre-answers most of them.
+- **Prefer answering a few questions** - the [setup wizard](https://simoncropp.github.io/SponsorCheck/) generates tailored, copy-pasteable configuration for either role; given a package id it inspects the published nupkg and pre-answers most of them; package docs can deep-link to `https://simoncropp.github.io/SponsorCheck/package/<PackageId>` for a flow seeded from that package.
 
 
 ## Why this approach

@@ -30,7 +30,11 @@
 @code {
     [Parameter, EditorRequired] public ConsumerModel Model { get; set; } = new();
 
+    /// <summary>The flow that produced the output, named in the copied markdown so a reader can
+    /// re-run it. The package flow passes its own url.</summary>
+    [Parameter] public string WizardUrl { get; set; } = WizardLinks.Consumer;
+
     ConsumerOutput output = ConsumerConfigGenerator.Generate(new());
 
-    protected override void OnParametersSet() => output = ConsumerConfigGenerator.Generate(Model);
+    protected override void OnParametersSet() => output = ConsumerConfigGenerator.Generate(Model, WizardUrl);
 }
