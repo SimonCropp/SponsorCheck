@@ -4,7 +4,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.10.1" />
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.10.0" />
     <PackageVersion Include="Microsoft.Build.Framework" Version="18.10.1" />
     <PackageVersion Include="ProjectDefaults" Version="1.0.180" />
     <PackageVersion Include="RemoteZip" Version="0.2.1" />
