@@ -19,14 +19,14 @@ public class BundleSponsorListTaskTests
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, """[{"platform":"GitHubSponsors","account":"alice"}]""");
+        var overrideListPath = WriteOverride(dir, """[{"platform":"GitHubSponsors","account":"alice"}]""");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -54,7 +54,7 @@ public class BundleSponsorListTaskTests
         // platform-specific sponsor URLs in SC001/SC005 messages.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -62,7 +62,7 @@ public class BundleSponsorListTaskTests
             OpenCollectiveAccountFromRef = "acme-org",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -152,7 +152,7 @@ public class BundleSponsorListTaskTests
         // SC0xx messages.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -160,7 +160,7 @@ public class BundleSponsorListTaskTests
             SponsorLandingUrlFromRef = "https://acme.example.com/sponsor",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -183,14 +183,14 @@ public class BundleSponsorListTaskTests
         // empty when SponsorLandingUrl is not declared.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -212,7 +212,7 @@ public class BundleSponsorListTaskTests
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(
+        var overrideListPath = WriteOverride(
             dir,
             """
             [
@@ -230,7 +230,7 @@ public class BundleSponsorListTaskTests
             PolarAccountFromVer = "acme",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -262,14 +262,14 @@ public class BundleSponsorListTaskTests
         // consumer and every build would fail SC007 despite the override packing cleanly.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, """[{"platform":"githubsponsors","account":"alice"}]""");
+        var overrideListPath = WriteOverride(dir, """[{"platform":"githubsponsors","account":"alice"}]""");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -296,14 +296,14 @@ public class BundleSponsorListTaskTests
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
         var engine = new StubBuildEngine();
-        var override_ = WriteOverride(dir, """[{"platform":"GitHub","account":"alice"}]""");
+        var overrideListPath = WriteOverride(dir, """[{"platform":"GitHub","account":"alice"}]""");
         var task = new BundleSponsorListTask
         {
             BuildEngine = engine,
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -467,7 +467,7 @@ public class BundleSponsorListTaskTests
             </Project>
             """);
 
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -475,7 +475,7 @@ public class BundleSponsorListTaskTests
             VerifierTargetsTemplatePath = templatePath,
             // ID with dot, dash, and digit — exercise sanitization.
             ThePackageId = "Acme.Lib-2",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "Acme.Lib-2.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -523,14 +523,14 @@ public class BundleSponsorListTaskTests
             </Project>
             """);
 
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = templatePath,
             ThePackageId = "Acme.Lib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "Acme.Lib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -566,7 +566,7 @@ public class BundleSponsorListTaskTests
             </Project>
             """);
 
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -574,7 +574,7 @@ public class BundleSponsorListTaskTests
             VerifierTargetsTemplatePath = templatePath,
             ThePackageId = "MyOssLib",
             InnerTargetsImportFileName = "MyOssLib.SponsorCheckInner.targets",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -608,7 +608,7 @@ public class BundleSponsorListTaskTests
             </Project>
             """);
 
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -616,7 +616,7 @@ public class BundleSponsorListTaskTests
             VerifierTargetsTemplatePath = templatePath,
             ThePackageId = "MyOssLib",
             // InnerTargetsImportFileName left at its default ("").
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -656,7 +656,7 @@ public class BundleSponsorListTaskTests
             </Project>
             """);
 
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -665,7 +665,7 @@ public class BundleSponsorListTaskTests
             VerifierTargetsTemplatePath = perPackageTemplate,
             VerifierOwnerTargetsTemplatePath = ownerTemplate,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -716,7 +716,7 @@ public class BundleSponsorListTaskTests
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -727,7 +727,7 @@ public class BundleSponsorListTaskTests
             LicenseExpiredSeverityOverrideFromRef = "warning",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -753,14 +753,14 @@ public class BundleSponsorListTaskTests
         // miss the file. The verifier tolerates missing files but pack-time should be deterministic.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -784,7 +784,7 @@ public class BundleSponsorListTaskTests
         // are rejected at pack time rather than producing a broken verifier targets file.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var engine = new StubBuildEngine();
         var task = new BundleSponsorListTask
         {
@@ -794,7 +794,7 @@ public class BundleSponsorListTaskTests
             VerifierTargetsTemplatePath = template,
             VerifierOwnerTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -840,7 +840,7 @@ public class BundleSponsorListTaskTests
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var engine = new StubBuildEngine();
         var task = new BundleSponsorListTask
         {
@@ -849,7 +849,7 @@ public class BundleSponsorListTaskTests
             NoLicenseSpecifiedSeverityOverrideFromRef = "critical",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -872,7 +872,7 @@ public class BundleSponsorListTaskTests
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -881,7 +881,7 @@ public class BundleSponsorListTaskTests
             LicenseIgnoredMessageOverrideFromRef = "You agreed not to free-ride.",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -903,14 +903,14 @@ public class BundleSponsorListTaskTests
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -934,7 +934,7 @@ public class BundleSponsorListTaskTests
         // ItemGroup batches the same way the platform-account metadata does.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
@@ -942,7 +942,7 @@ public class BundleSponsorListTaskTests
             LicenseIgnoredSeverityOverrideFromVer = "error",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -963,7 +963,7 @@ public class BundleSponsorListTaskTests
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(
+        var overrideListPath = WriteOverride(
             dir,
             """
             [
@@ -978,7 +978,7 @@ public class BundleSponsorListTaskTests
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
@@ -1011,14 +1011,14 @@ public class BundleSponsorListTaskTests
     {
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             SponsorExemptions =
             [
                 MakeExemption("Consulting", "Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work."),
@@ -1046,14 +1046,14 @@ public class BundleSponsorListTaskTests
         // Sidecar is always written (deterministic packaging) — empty when no exemptions defined.
         using var dir = new TempDirectory();
         var template = BuildTemplate(dir);
-        var override_ = WriteOverride(dir, "[]");
+        var overrideListPath = WriteOverride(dir, "[]");
         var task = new BundleSponsorListTask
         {
             BuildEngine = new StubBuildEngine(),
             GitHubSponsorsAccountFromRef = "acmecorp",
             VerifierTargetsTemplatePath = template,
             ThePackageId = "MyOssLib",
-            OverrideListPath = override_,
+            OverrideListPath = overrideListPath,
             OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
             OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
             OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
