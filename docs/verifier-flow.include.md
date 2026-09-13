@@ -18,7 +18,7 @@ flowchart TD
     UntilCap -->|No| UntilExpired{End of month<br/>in the past?}
     UntilExpired -->|Yes| SC047[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc047'>SC047 Error<br/>Exemption expired</a>]
     UntilExpired -->|No| SC029
-    SC029[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>SC029 Warning<br/>Publisher's criteria text</a>]
+    SC029([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>Build passes<br/>SC029 audit message<br/>publisher's criteria text</a>])
 
     Which -->|Supplied sponsor account| HasPrivate{Sponsorship<br/>PrivateUntil set?}
     HasPrivate -->|Yes| PrivateYM{Valid<br/>yyyy-MM?}

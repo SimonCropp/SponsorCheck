@@ -67,7 +67,7 @@ If you have a private (B2B) licensing arrangement, set a time-bounded license. T
 
 #### Option 3 — Claim an exemption
 
-The following exemptions are defined for this package. If one applies, claim it by name — the build passes with a warning quoting the exemption's criteria (not a breach message):
+The following exemptions are defined for this package. If one applies, claim it by name — the build passes and logs a message quoting the exemption's criteria (not a breach-of-license warning):
 
 - `Consulting` — Organizations that engaged a maintainer for consulting are exempt for 6 months.
 - `SmallRevenue` — Consumers under US$10,000 annual gross revenue are exempt.
@@ -200,7 +200,7 @@ If you have a private (B2B) licensing arrangement, set a time-bounded license. T
 
 #### Option 3 — Claim an exemption
 
-The following exemptions are defined for this package. If one applies, claim it by name — the build passes with a warning quoting the exemption's criteria (not a breach message):
+The following exemptions are defined for this package. If one applies, claim it by name — the build passes and logs a message quoting the exemption's criteria (not a breach-of-license warning):
 
 - `Consulting` — Organizations that engaged a maintainer for consulting are exempt for 6 months.
 - `SmallRevenue` — Consumers under US$10,000 annual gross revenue are exempt.

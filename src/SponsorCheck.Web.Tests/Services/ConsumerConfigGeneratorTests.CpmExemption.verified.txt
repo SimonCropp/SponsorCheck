@@ -9,7 +9,7 @@ Directory.Packages.props — the file holding the <PackageVersion> items under C
 Add the new attribute(s) to the existing <PackageVersion Include="ThePackage"> element — do not create a second element, and do not put the metadata on the <PackageReference>.
 
 === Build outcome ===
-Passes with a SC030 warning whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed rather than a generic breach message. A name the publisher did not define fails with SC033; that error lists the available exemption names.
+Passes and logs a high-priority SC030 audit message whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed, not a breach-of-license warning. A name the publisher did not define fails with SC033; that error lists the available exemption names.
 
 === Notes ===
 - Keep the metadata in exactly one place: on the <PackageVersion>. Setting it on the <PackageReference> as well raises SC019; only on the <PackageReference> raises SC020.
@@ -37,7 +37,7 @@ Add the new attribute(s) to the existing <PackageVersion Include="ThePackage"> e
 
 ## Expected build outcome
 
-Passes with a SC030 warning whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed rather than a generic breach message. A name the publisher did not define fails with SC033; that error lists the available exemption names.
+Passes and logs a high-priority SC030 audit message whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed, not a breach-of-license warning. A name the publisher did not define fails with SC033; that error lists the available exemption names.
 
 Notes:
 

@@ -210,7 +210,7 @@ Build passes but emits the [license ignored - SC005](VerifierDiagnosticCodes.md#
 
 `SponsorshipLicenseIgnored` is the universal opt-out, but the warning frames the consumer as in breach. Many publishers carve out scenarios where consumption is *legitimately* free — pre-existing customers, consulting clients, small businesses below a revenue threshold, etc. Those consumers shouldn't ship a "breach of license" warning through CI for the lifetime of every build.
 
-Publishers can define named **exemptions** at pack time (see [Defining exemptions](AuthorSetup.md#defining-exemptions) in the author guide). Consumers claim one by name; the build passes with a warning whose body is the publisher's own criteria text — so CI logs and code review show the exact exemption being claimed instead of a generic breach message.
+Publishers can define named **exemptions** at pack time (see [Defining exemptions](AuthorSetup.md#defining-exemptions) in the author guide). Consumers claim one by name; the build passes and logs a high-priority message (not a warning) whose body is the publisher's own criteria text — so CI logs and code review show the exact exemption being claimed instead of a generic breach warning.
 
 <!-- snippet: Consumer.Exemption.csproj -->
 <a id='snippet-Consumer.Exemption.csproj'></a>
@@ -265,9 +265,9 @@ In owner mode, the property uses the owner prefix:
 <sup><a href='/IntegrationTests/Fixtures/Consumer.OwnerExemption/Consumer.OwnerExemption.csproj#L1-L10' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.OwnerExemption.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Build passes with a warning ([SC029](VerifierDiagnosticCodes.md#sc029) / [SC030](VerifierDiagnosticCodes.md#sc030) / [SC031](VerifierDiagnosticCodes.md#sc031) for non-CPM / CPM / owner mode) whose body is the publisher's criteria text verbatim. Naming an exemption the publisher did not define fails the build with [SC032](VerifierDiagnosticCodes.md#sc032) / [SC033](VerifierDiagnosticCodes.md#sc033) / [SC034](VerifierDiagnosticCodes.md#sc034); the error body lists the available exemptions so the consumer can correct.
+Build passes and logs a high-priority message ([SC029](VerifierDiagnosticCodes.md#sc029) / [SC030](VerifierDiagnosticCodes.md#sc030) / [SC031](VerifierDiagnosticCodes.md#sc031) for non-CPM / CPM / owner mode) whose body is the publisher's criteria text verbatim. Like [SC017](VerifierDiagnosticCodes.md#sc017) and [SC059](VerifierDiagnosticCodes.md#sc059) it is a message rather than a warning, so a valid claim passes a warnings-as-errors build without a `NoWarn`. Naming an exemption the publisher did not define fails the build with [SC032](VerifierDiagnosticCodes.md#sc032) / [SC033](VerifierDiagnosticCodes.md#sc033) / [SC034](VerifierDiagnosticCodes.md#sc034); the error body lists the available exemptions so the consumer can correct.
 
-Lookup is case-insensitive but the warning text echoes the consumer-typed casing — what's in the audit trail is exactly what the consumer wrote.
+Lookup is case-insensitive but the message text echoes the consumer-typed casing — what's in the audit trail is exactly what the consumer wrote.
 
 
 ### Time-bounded exemptions
@@ -292,7 +292,7 @@ What the verifier does with the value:
 | Value isn't a `yyyy-MM` month | [invalid format - SC041](VerifierDiagnosticCodes.md#sc041) |
 | Month is further out than the publisher's cap | [beyond the cap - SC044](VerifierDiagnosticCodes.md#sc044) — the error names the latest month allowed |
 | Month has passed | [exemption expired - SC047](VerifierDiagnosticCodes.md#sc047) |
-| Otherwise | Build passes with the usual [SC029](VerifierDiagnosticCodes.md#sc029) warning, which now also names the end month |
+| Otherwise | Build passes with the usual [SC029](VerifierDiagnosticCodes.md#sc029) message, which now also names the end month |
 
 The cap is measured from the build clock, so a claim that was in range when written stays in range until it expires — it's each renewal that gets re-capped. Once the month passes the build fails, which is the point: it prompts someone to confirm the carve-out still applies before extending it. If it no longer does, switch to one of the other license modes.
 
@@ -369,7 +369,7 @@ flowchart TD
     UntilCap -->|No| UntilExpired{End of month<br/>in the past?}
     UntilExpired -->|Yes| SC047[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc047'>SC047 Error<br/>Exemption expired</a>]
     UntilExpired -->|No| SC029
-    SC029[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>SC029 Warning<br/>Publisher's criteria text</a>]
+    SC029([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>Build passes<br/>SC029 audit message<br/>publisher's criteria text</a>])
 
     Which -->|Supplied sponsor account| HasPrivate{Sponsorship<br/>PrivateUntil set?}
     HasPrivate -->|Yes| PrivateYM{Valid<br/>yyyy-MM?}

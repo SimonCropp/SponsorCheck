@@ -60,8 +60,8 @@ public static class ConsumerMetadataExamples
 
         // The exemption option only renders when the publisher actually defined at least one
         // <SponsorExemption> at pack time. Same suppression rule as includeIgnoreOption — the
-        // SC029/SC030/SC031 warnings (exemption already claimed) skip this so they don't
-        // re-offer the option that fired the warning.
+        // SC029/SC030/SC031 messages (exemption already claimed) skip this so they don't
+        // re-offer the option that fired the message.
         if (includeExemptionOption && exemptionsDefined is { Count: > 0 })
         {
             var first = exemptionsDefined.First();

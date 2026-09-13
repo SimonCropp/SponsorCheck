@@ -208,7 +208,7 @@ public static class ConsumerConfigGenerator
 
             case ConsumerLicenseMode.Exemption:
             {
-                var warnCode = CodeFor(placement, "SC029", "SC030", "SC031");
+                var claimedCode = CodeFor(placement, "SC029", "SC030", "SC031");
                 var unknownCode = CodeFor(placement, "SC032", "SC033", "SC034");
                 if (model.Facts is { BundlesSponsorCheck: true } facts)
                 {
@@ -227,7 +227,7 @@ public static class ConsumerConfigGenerator
                     }
 
                     var criteria =
-                        $"Passes with a {warnCode} warning quoting the publisher's criteria for '{match.Name}': \"{match.Message}\" — the build log records the specific carve-out being claimed rather than a generic breach message.";
+                        $"Passes and logs a high-priority {claimedCode} audit message quoting the publisher's criteria for '{match.Name}': \"{match.Message}\" — the build log records the specific carve-out being claimed, not a breach-of-license warning.";
                     if (match.MaxTermMonths is { } months)
                     {
                         var missingCode = CodeFor(placement, "SC038", "SC039", "SC040");
@@ -250,7 +250,7 @@ public static class ConsumerConfigGenerator
                 }
 
                 return
-                    $"Passes with a {warnCode} warning whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed rather than a generic breach message. A name the publisher did not define fails with {unknownCode}; that error lists the available exemption names.";
+                    $"Passes and logs a high-priority {claimedCode} audit message whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed, not a breach-of-license warning. A name the publisher did not define fails with {unknownCode}; that error lists the available exemption names.";
             }
 
             case ConsumerLicenseMode.Ignore:

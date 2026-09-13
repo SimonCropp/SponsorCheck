@@ -238,7 +238,7 @@ Severity values: `error`, `warning`, `message`. Message values: any string (the 
 
 Many publishers have legitimate scenarios where a consumer doesn't need to sponsor — consulting clients, pre-existing customers, small businesses below a revenue threshold, etc. Treating those consumers as in breach of the package license (via the [SC005](VerifierDiagnosticCodes.md#sc005)-style warning that follows the build through CI) misrepresents the relationship.
 
-`<SponsorExemption>` items declared next to the SponsorCheck reference let publishers define **named exemptions**, each with the criteria text that describes who qualifies. Consumers claim one by name (see [Publisher-defined exemptions](ConsumerUsage.md#publisher-defined-exemptions) in the consumer guide); the build passes with a warning whose body is the publisher's verbatim criteria text — so the consumer's audit trail documents the specific carve-out being claimed instead of a generic breach.
+`<SponsorExemption>` items declared next to the SponsorCheck reference let publishers define **named exemptions**, each with the criteria text that describes who qualifies. Consumers claim one by name (see [Publisher-defined exemptions](ConsumerUsage.md#publisher-defined-exemptions) in the consumer guide); the build passes and logs a high-priority message whose body is the publisher's verbatim criteria text — so the consumer's audit trail documents the specific carve-out being claimed instead of a generic breach.
 
 <!-- snippet: ThePackageWithExemptions.csproj -->
 <a id='snippet-ThePackageWithExemptions.csproj'></a>
@@ -266,9 +266,9 @@ Many publishers have legitimate scenarios where a consumer doesn't need to spons
 <sup><a href='/IntegrationTests/Fixtures/_Shared/ThePackageWithExemptions/ThePackageWithExemptions.csproj#L1-L19' title='Snippet source file'>snippet source</a> | <a href='#snippet-ThePackageWithExemptions.csproj' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-`Include=` is the exemption name consumers will claim; `Message=` is the criteria text that becomes the warning body. The bundler validates each item at pack time — empty name, empty message, or duplicate names (case-insensitive) fail with [SC106](BundlerDiagnosticCodes.md#sc106). The exemption set is baked into the produced nupkg under `build/SponsorCheck.Exemptions.json`, so consumers can't add new names or change the criteria text.
+`Include=` is the exemption name consumers will claim; `Message=` is the criteria text that becomes the message body. The bundler validates each item at pack time — empty name, empty message, or duplicate names (case-insensitive) fail with [SC106](BundlerDiagnosticCodes.md#sc106). The exemption set is baked into the produced nupkg under `build/SponsorCheck.Exemptions.json`, so consumers can't add new names or change the criteria text.
 
-Exemption warnings ([SC029](VerifierDiagnosticCodes.md#sc029) / [SC030](VerifierDiagnosticCodes.md#sc030) / [SC031](VerifierDiagnosticCodes.md#sc031)) are **not** overrideable via `*MessageOverride` — the publisher's `Message` *is* the override. To change the warning text, edit the `Message` and repack.
+Exemption messages ([SC029](VerifierDiagnosticCodes.md#sc029) / [SC030](VerifierDiagnosticCodes.md#sc030) / [SC031](VerifierDiagnosticCodes.md#sc031)) are **not** overrideable via `*SeverityOverride` or `*MessageOverride` — they are always high-priority messages, and the publisher's `Message` *is* the text override. To change the text, edit the `Message` and repack.
 
 
 ### Time-bounding an exemption
