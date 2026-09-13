@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
-    <NoWarn>CS1591;NU1608;NU1109;NU1901;PolyfillTargetsForNuget;SC023</NoWarn>
+    <NoWarn>CS1591;NU1608;NU1109;NU1901;PolyfillTargetsForNuget</NoWarn>
     <Version>0.22.0</Version>
     <LangVersion>preview</LangVersion>
     <!-- Do NOT pin AssemblyVersion. SponsorCheck.dll is an MSBuild task assembly shipped inside many
@@ -25,6 +25,7 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <SignAssembly>false</SignAssembly>
-    <Verify_SponsorshipLicenseIgnored>true</Verify_SponsorshipLicenseIgnored>
+    <Verify_SponsorshipExemption>OpenSource</Verify_SponsorshipExemption>
+    <Verify_SponsorshipExemptionUntil>2027-08</Verify_SponsorshipExemptionUntil>
   </PropertyGroup>
 </Project>

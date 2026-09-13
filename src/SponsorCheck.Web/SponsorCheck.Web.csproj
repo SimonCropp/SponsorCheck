@@ -9,10 +9,10 @@
     <BlazorEnableTimeZoneSupport>false</BlazorEnableTimeZoneSupport>
     <UseNativeHttpHandler>true</UseNativeHttpHandler>
     <!-- RemoteZip bundles the SponsorCheck verifier (owner Papyrine); this repo is first-party.
-         The ignore property satisfies the verifier, and SC023 (its acknowledgment warning) is
-         suppressed the same way the Papyrine repos do. -->
+         The ignore property satisfies the verifier. -->
     <Papyrine_SponsorshipLicenseIgnored>true</Papyrine_SponsorshipLicenseIgnored>
-    <NoWarn>$(NoWarn);SC023</NoWarn>
+    <Verify_SponsorshipExemption>OpenSource</Verify_SponsorshipExemption>
+    <Verify_SponsorshipExemptionUntil>2027-08</Verify_SponsorshipExemptionUntil>
   </PropertyGroup>
 
   <ItemGroup>
