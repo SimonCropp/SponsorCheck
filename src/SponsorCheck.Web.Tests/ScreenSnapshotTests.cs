@@ -7,6 +7,7 @@ namespace SponsorCheck.Web.Tests;
 /// remaining rasterization differences. The HTML target pins exact markup.
 /// Inputs are fixed values so every screen renders deterministic content.
 /// </summary>
+[ParallelLimiter<BrowserParallelLimit>]
 public class ScreenSnapshotTests
 {
     static PublishedWizard wizard => PublishedWizard.Shared;
