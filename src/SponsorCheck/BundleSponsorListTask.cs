@@ -67,7 +67,7 @@ public sealed class BundleSponsorListTask :
 
     // Publisher-defined exempt scenarios. Each item's ItemSpec is the exemption name (e.g.
     // "Consulting") and the required Message metadata is the criteria text that becomes the
-    // body of the consumer-side warning (SC029/SC030/SC031) when claimed. Optional MaxTermMonths
+    // body of the consumer-side audit message (SC029/SC030/SC031) when claimed. Optional MaxTermMonths
     // metadata makes the claim time-bounded — see ExemptionDefinition.
     public ITaskItem[] SponsorExemptions { get; set; } = [];
 

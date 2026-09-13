@@ -9,7 +9,7 @@ The consuming project's .csproj — the file holding the <PackageReference> for 
 Add the new attribute(s) to the existing <PackageReference Include="ThePackage"> element — do not create a second reference.
 
 === Build outcome ===
-Passes with a SC029 warning whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed rather than a generic breach message. A name the publisher did not define fails with SC032; that error lists the available exemption names.
+Passes and logs a high-priority SC029 audit message whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed, not a breach-of-license warning. A name the publisher did not define fails with SC032; that error lists the available exemption names.
 
 === Notes ===
 - If the solution adopts Central Package Management later, the metadata moves to the matching <PackageVersion> in Directory.Packages.props — wrong placement raises SC020, both places raises SC019.
@@ -37,7 +37,7 @@ Add the new attribute(s) to the existing <PackageReference Include="ThePackage">
 
 ## Expected build outcome
 
-Passes with a SC029 warning whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed rather than a generic breach message. A name the publisher did not define fails with SC032; that error lists the available exemption names.
+Passes and logs a high-priority SC029 audit message whose body is the publisher's own criteria text — the build log records the specific carve-out being claimed, not a breach-of-license warning. A name the publisher did not define fails with SC032; that error lists the available exemption names.
 
 Notes:
 

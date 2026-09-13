@@ -102,7 +102,7 @@ public static class DecisionApplier
             }
 
             case LicenseDecision.Exempt exempt:
-                return ApplyExempt(exempt, context, exemptionsDefined, severityOverrides, messageOverrides, log, utcNow);
+                return ApplyExempt(exempt, context, exemptionsDefined, log, utcNow);
 
             case LicenseDecision.Sponsor sponsor:
                 return ApplySponsor(sponsor, sponsorHashListPath, packDatePath, context, authorAccounts, severityOverrides, messageOverrides, log, utcNow, privateSponsorMaxTermMonths);
@@ -119,12 +119,10 @@ public static class DecisionApplier
         LicenseDecision.Exempt exempt,
         ConsumerContext context,
         Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> exemptionsDefined,
-        Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
-        Lazy<IReadOnlyDictionary<string, string>> messageOverrides,
         TaskLoggingHelper log,
         DateTime utcNow)
     {
-        // Lookup is case-insensitive (the loaded dict uses OrdinalIgnoreCase) but the warning
+        // Lookup is case-insensitive (the loaded dict uses OrdinalIgnoreCase) but the message
         // body surfaces what the consumer actually typed — that's the audit signal in CI logs.
         if (!exemptionsDefined.Value.TryGetValue(exempt.ExemptionName, out var definition))
         {
@@ -256,13 +254,15 @@ public static class DecisionApplier
             ConsumerMode.Cpm => ("SC030", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" claimed on the <PackageVersion> in Directory.Packages.props{bound}. Publisher's exemption criteria: {definition.Message}"),
             _ => ("SC029", $"Package '{exempt.PackageId}': SponsorshipExemption=\"{exempt.ExemptionName}\" claimed on the <PackageReference>{bound}. Publisher's exemption criteria: {definition.Message}")
         };
-        return SponsorCheckLog.Emit(
+        // Informational, not a warning: like SC017 and SC059, an exemption is a documented route the
+        // publisher offers, and every way a claim can be wrong has already failed above. As a warning
+        // it broke warnings-as-errors builds on a valid claim, and the NoWarn that unblocked them also
+        // hid this line from the default log, taking the audit trail with it.
+        SponsorCheckLog.HighMessage(
             log,
             code,
-            Severity.Warning,
-            severityOverrides.Value,
-            messageOverrides.Value,
             opener);
+        return true;
     }
 
     static bool ApplySponsor(

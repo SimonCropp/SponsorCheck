@@ -30,7 +30,7 @@ flowchart TD
     UntilCap -->|No| UntilExpired{End of month<br/>in the past?}
     UntilExpired -->|Yes| SC047[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc047'>SC047 Error<br/>Exemption expired</a>]
     UntilExpired -->|No| SC029
-    SC029[<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>SC029 Warning<br/>Publisher's criteria text</a>]
+    SC029([<a href='https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029'>Build passes<br/>SC029 audit message<br/>publisher's criteria text</a>])
 
     Which -->|Supplied sponsor account| HasPrivate{Sponsorship<br/>PrivateUntil set?}
     HasPrivate -->|Yes| PrivateYM{Valid<br/>yyyy-MM?}
@@ -714,8 +714,8 @@ flowchart TD
 ### SC029
 
 - **Name:** Exemption claimed
-- **Level**: Warning
-- **Meaning:** The consumer set `SponsorshipExemption="<name>"` on the `<PackageReference>` and `<name>` matches an exemption the publisher defined at pack time. The build passes; the warning body includes the publisher's verbatim exemption criteria so the audit trail in CI logs documents the exact carve-out being claimed (not a generic "in breach" message). The matched name appears with the consumer-typed casing — lookup is case-insensitive but what the consumer wrote is what's surfaced. Not overrideable: the publisher's `Message` is the override. CPM equivalent: [SC030](#sc030). Owner-mode equivalent: [SC031](#sc031).
+- **Level**: Info
+- **Meaning:** The consumer set `SponsorshipExemption="<name>"` on the `<PackageReference>` and `<name>` matches an exemption the publisher defined at pack time. The build passes; the high-priority message body includes the publisher's verbatim exemption criteria so the audit trail in CI logs documents the exact carve-out being claimed (not a generic "in breach" warning). Like [SC017](#sc017) and [SC059](#sc059) it is a message rather than a warning, so a valid claim passes a warnings-as-errors build without a `NoWarn`. The matched name appears with the consumer-typed casing — lookup is case-insensitive but what the consumer wrote is what's surfaced. Not overrideable: the publisher's `Message` is the override. CPM equivalent: [SC030](#sc030). Owner-mode equivalent: [SC031](#sc031).
 - **Syntax:** `Package '{PackageId}': SponsorshipExemption="{name}" claimed on the <PackageReference>. Publisher's exemption criteria: {publisherMessage}`
 - **Example:** `Package 'Papyrine': SponsorshipExemption="Consulting" claimed on the <PackageReference>. Publisher's exemption criteria: Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work.`
 
@@ -723,7 +723,7 @@ flowchart TD
 ### SC030
 
 - **Name:** Exemption claimed
-- **Level**: Warning
+- **Level**: Info
 - **Meaning:** CPM equivalent of [SC029](#sc029): the consumer set `SponsorshipExemption` on the `<PackageVersion>` in `Directory.Packages.props` and the name matches a publisher-defined exemption.
 - **Syntax:** `Package '{PackageId}': SponsorshipExemption="{name}" claimed on the <PackageVersion> in Directory.Packages.props. Publisher's exemption criteria: {publisherMessage}`
 - **Example:** `Package 'Papyrine': SponsorshipExemption="SmallRevenue" claimed on the <PackageVersion> in Directory.Packages.props. Publisher's exemption criteria: Consumers under US$10,000 annual gross revenue are exempt.`
@@ -732,7 +732,7 @@ flowchart TD
 ### SC031
 
 - **Name:** Exemption claimed
-- **Level**: Warning
+- **Level**: Info
 - **Meaning:** Owner-mode equivalent of [SC029](#sc029)/[SC030](#sc030): the owner-prefixed `{OwnerId}_SponsorshipExemption` global property is set and names a publisher-defined exemption.
 - **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemption="{name}" property is set. Publisher's exemption criteria: {publisherMessage}`
 - **Example:** `Package 'Papyrine': papyrine_SponsorshipExemption="Consulting" property is set. Publisher's exemption criteria: Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work.`

@@ -1,5 +1,5 @@
 ﻿{
-  Warnings: [
+  Messages: [
     {
       Code: SC031,
       Message:

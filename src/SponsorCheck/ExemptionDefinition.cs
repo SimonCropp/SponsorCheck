@@ -1,6 +1,6 @@
 // A publisher-defined exemption, as declared by an <SponsorExemption> item at pack time and
 // bundled into SponsorCheck.Exemptions.json. Message is the criteria text that becomes the body
-// of the consumer-side warning (SC029/SC030/SC031) when the exemption is claimed.
+// of the consumer-side audit message (SC029/SC030/SC031) when the exemption is claimed.
 //
 // MaxTermMonths turns the claim into a time-bounded one: the consumer must also supply
 // SponsorshipExemptionUntil, and that month may be at most MaxTermMonths past the build clock.

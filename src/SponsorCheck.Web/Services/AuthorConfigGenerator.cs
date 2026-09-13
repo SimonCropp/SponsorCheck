@@ -331,7 +331,7 @@ public static class AuthorConfigGenerator
         {
             Line($"#### Option {optionNumber++} — Claim an exemption");
             Line();
-            Line("The following exemptions are defined for this package. If one applies, claim it by name — the build passes with a warning quoting the exemption's criteria (not a breach message):");
+            Line("The following exemptions are defined for this package. If one applies, claim it by name — the build passes and logs a message quoting the exemption's criteria (not a breach-of-license warning):");
             Line();
             foreach (var exemption in model.CompletedExemptions)
             {

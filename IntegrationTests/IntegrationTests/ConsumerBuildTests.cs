@@ -500,17 +500,19 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task NonCpmExemption_BuildsWithSC029Warning()
+    public async Task NonCpmExemption_BuildsWithSC029Message()
     {
         var result = await BuildFixture("Consumer.Exemption", authorFixture: "ThePackageWithExemptions");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
         await Assert.That(result.Combined).Contains("SC029");
+        // Logged as a message, so a warnings-as-errors build still passes a valid claim.
+        await Assert.That(result.Combined).DoesNotContain("warning SC029");
         // Audit-trail guarantee: the publisher's verbatim criteria text appears in the build log.
         await Assert.That(result.Combined).Contains("Organizations that have engaged");
     }
 
     [Test]
-    public async Task CpmExemption_BuildsWithSC030Warning()
+    public async Task CpmExemption_BuildsWithSC030Message()
     {
         var result = await BuildFixture("Consumer.CpmExemption", authorFixture: "ThePackageWithExemptions");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
@@ -519,7 +521,7 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task OwnerModeExemption_BuildsWithSC031Warning()
+    public async Task OwnerModeExemption_BuildsWithSC031Message()
     {
         var result = await BuildFixture("Consumer.OwnerExemption", authorFixture: "ThePackageOwnerModeWithExemptions");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
@@ -556,12 +558,12 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task BoundedExemption_WithUntil_BuildsWithSC029Warning()
+    public async Task BoundedExemption_WithUntil_BuildsWithSC029Message()
     {
         var result = await BuildFixture("Consumer.BoundedExemption", authorFixture: "ThePackageWithExemptions");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
         await Assert.That(result.Combined).Contains("SC029");
-        // The end month rides along in the warning, so the CI log records the term as well as the claim.
+        // The end month rides along in the message, so the CI log records the term as well as the claim.
         await Assert.That(result.Combined).Contains("until");
         await Assert.That(result.Combined).Contains("Teams evaluating the package");
     }
@@ -602,7 +604,7 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task CpmBoundedExemption_WithUntil_BuildsWithSC030Warning()
+    public async Task CpmBoundedExemption_WithUntil_BuildsWithSC030Message()
     {
         var result = await BuildFixture("Consumer.CpmBoundedExemption", authorFixture: "ThePackageWithExemptions");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
@@ -611,7 +613,7 @@ public class ConsumerBuildTests
     }
 
     [Test]
-    public async Task OwnerModeBoundedExemption_WithUntil_BuildsWithSC031Warning()
+    public async Task OwnerModeBoundedExemption_WithUntil_BuildsWithSC031Message()
     {
         var result = await BuildFixture("Consumer.OwnerBoundedExemption", authorFixture: "ThePackageOwnerModeWithExemptions");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);

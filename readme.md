@@ -135,7 +135,8 @@ flowchart TD
     subgraph Consumer["Consumer - every build"]
         Verifier["bundled verifier"] --> Mode{license mode?}
         Mode -->|"sponsor match /<br/>valid license"| Pass(["build passes"])
-        Mode -->|"ignored /<br/>exemption"| Warn(["passes + warning"])
+        Mode -->|exemption| Audit(["passes + audit message"])
+        Mode -->|ignored| Warn(["passes + warning"])
         Mode -->|"none / no match /<br/>expired"| Fail(["SC0xx error"])
     end
     Nupkg -->|publish| Feed[("nuget.org")]

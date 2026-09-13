@@ -2207,7 +2207,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task Exemption_KnownName_PassesWithSC029Warning()
+    public async Task Exemption_KnownName_PassesWithSC029Message()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -2227,9 +2227,13 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
-        await Assert.That(engine.Warnings).HasSingleItem();
-        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC029");
-        await Assert.That(engine.Warnings[0].Message!).Contains("Organizations that have engaged");
+        // A message, not a warning, so a warnings-as-errors build passes a valid claim. High
+        // importance keeps it in a default minimal-verbosity log, which is where the audit trail lands.
+        await Assert.That(engine.Warnings).IsEmpty();
+        await Assert.That(engine.Messages).HasSingleItem();
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
+        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.High);
+        await Assert.That(engine.Messages[0].Message!).Contains("Organizations that have engaged");
         await Verify(engine);
     }
 
@@ -2322,8 +2326,8 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsTrue();
-        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC029");
-        var message = engine.Warnings[0].Message!;
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
+        var message = engine.Messages[0].Message!;
         await Assert.That(message).Contains("\"consulting\"");
         await Assert.That(message).Contains("Consulting carve-out.");
         await Verify(engine);
@@ -2379,7 +2383,7 @@ public class VerifySponsorshipTaskTests
     [Test]
     public async Task BoundedExemption_WithinCap_PassesAndSC029NamesTheEndMonth()
     {
-        // The end month rides along in the warning: the CI audit trail should record not just
+        // The end month rides along in the message: the CI audit trail should record not just
         // which carve-out was claimed but how long it was claimed for.
         var engine = new StubBuildEngine();
         var ok = ApplyExemption(
@@ -2388,8 +2392,8 @@ public class VerifySponsorshipTaskTests
             Exemptions(("Consulting", "Consulting carve-out.", 6)));
         await Assert.That(ok).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
-        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC029");
-        await Assert.That(engine.Warnings[0].Message!).Contains("until 2026-11");
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
+        await Assert.That(engine.Messages[0].Message!).Contains("until 2026-11");
         await Verify(engine);
     }
 
@@ -2591,8 +2595,8 @@ public class VerifySponsorshipTaskTests
         var engine = new StubBuildEngine();
         var ok = ApplyExemption(engine, ExemptDecision("Consulting"), Exemptions(("Consulting", "Consulting carve-out.", null)));
         await Assert.That(ok).IsTrue();
-        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC029");
-        await Assert.That(engine.Warnings[0].Message!).DoesNotContain("until");
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
+        await Assert.That(engine.Messages[0].Message!).DoesNotContain("until");
     }
 
     [Test]
@@ -2698,7 +2702,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task CpmExemption_KnownName_PassesWithSC030Warning()
+    public async Task CpmExemption_KnownName_PassesWithSC030Message()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -2719,8 +2723,8 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsTrue();
-        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC030");
-        await Assert.That(engine.Warnings[0].Message!).Contains("Small-revenue carve-out.");
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC030");
+        await Assert.That(engine.Messages[0].Message!).Contains("Small-revenue carve-out.");
         await Verify(engine);
     }
 
@@ -2749,7 +2753,7 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
-    public async Task OwnerModeExemption_KnownName_PassesWithSC031Warning()
+    public async Task OwnerModeExemption_KnownName_PassesWithSC031Message()
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
@@ -2768,9 +2772,9 @@ public class VerifySponsorshipTaskTests
         };
 
         await Assert.That(task.Execute()).IsTrue();
-        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC031");
-        await Assert.That(engine.Warnings[0].Message!).Contains("papyrine_SponsorshipExemption");
-        await Assert.That(engine.Warnings[0].Message!).Contains("Consulting carve-out.");
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC031");
+        await Assert.That(engine.Messages[0].Message!).Contains("papyrine_SponsorshipExemption");
+        await Assert.That(engine.Messages[0].Message!).Contains("Consulting carve-out.");
         await Verify(engine);
     }
 
