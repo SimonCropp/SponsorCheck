@@ -36,27 +36,28 @@ public sealed class PublishedWizard : IAsyncDisposable
         }
     }
 
-    PublishedWizard(WebApplication app, IPlaywright playwright, IBrowser browser, int port)
+    /// <summary>
+    /// The one context every page opens in. <see cref="IBrowser.NewPageAsync"/> creates a fresh context
+    /// per page, and a context is an isolated profile with its own HTTP cache — so each test re-fetched
+    /// and re-compiled the WASM runtime from cold, all of them at once, and <see cref="WarmUp"/> warmed a
+    /// cache nothing else read. The wizard keeps no browser storage, so sharing the context leaks no
+    /// state between tests. Routes stay page-level (<see cref="FakeNuGetFeed"/>).
+    /// </summary>
+    readonly IBrowserContext context;
+
+    PublishedWizard(WebApplication app, IPlaywright playwright, IBrowser browser, IBrowserContext context, int port)
     {
         this.app = app;
         this.playwright = playwright;
+        this.context = context;
         Browser = browser;
         Port = port;
     }
 
     public string Url(string path = "/") => $"http://localhost:{Port}{path}";
 
-    /// <summary>Fixed viewport so screenshots are deterministic across machines.</summary>
     public Task<IPage> NewPage() =>
-        Browser.NewPageAsync(
-            new()
-            {
-                ViewportSize = new()
-                {
-                    Width = 1280,
-                    Height = 900
-                }
-            });
+        context.NewPageAsync();
 
     public static async Task<PublishedWizard> Start()
     {
@@ -106,7 +107,17 @@ public sealed class PublishedWizard : IAsyncDisposable
 
         var playwright = await Playwright.CreateAsync();
         var browser = await playwright.Chromium.LaunchAsync();
-        var wizard = new PublishedWizard(app, playwright, browser, port);
+        // Fixed viewport so screenshots are deterministic across machines.
+        var context = await browser.NewContextAsync(
+            new()
+            {
+                ViewportSize = new()
+                {
+                    Width = 1280,
+                    Height = 900
+                }
+            });
+        var wizard = new PublishedWizard(app, playwright, browser, context, port);
         await wizard.WarmUp();
         return wizard;
     }
@@ -114,8 +125,9 @@ public sealed class PublishedWizard : IAsyncDisposable
     /// <summary>
     /// Boot the app once, serially, before any test runs. The first load downloads and initializes the
     /// WASM runtime — on a cold CI agent that alone can outlast Playwright's 30s default, and doing it
-    /// concurrently in several pages only makes each one slower. After this the browser's HTTP cache is
-    /// warm, so the pages the tests open start against an already-fetched runtime.
+    /// concurrently in several pages only makes each one slower. After this the shared context's HTTP
+    /// cache is warm, so the pages the tests open start against an already-fetched runtime (except pages
+    /// that register a route: Playwright disables the HTTP cache for those).
     /// </summary>
     async Task WarmUp()
     {
@@ -132,6 +144,7 @@ public sealed class PublishedWizard : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await context.CloseAsync();
         await Browser.CloseAsync();
         playwright.Dispose();
         await app.StopAsync();
