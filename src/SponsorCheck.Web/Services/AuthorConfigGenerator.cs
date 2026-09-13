@@ -446,13 +446,14 @@ public static class AuthorConfigGenerator
     static string PerPackagePair(string id, string version, string attribute)
     {
         var versionAttribute = version.Length == 0 ? "" : $" Version=\"{MsBuildXml.Escape(version)}\"";
-        return $"""
-                <!-- Without Central Package Management: in the consuming .csproj -->
-                <PackageReference Include="{MsBuildXml.Escape(id)}"{versionAttribute} {attribute} />
+        return
+            $"""
+             <!-- Without Central Package Management: in the consuming .csproj -->
+             <PackageReference Include="{MsBuildXml.Escape(id)}"{versionAttribute} {attribute} />
 
-                <!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->
-                <PackageVersion Include="{MsBuildXml.Escape(id)}"{versionAttribute} {attribute} />
-                """;
+             <!-- With Central Package Management: on the matching PackageVersion in Directory.Packages.props -->
+             <PackageVersion Include="{MsBuildXml.Escape(id)}"{versionAttribute} {attribute} />
+             """;
     }
 
     static string OwnerPropertyGroup(string property) =>

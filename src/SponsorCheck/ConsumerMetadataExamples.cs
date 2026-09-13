@@ -145,45 +145,60 @@ public static class ConsumerMetadataExamples
     // way — put a month no later than the ceiling on the claim — so they share one block, and
     // like RenderLicensedUntilMaxFix the example renders the real ceiling rather than a
     // yyyy-MM placeholder so it is directly pasteable.
-    public static string RenderExemptionUntilFix(ConsumerContext context, string exemptionName, string maxMonth) =>
-        context.IsOwner
-            ? $"""
-               Set the {context.OwnerId}_SponsorshipExemptionUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
+    public static string RenderExemptionUntilFix(ConsumerContext context, string exemptionName, string maxMonth)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Set the {context.OwnerId}_SponsorshipExemptionUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
 
-               Example format:
+                 Example format:
 
-                 {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
-               """
-            : $"""
-               Set the SponsorshipExemptionUntil attribute to {maxMonth} or earlier in:
+                   {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
+                 """;
+        }
 
-                 {context.TargetFilePath}
+        return
+            $"""
+             Set the SponsorshipExemptionUntil attribute to {maxMonth} or earlier in:
 
-               Example format:
+               {context.TargetFilePath}
 
-                 {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
-               """;
+             Example format:
+
+               {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
+             """;
+    }
 
     // Body of SC041/SC042/SC043. The value isn't a month at all, so there is nothing to compare
     // against a ceiling — the example shows the shape.
-    public static string RenderExemptionUntilFormatFix(ConsumerContext context, string exemptionName) =>
-        context.IsOwner
-            ? $"""
-               Fix the {context.OwnerId}_SponsorshipExemptionUntil property in Directory.Build.props or the consuming project.
+    public static string RenderExemptionUntilFormatFix(ConsumerContext context, string exemptionName)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Fix the {context.OwnerId}_SponsorshipExemptionUntil property in Directory.Build.props or the consuming project.
 
-               Example format:
+                 Example format:
 
-                 {RenderExemptionUntilExample(context, exemptionName, null)}
-               """
-            : $"""
-               Fix the SponsorshipExemptionUntil attribute in:
+                   {RenderExemptionUntilExample(context, exemptionName, null)}
+                 """;
+        }
 
-                 {context.TargetFilePath}
+        return
+            $"""
+             Fix the SponsorshipExemptionUntil attribute in:
 
-               Example format:
+               {context.TargetFilePath}
 
-                 {RenderExemptionUntilExample(context, exemptionName, null)}
-               """;
+             Example format:
+
+               {RenderExemptionUntilExample(context, exemptionName, null)}
+             """;
+
+    }
 
     // Body of SC047/SC048/SC049. The lead line is deliberately not "extend it" — an expired bound
     // is the prompt to re-check whether the carve-out still applies, which is the entire reason
@@ -192,25 +207,30 @@ public static class ConsumerMetadataExamples
     public static string RenderExemptionUntilRenewal(ConsumerContext context, string exemptionName, string? maxMonth)
     {
         var ceiling = maxMonth is null ? "" : $" to {maxMonth} or earlier";
-        return context.IsOwner
-            ? $"""
-               Confirm the exemption still applies, then set the {context.OwnerId}_SponsorshipExemptionUntil property{ceiling} in Directory.Build.props or the consuming project. Otherwise switch to another license mode.
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Confirm the exemption still applies, then set the {context.OwnerId}_SponsorshipExemptionUntil property{ceiling} in Directory.Build.props or the consuming project. Otherwise switch to another license mode.
 
-               Example format:
+                 Example format:
 
-                 {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
-               """
-            : $"""
-               Confirm the exemption still applies, then set the SponsorshipExemptionUntil attribute{ceiling} in:
+                   {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
+                 """;
+        }
 
-                 {context.TargetFilePath}
+        return
+            $"""
+             Confirm the exemption still applies, then set the SponsorshipExemptionUntil attribute{ceiling} in:
 
-               Otherwise switch to another license mode.
+               {context.TargetFilePath}
 
-               Example format:
+             Otherwise switch to another license mode.
 
-                 {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
-               """;
+             Example format:
+
+               {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
+             """;
     }
 
     // The copy-pasteable snippet shared by every SponsorshipExemptionUntil block: the claimed
@@ -302,24 +322,31 @@ public static class ConsumerMetadataExamples
     public static string RenderPrivateUntilFix(
         ConsumerContext context,
         IReadOnlyDictionary<string, string> attemptedAccounts,
-        string maxMonth) =>
-        context.IsOwner
-            ? $"""
-               Set the {context.OwnerId}_SponsorshipPrivateUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
+        string maxMonth)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Set the {context.OwnerId}_SponsorshipPrivateUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
 
-               Example format:
+                 Example format:
 
-                 {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
-               """
-            : $"""
-               Set the SponsorshipPrivateUntil attribute to {maxMonth} or earlier in:
+                   {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
+                 """;
+        }
 
-                 {context.TargetFilePath}
+        return
+            $"""
+             Set the SponsorshipPrivateUntil attribute to {maxMonth} or earlier in:
 
-               Example format:
+               {context.TargetFilePath}
 
-                 {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
-               """;
+             Example format:
+
+               {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
+             """;
+    }
 
     // Body of SC050/SC051/SC052. The value isn't a month at all, so there is nothing to compare
     // against a ceiling — the example shows the shape.

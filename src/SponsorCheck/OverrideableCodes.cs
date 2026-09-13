@@ -3,7 +3,7 @@
     // Single source of truth for the codes the OSS author can tune at pack time. The bundler,
     // verifier, targets file, and docs all derive their metadata names from this list. A new
     // entry needs accompanying bundler properties + targets-file plumbing.
-    public static readonly OverrideableCode[] All =
+    public static OverrideableCode[] All =
     [
         new("SC001", "SC002", "SC021", "NoLicenseSpecified"),
         new("SC005", "SC006", "SC023", "LicenseIgnored"),
@@ -12,5 +12,5 @@
     ];
 
     public static HashSet<string> Codes { get; } =
-        [with(All.SelectMany(_ => new[] {_.Code, _.CpmCode, _.OwnerCode}), StringComparer.Ordinal)];
+        [with(StringComparer.Ordinal), .. All.SelectMany(_ => new[] {_.Code, _.CpmCode, _.OwnerCode})];
 }

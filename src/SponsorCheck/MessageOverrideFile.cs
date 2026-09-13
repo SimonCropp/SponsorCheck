@@ -1,6 +1,6 @@
 public static class MessageOverrideFile
 {
-    static readonly JsonSerializerOptions Options = new()
+    static JsonSerializerOptions options = new()
     {
         WriteIndented = true
     };
@@ -14,7 +14,7 @@ public static class MessageOverrideFile
             sorted[pair.Key] = pair.Value;
         }
 
-        File.WriteAllText(path, JsonSerializer.Serialize(sorted, Options));
+        File.WriteAllText(path, JsonSerializer.Serialize(sorted, options));
     }
 
     // Verifier-side: read the bundled sidecar. Tolerant of a missing file (no overrides) and of

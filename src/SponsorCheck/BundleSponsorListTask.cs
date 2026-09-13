@@ -46,7 +46,9 @@ public sealed class BundleSponsorListTask :
     public string LicenseExpiredMessageOverrideFromRef { get; set; } = "";
     public string LicenseExpiredMessageOverrideFromVer { get; set; } = "";
 
-    [Required] public string VerifierTargetsTemplatePath { get; set; } = "";
+    [Required]
+    public string VerifierTargetsTemplatePath { get; set; } = "";
+
     public string VerifierOwnerTargetsTemplatePath { get; set; } = "";
 
     // When the author package also ships its own build/<PackageId>.targets, SponsorCheck claims the
@@ -55,15 +57,33 @@ public sealed class BundleSponsorListTask :
     // into the generated verifier so the author's own build logic still runs in consumers". Empty
     // (the common case, no author-owned targets) emits no import.
     public string InnerTargetsImportFileName { get; set; } = "";
-    [Required] public string ThePackageId { get; set; } = "";
-    [Required] public string OutputHashListPath { get; set; } = "";
-    [Required] public string OutputVerifierTargetsPath { get; set; } = "";
-    [Required] public string OutputPackDatePath { get; set; } = "";
-    [Required] public string OutputAuthorAccountsPath { get; set; } = "";
-    [Required] public string OutputSeverityOverridesPath { get; set; } = "";
-    [Required] public string OutputMessageOverridesPath { get; set; } = "";
-    [Required] public string OutputLandingUrlPath { get; set; } = "";
-    [Required] public string OutputExemptionsPath { get; set; } = "";
+
+    [Required]
+    public string ThePackageId { get; set; } = "";
+
+    [Required]
+    public string OutputHashListPath { get; set; } = "";
+
+    [Required]
+    public string OutputVerifierTargetsPath { get; set; } = "";
+
+    [Required]
+    public string OutputPackDatePath { get; set; } = "";
+
+    [Required]
+    public string OutputAuthorAccountsPath { get; set; } = "";
+
+    [Required]
+    public string OutputSeverityOverridesPath { get; set; } = "";
+
+    [Required]
+    public string OutputMessageOverridesPath { get; set; } = "";
+
+    [Required]
+    public string OutputLandingUrlPath { get; set; } = "";
+
+    [Required]
+    public string OutputExemptionsPath { get; set; } = "";
 
     // Publisher-defined exempt scenarios. Each item's ItemSpec is the exemption name (e.g.
     // "Consulting") and the required Message metadata is the criteria text that becomes the
@@ -154,6 +174,7 @@ public sealed class BundleSponsorListTask :
             {
                 packDate = OverridePackDate.Trim();
             }
+
             File.WriteAllText(OutputPackDatePath, packDate);
             var ownerId = PackageMetadataMerger.Merge("SponsorOwner", SponsorOwnerFromRef, SponsorOwnerFromVer);
             var isOwnerMode = !string.IsNullOrWhiteSpace(ownerId);
@@ -598,7 +619,8 @@ public sealed class BundleSponsorListTask :
     // property name chars but easy to mis-type, so they're excluded too.
     public static bool IsValidOwnerId(string ownerId)
     {
-        if (string.IsNullOrEmpty(ownerId) || !char.IsAsciiLetter(ownerId[0]))
+        if (string.IsNullOrEmpty(ownerId) ||
+            !char.IsAsciiLetter(ownerId[0]))
         {
             return false;
         }

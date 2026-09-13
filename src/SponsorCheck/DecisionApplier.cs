@@ -506,7 +506,7 @@ public static class DecisionApplier
     }
 
     static bool ApplyLicensed(
-        LicenseDecision.Licensed l,
+        LicenseDecision.Licensed licensed,
         ConsumerContext context,
         Lazy<IReadOnlyList<AuthorAccount>> authorAccounts,
         Lazy<IReadOnlyDictionary<string, Severity>> severityOverrides,
@@ -514,13 +514,13 @@ public static class DecisionApplier
         TaskLoggingHelper log,
         DateTime utcNow)
     {
-        if (!TryParseYearMonth(l.LicensedUntilRaw, out var year, out var month))
+        if (!TryParseYearMonth(licensed.LicensedUntilRaw, out var year, out var month))
         {
             var (code, opener) = context.Mode switch
             {
-                ConsumerMode.Owner => ("SC026", $"Package '{l.PackageId}': {context.OwnerId}_SponsorshipLicensedUntil='{l.LicensedUntilRaw}' property is not in 'yyyy-MM' format."),
-                ConsumerMode.Cpm => ("SC012", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format."),
-                _ => ("SC011", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> is not in 'yyyy-MM' format.")
+                ConsumerMode.Owner => ("SC026", $"Package '{licensed.PackageId}': {context.OwnerId}_SponsorshipLicensedUntil='{licensed.LicensedUntilRaw}' property is not in 'yyyy-MM' format."),
+                ConsumerMode.Cpm => ("SC012", $"Package '{licensed.PackageId}': SponsorshipLicensedUntil='{licensed.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props is not in 'yyyy-MM' format."),
+                _ => ("SC011", $"Package '{licensed.PackageId}': SponsorshipLicensedUntil='{licensed.LicensedUntilRaw}' on the <PackageReference> is not in 'yyyy-MM' format.")
             };
             SponsorCheckLog.Error(
                 log,
@@ -544,9 +544,9 @@ public static class DecisionApplier
             var maxMonth = $"{maxYear:0000}-{utcNow.Month:00}";
             var (code, opener) = context.Mode switch
             {
-                ConsumerMode.Owner => ("SC037", $"Package '{l.PackageId}': {context.OwnerId}_SponsorshipLicensedUntil='{l.LicensedUntilRaw}' property is more than 1 year in the future (maximum {maxMonth})."),
-                ConsumerMode.Cpm => ("SC036", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props is more than 1 year in the future (maximum {maxMonth})."),
-                _ => ("SC035", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> is more than 1 year in the future (maximum {maxMonth}).")
+                ConsumerMode.Owner => ("SC037", $"Package '{licensed.PackageId}': {context.OwnerId}_SponsorshipLicensedUntil='{licensed.LicensedUntilRaw}' property is more than 1 year in the future (maximum {maxMonth})."),
+                ConsumerMode.Cpm => ("SC036", $"Package '{licensed.PackageId}': SponsorshipLicensedUntil='{licensed.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props is more than 1 year in the future (maximum {maxMonth})."),
+                _ => ("SC035", $"Package '{licensed.PackageId}': SponsorshipLicensedUntil='{licensed.LicensedUntilRaw}' on the <PackageReference> is more than 1 year in the future (maximum {maxMonth}).")
             };
             SponsorCheckLog.Error(
                 log,
@@ -573,9 +573,9 @@ public static class DecisionApplier
             var lastDay = new DateTime(year, month, DateTime.DaysInMonth(year, month), 0, 0, 0, DateTimeKind.Utc);
             var (code, opener) = context.Mode switch
             {
-                ConsumerMode.Owner => ("SC025", $"Package '{l.PackageId}': {context.OwnerId}_SponsorshipLicensedUntil='{l.LicensedUntilRaw}' property has expired (end of month {lastDay:yyyy-MM-dd} UTC)."),
-                ConsumerMode.Cpm => ("SC010", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props has expired (end of month {lastDay:yyyy-MM-dd} UTC)."),
-                _ => ("SC009", $"Package '{l.PackageId}': SponsorshipLicensedUntil='{l.LicensedUntilRaw}' on the <PackageReference> has expired (end of month {lastDay:yyyy-MM-dd} UTC).")
+                ConsumerMode.Owner => ("SC025", $"Package '{licensed.PackageId}': {context.OwnerId}_SponsorshipLicensedUntil='{licensed.LicensedUntilRaw}' property has expired (end of month {lastDay:yyyy-MM-dd} UTC)."),
+                ConsumerMode.Cpm => ("SC010", $"Package '{licensed.PackageId}': SponsorshipLicensedUntil='{licensed.LicensedUntilRaw}' on the <PackageVersion> in Directory.Packages.props has expired (end of month {lastDay:yyyy-MM-dd} UTC)."),
+                _ => ("SC009", $"Package '{licensed.PackageId}': SponsorshipLicensedUntil='{licensed.LicensedUntilRaw}' on the <PackageReference> has expired (end of month {lastDay:yyyy-MM-dd} UTC).")
             };
             var expiredLines = new List<string>
             {
