@@ -365,24 +365,31 @@ public static class ConsumerMetadataExamples
     // against a ceiling — the example shows the shape.
     public static string RenderPrivateUntilFormatFix(
         ConsumerContext context,
-        IReadOnlyDictionary<string, string> attemptedAccounts) =>
-        context.IsOwner
-            ? $"""
-               Fix the {context.OwnerId}_SponsorshipPrivateUntil property in Directory.Build.props or the consuming project.
+        IReadOnlyDictionary<string, string> attemptedAccounts)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Fix the {context.OwnerId}_SponsorshipPrivateUntil property in Directory.Build.props or the consuming project.
 
-               Example format:
+                 Example format:
 
-                 {RenderPrivateUntilExample(context, attemptedAccounts, null)}
-               """
-            : $"""
-               Fix the SponsorshipPrivateUntil attribute in:
+                   {RenderPrivateUntilExample(context, attemptedAccounts, null)}
+                 """;
+        }
 
-                 {context.TargetFilePath}
+        return
+            $"""
+             Fix the SponsorshipPrivateUntil attribute in:
 
-               Example format:
+               {context.TargetFilePath}
 
-                 {RenderPrivateUntilExample(context, attemptedAccounts, null)}
-               """;
+             Example format:
+
+               {RenderPrivateUntilExample(context, attemptedAccounts, null)}
+             """;
+    }
 
     // Body of SC056/SC057/SC058. As with an expired exemption the lead line is deliberately not
     // "extend it" — an expired bound is the prompt to confirm the sponsorship is still running,
@@ -390,26 +397,33 @@ public static class ConsumerMetadataExamples
     public static string RenderPrivateUntilRenewal(
         ConsumerContext context,
         IReadOnlyDictionary<string, string> attemptedAccounts,
-        string maxMonth) =>
-        context.IsOwner
-            ? $"""
-               Confirm the private sponsorship is still active, then set the {context.OwnerId}_SponsorshipPrivateUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project. Otherwise switch to another license mode.
+        string maxMonth)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Confirm the private sponsorship is still active, then set the {context.OwnerId}_SponsorshipPrivateUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project. Otherwise switch to another license mode.
 
-               Example format:
+                 Example format:
 
-                 {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
-               """
-            : $"""
-               Confirm the private sponsorship is still active, then set the SponsorshipPrivateUntil attribute to {maxMonth} or earlier in:
+                   {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
+                 """;
+        }
 
-                 {context.TargetFilePath}
+        return
+            $"""
+             Confirm the private sponsorship is still active, then set the SponsorshipPrivateUntil attribute to {maxMonth} or earlier in:
 
-               Otherwise switch to another license mode.
+               {context.TargetFilePath}
 
-               Example format:
+             Otherwise switch to another license mode.
 
-                 {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
-               """;
+             Example format:
+
+               {RenderPrivateUntilExample(context, attemptedAccounts, maxMonth)}
+             """;
+    }
 
     // The copy-pasteable snippet shared by every SponsorshipPrivateUntil block: whichever platform
     // account the consumer already supplied, plus the end month. Same approach as
@@ -466,65 +480,86 @@ public static class ConsumerMetadataExamples
         return string.Join(newline, lines);
     }
 
-    public static string RenderLicensedUntilRenewal(ConsumerContext context) =>
-        context.IsOwner
-            ? $"""
-               Renew the license by updating the {context.OwnerId}_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+    public static string RenderLicensedUntilRenewal(ConsumerContext context)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Renew the license by updating the {context.OwnerId}_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
-               Example format:
+                 Example format:
 
-                 {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
-               """
-            : $"""
-               Renew the license in:
+                   {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+                 """;
+        }
 
-                 {context.TargetFilePath}
+        return
+            $"""
+             Renew the license in:
 
-               Example format:
+               {context.TargetFilePath}
 
-                 {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
-               """;
+             Example format:
 
-    public static string RenderLicensedUntilFormatFix(ConsumerContext context) =>
-        context.IsOwner
-            ? $"""
-               Fix the {context.OwnerId}_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
+               {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+             """;
+    }
 
-               Example format:
+    public static string RenderLicensedUntilFormatFix(ConsumerContext context)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Fix the {context.OwnerId}_SponsorshipLicensedUntil property in Directory.Build.props or the consuming project.
 
-                 {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
-               """
-            : $"""
-               Fix the SponsorshipLicensedUntil attribute in:
+                 Example format:
 
-                 {context.TargetFilePath}
+                   {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+                 """;
+        }
 
-               Example format:
+        return
+            $"""
+             Fix the SponsorshipLicensedUntil attribute in:
 
-                 {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
-               """;
+               {context.TargetFilePath}
+
+             Example format:
+
+               {RenderItem(context, ("SponsorshipLicensedUntil", "yyyy-MM"))}
+             """;
+    }
 
     // Body of SC035/SC036/SC037 (license dated beyond the one-year cap). Unlike the format-fix
     // block this renders the actual cap month rather than a literal "yyyy-MM" placeholder — the
     // consumer needs to know the ceiling, and it makes the example directly pasteable.
-    public static string RenderLicensedUntilMaxFix(ConsumerContext context, string maxMonth) =>
-        context.IsOwner
-            ? $"""
-               Set the {context.OwnerId}_SponsorshipLicensedUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
+    public static string RenderLicensedUntilMaxFix(ConsumerContext context, string maxMonth)
+    {
+        if (context.IsOwner)
+        {
+            return
+                $"""
+                 Set the {context.OwnerId}_SponsorshipLicensedUntil property to {maxMonth} or earlier in Directory.Build.props or the consuming project.
 
-               Example format:
+                 Example format:
 
-                 {RenderItem(context, ("SponsorshipLicensedUntil", maxMonth))}
-               """
-            : $"""
-               Set the SponsorshipLicensedUntil attribute to {maxMonth} or earlier in:
+                   {RenderItem(context, ("SponsorshipLicensedUntil", maxMonth))}
+                 """;
+        }
 
-                 {context.TargetFilePath}
+        return
+            $"""
+             Set the SponsorshipLicensedUntil attribute to {maxMonth} or earlier in:
 
-               Example format:
+               {context.TargetFilePath}
 
-                 {RenderItem(context, ("SponsorshipLicensedUntil", maxMonth))}
-               """;
+             Example format:
+
+               {RenderItem(context, ("SponsorshipLicensedUntil", maxMonth))}
+             """;
+    }
 
     public static string RenderSponsorshipStartFix(ConsumerContext context)
     {
@@ -626,8 +661,15 @@ public static class ConsumerMetadataExamples
 
     // Lives here rather than in DecisionApplier because both message renderers and the SC0xx
     // openers phrase the same cap, and a second copy would let the two drift.
-    public static string MonthsWord(int months) =>
-        months == 1 ? "1 month" : $"{months} months";
+    public static string MonthsWord(int months)
+    {
+        if (months == 1)
+        {
+            return "1 month";
+        }
+
+        return $"{months} months";
+    }
 
     static string FriendlyPlatformName(string platformId) => platformId switch
     {
