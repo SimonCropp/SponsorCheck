@@ -2824,6 +2824,31 @@ public class VerifySponsorshipTaskTests
     }
 
     [Test]
+    public async Task SC001_WithMultipleExemptionsDefined_BodyListsEveryExemption()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.0.0",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteBoundedExemptions(
+                dir,
+                ("MaintainerConsulting", "Consulting carve-out.", 6),
+                ("OpenSource", "Non-revenue open source.", 12),
+                ("Uncapped", "Open-ended carve-out.", null))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+        await Verify(engine);
+    }
+
+    [Test]
     public async Task SC001_WithoutExemptionsDefined_BodyOmitsExemptionOption()
     {
         using var dir = new TempDirectory();

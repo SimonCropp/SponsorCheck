@@ -85,12 +85,18 @@ flowchart TD
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
 
+  Option — Claim a publisher-defined exemption (replace the name with one of the exemptions below):
+    - {exemptionName}: {publisherMessage}[ [time-bounded: SponsorshipExemptionUntil required, at most {maxTermMonths} months out]]
+    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{firstExemptionName}"[ SponsorshipExemptionUntil="yyyy-MM"] />
+
   Option — Mark as ignored (you accept that the build is in breach of the package license):
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicenseIgnored="true" />
 
   Sponsor at:
     {sponsorUrls}
   ```
+
+  The "Claim a publisher-defined exemption" option renders only when the publisher defined at least one `<SponsorExemption>`. Every exemption is listed, one line each, with its criteria text and — for a time-bounded one — its cap; the example claims the first, including `SponsorshipExemptionUntil` when that exemption is time-bounded.
 
   One "Sponsor on..." option is rendered per platform the author has enabled. SponsorshipLicenseIgnored is listed last so the breach-of-license escape hatch sits after the legitimate options. When only one platform is configured the "Sponsor at:" block collapses to a single inline line: `Sponsor at {sponsorUrl}`.
 

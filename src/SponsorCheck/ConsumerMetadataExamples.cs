@@ -64,14 +64,12 @@ public static class ConsumerMetadataExamples
         // re-offer the option that fired the message.
         if (includeExemptionOption && exemptionsDefined is { Count: > 0 })
         {
-            var first = exemptionsDefined.First();
             lines.Add("");
-            lines.Add("Option — Claim a publisher-defined exemption (replace the name with one offered by the publisher):");
-            // A capped exemption is only claimable with an end month, so the example has to show
-            // both attributes — pasting the name alone would just trade this error for SC038.
-            lines.Add(first.Value.MaxTermMonths is null
-                ? $"  {RenderItem(context, ("SponsorshipExemption", first.Key))}"
-                : $"  {RenderExemptionUntilExample(context, first.Key, null)}");
+            lines.Add("Option — Claim a publisher-defined exemption (replace the name with one of the exemptions below):");
+            // Every name is listed, not just the one in the example — otherwise the consumer can
+            // only ever discover the alphabetically-first exemption without opening the nupkg.
+            AddExemptionList(lines, exemptionsDefined);
+            lines.Add($"  {RenderExemptionExample(context, exemptionsDefined)}");
         }
 
         // Omitted when the warning being rendered is itself the "license ignored" warning —
@@ -107,20 +105,9 @@ public static class ConsumerMetadataExamples
         }
 
         var lines = new List<string> { "Available exemptions:" };
-        foreach (var pair in exemptionsDefined)
-        {
-            // The cap is part of choosing between the names, not a detail to discover later —
-            // a consumer picking a time-bounded exemption needs to know it comes with an end date.
-            var bound = pair.Value.MaxTermMonths is { } months
-                ? $" [time-bounded: SponsorshipExemptionUntil required, at most {months} month{(months == 1 ? "" : "s")} out]"
-                : "";
-            lines.Add($"  - {pair.Key}: {pair.Value.Message}{bound}");
-        }
+        AddExemptionList(lines, exemptionsDefined);
 
-        var first = exemptionsDefined.First();
-        var example = first.Value.MaxTermMonths is null
-            ? RenderItem(context, ("SponsorshipExemption", first.Key))
-            : RenderExemptionUntilExample(context, first.Key, null);
+        var example = RenderExemptionExample(context, exemptionsDefined);
         if (context.IsOwner)
         {
             lines.Add("");
@@ -231,6 +218,29 @@ public static class ConsumerMetadataExamples
 
                {RenderExemptionUntilExample(context, exemptionName, maxMonth)}
              """;
+    }
+
+    static void AddExemptionList(List<string> lines, IReadOnlyDictionary<string, ExemptionDefinition> exemptionsDefined)
+    {
+        foreach (var pair in exemptionsDefined)
+        {
+            // The cap is part of choosing between the names, not a detail to discover later —
+            // a consumer picking a time-bounded exemption needs to know it comes with an end date.
+            var bound = pair.Value.MaxTermMonths is { } months
+                ? $" [time-bounded: SponsorshipExemptionUntil required, at most {MonthsWord(months)} out]"
+                : "";
+            lines.Add($"  - {pair.Key}: {pair.Value.Message}{bound}");
+        }
+    }
+
+    // A capped exemption is only claimable with an end month, so the example has to show both
+    // attributes — pasting the name alone would just trade the error for SC038.
+    static string RenderExemptionExample(ConsumerContext context, IReadOnlyDictionary<string, ExemptionDefinition> exemptionsDefined)
+    {
+        var first = exemptionsDefined.First();
+        return first.Value.MaxTermMonths is null
+            ? RenderItem(context, ("SponsorshipExemption", first.Key))
+            : RenderExemptionUntilExample(context, first.Key, null);
     }
 
     // The copy-pasteable snippet shared by every SponsorshipExemptionUntil block: the claimed
