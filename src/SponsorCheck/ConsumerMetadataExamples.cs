@@ -238,9 +238,12 @@ public static class ConsumerMetadataExamples
     static string RenderExemptionExample(ConsumerContext context, IReadOnlyDictionary<string, ExemptionDefinition> exemptionsDefined)
     {
         var first = exemptionsDefined.First();
-        return first.Value.MaxTermMonths is null
-            ? RenderItem(context, ("SponsorshipExemption", first.Key))
-            : RenderExemptionUntilExample(context, first.Key, null);
+        if (first.Value.MaxTermMonths is null)
+        {
+            return RenderItem(context, ("SponsorshipExemption", first.Key));
+        }
+
+        return RenderExemptionUntilExample(context, first.Key, null);
     }
 
     // The copy-pasteable snippet shared by every SponsorshipExemptionUntil block: the claimed
