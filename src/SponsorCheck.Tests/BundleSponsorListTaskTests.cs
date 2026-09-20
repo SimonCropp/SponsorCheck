@@ -588,7 +588,9 @@ public class BundleSponsorListTaskTests
         await Assert.That(task.Execute()).IsTrue();
         var rendered = await File.ReadAllTextAsync(task.OutputVerifierTargetsPath);
         await Assert.That(rendered).Contains("<Import Project=\"$(MSBuildThisFileDirectory)MyOssLib.SponsorCheckInner.targets\"");
-        await Assert.That(rendered).Contains("Condition=\"Exists('$(MSBuildThisFileDirectory)MyOssLib.SponsorCheckInner.targets')\"");
+        // The AnnounceCode half keeps the author's file out of the announce build, where the verifier
+        // targets are built as a standalone project and none of a real project's properties exist.
+        await Assert.That(rendered).Contains("Condition=\"'$(_SponsorCheck_AnnounceCode)' == '' and Exists('$(MSBuildThisFileDirectory)MyOssLib.SponsorCheckInner.targets')\"");
         await Assert.That(rendered).DoesNotContain("__SC_INNER_IMPORT__");
     }
 

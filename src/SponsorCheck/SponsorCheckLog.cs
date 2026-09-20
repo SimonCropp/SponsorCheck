@@ -50,9 +50,14 @@ public static class SponsorCheckLog
         return defaultMessage;
     }
 
-    static void EmitInternal(TaskLoggingHelper log, string code, Severity severity, string message)
+    static void EmitInternal(TaskLoggingHelper log, string code, Severity severity, string message) =>
+        EmitRendered(log, code, severity, $"{NameFor(code)}. {message}\n\nSee: {DocsUrl(code)}");
+
+    // Emits a body that has already been through the wrapping above. The once-per-build announce
+    // run takes this entry point: it replays what the deferred verify run captured, so re-wrapping
+    // would double the name prefix and the See line.
+    public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, string fullMessage)
     {
-        var fullMessage = $"{NameFor(code)}. {message}\n\nSee: {DocsUrl(code)}";
         switch (severity)
         {
             case Severity.Error:

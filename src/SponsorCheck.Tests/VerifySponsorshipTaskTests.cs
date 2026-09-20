@@ -3282,6 +3282,98 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC020");
         await Assert.That(engine.Errors[0].Message!).Contains("SponsorshipPrivateUntil");
     }
+
+    static VerifySponsorshipTask NoConfigTask(IBuildEngine engine, TempDirectory dir) =>
+        new()
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            PackageVersionFromRef = "1.2.3",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp"))
+        };
+
+    [Test]
+    public async Task DeferDiagnostic_HandsTheDiagnosticBackInsteadOfLogging()
+    {
+        // What the shipped verifier targets do on every run: render the diagnostic here, announce it
+        // once per build from the deduped <MSBuild> call. So nothing may reach the build from this
+        // run, and it has to report success even though the verification failed — the announce run
+        // is the one that logs the error, and so the one that gets to fail the build.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = NoConfigTask(engine, dir);
+        task.DeferDiagnostic = true;
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Warnings).IsEmpty();
+        await Assert.That(engine.Messages).IsEmpty();
+        await Assert.That(task.DiagnosticCode).IsEqualTo("SC001");
+        await Assert.That(task.DiagnosticSeverity).IsEqualTo("error");
+    }
+
+    [Test]
+    public async Task Announce_ReplaysWhatTheDeferredRunCaptured()
+    {
+        using var dir = new TempDirectory();
+        var deferredEngine = new StubBuildEngine();
+        var deferred = NoConfigTask(deferredEngine, dir);
+        deferred.DeferDiagnostic = true;
+        await Assert.That(deferred.Execute()).IsTrue();
+
+        var immediateEngine = new StubBuildEngine();
+        await Assert.That(NoConfigTask(immediateEngine, dir).Execute()).IsFalse();
+
+        var announceEngine = new StubBuildEngine();
+        var announce = new VerifySponsorshipTask
+        {
+            BuildEngine = announceEngine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            AnnounceCode = deferred.DiagnosticCode,
+            AnnounceSeverity = deferred.DiagnosticSeverity,
+            AnnouncePayload = deferred.DiagnosticPayload
+        };
+
+        await Assert.That(announce.Execute()).IsFalse();
+        await Assert.That(announceEngine.Errors).HasSingleItem();
+        await Assert.That(announceEngine.Errors[0].Code).IsEqualTo("SC001");
+        // Byte-identical to the immediate path: the round trip must not re-wrap a body that already
+        // carries its name prefix and See line, and must not lose anything on the way through.
+        await Assert.That(announceEngine.Errors[0].Message).IsEqualTo(immediateEngine.Errors[0].Message);
+    }
+
+    [Test]
+    public async Task Announce_MessageSeverity_KeepsTheBuildGreen()
+    {
+        // The severity rides across the round trip as text, and only Error may fail the build —
+        // SC029 and friends pass. The body deliberately carries the characters that make MSBuild's
+        // property plumbing lossy, which is why it travels base64: a ';' would split the property
+        // list and a $(...) or %(...) would be expanded away en route.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var body = "Exemption claimed. Package 'MyOssLib': set $(Foo); or %(Bar).";
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir),
+            AuthorAccountsPath = WriteAuthorAccounts(dir),
+            AnnounceCode = "SC029",
+            AnnounceSeverity = "message",
+            AnnouncePayload = new DeferredDiagnostic("SC029", Severity.Message, body).Encode()
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Errors).IsEmpty();
+        await Assert.That(engine.Messages).HasSingleItem();
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
+        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.High);
+        await Assert.That(engine.Messages[0].Message).IsEqualTo(body);
+    }
 }
 
 internal sealed class TaskLoggingHelperFor(IBuildEngine engine) :

@@ -15,6 +15,20 @@ public class VerifySponsorshipTask :
     public string LandingUrlPath { get; set; } = "";
     public string ExemptionsPath { get; set; } = "";
 
+    // Splits the run in two. With DeferDiagnostic the verification happens as usual but whatever it
+    // would have logged is handed back through the Diagnostic* outputs instead, for the generated
+    // targets to announce once per build rather than once per project and target framework. The
+    // Announce* inputs are the other half of that round trip: they carry one captured diagnostic
+    // back in to be logged. Both default off, so a direct caller still gets an immediate verifier.
+    public bool DeferDiagnostic { get; set; }
+    public string AnnounceCode { get; set; } = "";
+    public string AnnounceSeverity { get; set; } = "";
+    public string AnnouncePayload { get; set; } = "";
+
+    [Output] public string DiagnosticCode { get; set; } = "";
+    [Output] public string DiagnosticSeverity { get; set; } = "";
+    [Output] public string DiagnosticPayload { get; set; } = "";
+
     public string IsCpm { get; set; } = "";
     // Non-empty signals owner mode: the consumer configures sponsorship via global MSBuild
     // properties (passed through the *FromRef parameters) rather than per-package item metadata.
@@ -53,13 +67,61 @@ public class VerifySponsorshipTask :
     {
         try
         {
+            if (AnnounceCode.Trim().Length > 0)
+            {
+                return Announce();
+            }
+
+            if (!DeferDiagnostic)
+            {
+                return Verify(Log);
+            }
+
+            var capture = new CapturingBuildEngine();
+            var passed = Verify(new TaskLoggingHelper(capture, nameof(VerifySponsorshipTask)));
+            if (capture.Diagnostic is not { } diagnostic)
+            {
+                return passed;
+            }
+
+            DiagnosticCode = diagnostic.Code;
+            DiagnosticSeverity = diagnostic.Severity.ToString().ToLowerInvariant();
+            DiagnosticPayload = diagnostic.Encode();
+            // Whether the build lives or dies is the announce run's call — it is the run that logs
+            // the error, and MSBuild requires the task that returns false to be the one that logged
+            // one. The <MSBuild> call driving it fails this project in turn.
+            return true;
+        }
+        // Not routed through the deferral: an exception here is a SponsorCheck bug rather than a
+        // consumer-side diagnostic, and naming the project that hit it is the point.
+        catch (Exception exception)
+        {
+            Log.LogErrorFromException(exception, showStackTrace: false);
+            return false;
+        }
+    }
+
+    bool Announce()
+    {
+        // The severity round-trips through targets this task generated, so a value that doesn't
+        // parse means the property was mangled in transit. Severity.Error is the default, which
+        // fails closed rather than quietly downgrading an error to a message.
+        SeverityOverrideFile.TryParseSeverity(AnnounceSeverity, out var severity);
+        SponsorCheckLog.EmitRendered(Log, AnnounceCode.Trim(), severity, DeferredDiagnostic.Decode(AnnouncePayload));
+        return severity != Severity.Error;
+    }
+
+    bool Verify(TaskLoggingHelper log)
+    {
+        try
+        {
             var context = BuildConsumerContext();
 
             // SC020 enforces that under CPM only <PackageVersion> carries SponsorCheck metadata,
             // and conversely under non-CPM only <PackageReference> does. Run this before merging
             // so a wrong-side value doesn't silently flow through the merge. Owner mode reads global
             // properties (single source), so placement doesn't apply.
-            if (!context.IsOwner && !CheckPlacement(context))
+            if (!context.IsOwner && !CheckPlacement(context, log))
             {
                 return false;
             }
@@ -90,16 +152,11 @@ public class VerifySponsorshipTask :
                 () => SeverityOverrideFile.Read(SeverityOverridesPath));
             var messageOverrides = new Lazy<IReadOnlyDictionary<string, string>>(
                 () => MessageOverrideFile.Read(MessageOverridesPath));
-            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, exemptionsDefined, severityOverrides, messageOverrides, Log, DateTime.UtcNow, ResolvePrivateSponsorMaxTermMonths());
+            return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, exemptionsDefined, severityOverrides, messageOverrides, log, DateTime.UtcNow, ResolvePrivateSponsorMaxTermMonths());
         }
         catch (MaintenanceFeeException exception)
         {
-            SponsorCheckLog.Error(Log, "SC019", exception.Message);
-            return false;
-        }
-        catch (Exception exception)
-        {
-            Log.LogErrorFromException(exception, showStackTrace: false);
+            SponsorCheckLog.Error(log, "SC019", exception.Message);
             return false;
         }
     }
@@ -143,7 +200,7 @@ public class VerifySponsorshipTask :
             isOwner ? OwnerId.Trim() : "");
     }
 
-    bool CheckPlacement(ConsumerContext context)
+    bool CheckPlacement(ConsumerContext context, TaskLoggingHelper log)
     {
         var pairs = new (string Name, string FromRef, string FromVer)[]
         {
@@ -174,7 +231,7 @@ public class VerifySponsorshipTask :
         }
 
         var body = ConsumerMetadataExamples.RenderPlacementError(context, misplaced);
-        SponsorCheckLog.Error(Log, "SC020", body);
+        SponsorCheckLog.Error(log, "SC020", body);
         return false;
     }
 

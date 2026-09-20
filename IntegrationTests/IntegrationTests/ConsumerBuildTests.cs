@@ -500,6 +500,47 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task RepeatedDiagnostic_AcrossTargetFrameworks_IsAnnouncedOnce()
+    {
+        // The reported symptom: one multi-targeted project, the same diagnostic once per target
+        // framework. Each inner build runs in its own MSBuild worker process, so the guard cannot
+        // be a static or a registered task object — it is MSBuild's own build-result cache, keyed
+        // by the rendered text (see the announce target in the generated verifier targets).
+        var result = await BuildFixture("Consumer.AnnounceOnceAcrossFrameworks", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(Occurrences(result.Combined, exemptionCriteria)).IsEqualTo(1).Because(result.Combined);
+    }
+
+    [Test]
+    public async Task RepeatedDiagnostic_AcrossProjects_IsAnnouncedOnce()
+    {
+        // The other half of once-per-build: two projects in one build claiming the same exemption
+        // render identical text, so one announcement covers both. A project whose diagnostic differs
+        // — it names a file to fix that the other doesn't — still gets its own.
+        var result = await BuildFixture("Consumer.AnnounceOnceAcrossProjects", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(Occurrences(result.Combined, exemptionCriteria)).IsEqualTo(1).Because(result.Combined);
+    }
+
+    // Counted instead of the bare code: the console logger prefixes every line of a multi-line
+    // message with it, so "SC029" appears once per line of the body but the criteria text appears
+    // once per announcement.
+    const string exemptionCriteria = "Organizations that have engaged";
+
+    static int Occurrences(string haystack, string needle)
+    {
+        var count = 0;
+        var index = haystack.IndexOf(needle, StringComparison.Ordinal);
+        while (index >= 0)
+        {
+            count++;
+            index = haystack.IndexOf(needle, index + needle.Length, StringComparison.Ordinal);
+        }
+
+        return count;
+    }
+
+    [Test]
     public async Task NonCpmExemption_BuildsWithSC029Message()
     {
         var result = await BuildFixture("Consumer.Exemption", authorFixture: "ThePackageWithExemptions");
