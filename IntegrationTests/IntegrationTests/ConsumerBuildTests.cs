@@ -2,13 +2,16 @@ namespace SponsorCheck.IntegrationTests;
 
 public class ConsumerBuildTests
 {
-    static async Task<CliResult> BuildFixture(string fixtureName, string configuration = "Release", string authorFixture = "ThePackage")
+    // onBuildServer is pinned rather than inherited — see DotnetCliRunner.PinBuildServerDetection.
+    // It defaults to true because that is where every diagnostic is visible at minimal verbosity,
+    // which is what most of these assertions are reading.
+    static async Task<CliResult> BuildFixture(string fixtureName, string configuration = "Release", string authorFixture = "ThePackage", bool onBuildServer = true)
     {
         var feed = await ThePackageBuilder.EnsureBuilt(authorFixture);
-        return await BuildFixtureInFeed(fixtureName, feed, configuration);
+        return await BuildFixtureInFeed(fixtureName, feed, configuration, onBuildServer);
     }
 
-    static async Task<CliResult> BuildFixtureInFeed(string fixtureName, string feed, string configuration = "Release")
+    static async Task<CliResult> BuildFixtureInFeed(string fixtureName, string feed, string configuration = "Release", bool onBuildServer = true)
     {
         var workDir = TestEnvironment.MakeWorkDir(fixtureName);
         TestEnvironment.CopyDirectory(Path.Combine(TestEnvironment.FixturesDir, fixtureName), workDir);
@@ -32,7 +35,7 @@ public class ConsumerBuildTests
         Directory.CreateDirectory(packagesDir);
         var project = Directory.GetFiles(workDir)
             .Single(f => f.EndsWith(".csproj") || f.EndsWith(".fsproj") || f.EndsWith(".vbproj"));
-        return await DotnetCliRunner.Run("build", project, configuration, null, workDir, packagesDir);
+        return await DotnetCliRunner.Run("build", project, configuration, null, workDir, packagesDir, onBuildServer);
     }
 
     [Test]
@@ -520,6 +523,20 @@ public class ConsumerBuildTests
         var result = await BuildFixture("Consumer.AnnounceOnceAcrossProjects", authorFixture: "ThePackageWithExemptions");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
         await Assert.That(Occurrences(result.Combined, exemptionCriteria)).IsEqualTo(1).Because(result.Combined);
+    }
+
+    [Test]
+    public async Task MessageDiagnostic_OffBuildServer_StaysOutOfTheDefaultLog()
+    {
+        // The same fixture NonCpmExemption_BuildsWithSC029Message builds, with one thing changed:
+        // this build does not look like a build server. SC029 is then logged at low importance, so
+        // it is below the minimal verbosity `dotnet build` defaults to — the audit trail is kept for
+        // the CI log rather than repeated on every local build. The claim is still verified: an
+        // invalid one would fail the build regardless of importance.
+        var result = await BuildFixture("Consumer.Exemption", authorFixture: "ThePackageWithExemptions", onBuildServer: false);
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC029");
+        await Assert.That(result.Combined).DoesNotContain(exemptionCriteria);
     }
 
     // Counted instead of the bare code: the console logger prefixes every line of a multi-line
