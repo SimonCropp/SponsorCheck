@@ -657,6 +657,12 @@ public sealed class BundleSponsorListTask :
     // when the author package ships its own <PackageId>.targets. The author's file was relocated to a
     // sidecar alongside the verifier, so importing it by MSBuildThisFileDirectory keeps the author's
     // build logic running in consumers. Empty string when there is no author-owned targets to chain.
+    //
+    // The AnnounceCode half of the condition skips the author's file when the verifier is being built
+    // as a project in its own right to announce a diagnostic (see the announce target in the
+    // templates). Nothing there needs the author's build logic, and evaluating it outside a real
+    // project — with no SDK imported and none of its properties defined — is a failure mode this
+    // package has no business introducing into someone else's build.
     string RenderInnerImport()
     {
         if (string.IsNullOrWhiteSpace(InnerTargetsImportFileName))
@@ -665,7 +671,7 @@ public sealed class BundleSponsorListTask :
         }
 
         var fileName = InnerTargetsImportFileName.Trim();
-        return $"  <Import Project=\"$(MSBuildThisFileDirectory){fileName}\" Condition=\"Exists('$(MSBuildThisFileDirectory){fileName}')\" />";
+        return $"  <Import Project=\"$(MSBuildThisFileDirectory){fileName}\" Condition=\"'$(_SponsorCheck_AnnounceCode)' == '' and Exists('$(MSBuildThisFileDirectory){fileName}')\" />";
     }
 
     static void EnsureDirectory(string filePath)

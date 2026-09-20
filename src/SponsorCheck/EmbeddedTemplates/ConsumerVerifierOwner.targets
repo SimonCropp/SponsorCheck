@@ -85,6 +85,7 @@ __SC_INNER_IMPORT__
 
     <__SC_TASK_NAME__
         Condition="'@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
+        DeferDiagnostic="true"
         ThePackageId="$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)"
         OwnerId="$(_SponsorCheck___SC_PACKAGE_ID___OwnerId)"
         SponsorHashListPath="$(_SponsorCheck___SC_PACKAGE_ID___HashListPath)"
@@ -104,6 +105,62 @@ __SC_INNER_IMPORT__
         PrivateSponsorMaxTermMonths="$(_SponsorCheck___SC_PACKAGE_ID___PrivateSponsorMaxTermMonths)"
         GitHubFromRef="$(__SC_OWNER_PREFIX__GitHubSponsorAccount)"
         OpenCollectiveFromRef="$(__SC_OWNER_PREFIX__OpenCollectiveSponsorAccount)"
-        PolarFromRef="$(__SC_OWNER_PREFIX__PolarSponsorAccount)" />
+        PolarFromRef="$(__SC_OWNER_PREFIX__PolarSponsorAccount)">
+      <Output TaskParameter="DiagnosticCode" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode" />
+      <Output TaskParameter="DiagnosticSeverity" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticSeverity" />
+      <Output TaskParameter="DiagnosticPayload" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticPayload" />
+    </__SC_TASK_NAME__>
+
+    <!-- The verifier runs in every project that references ThePackage, and again in every target
+         framework of a multi-targeted one, but a build only needs to be told its result once. So
+         the run above only renders the diagnostic (DeferDiagnostic) and hands it back; announcing
+         it is a separate <MSBuild> call on this same file, keyed by the rendered text.
+
+         That key is the whole mechanism. MSBuild caches build results per (project, global
+         properties, targets) for the life of the build, and that cache lives in the scheduler, so
+         every later caller that would announce the same text is served the first one's result
+         instead of running the target again — including callers in other MSBuild worker processes,
+         which is where an in-process guard fails: each inner build of a multi-targeted project
+         lands in a process of its own. Two projects that render *different* text still announce
+         separately, which is the point, since they name different files to fix.
+
+         RemoveProperties drops the globals MSBuild varies per project instance; one left in would
+         split the key and announce twice. The warning-severity properties travel the other way:
+         MSBuild applies those from the project that logs the warning, so without forwarding them a
+         consumer's <NoWarn>SC005</NoWarn> would quietly stop working. They join the key too, so
+         projects that suppress differently announce separately — again what they asked for. -->
+    <ItemGroup>
+      <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnounceCode=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)" />
+      <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnounceSeverity=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticSeverity)" />
+      <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnouncePayload=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticPayload)" />
+      <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="NoWarn=$([MSBuild]::Escape('$(NoWarn)'))" />
+      <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="MSBuildWarningsAsMessages=$([MSBuild]::Escape('$(MSBuildWarningsAsMessages)'))" />
+      <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="MSBuildWarningsAsErrors=$([MSBuild]::Escape('$(MSBuildWarningsAsErrors)'))" />
+      <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="MSBuildTreatWarningsAsErrors=$(MSBuildTreatWarningsAsErrors)" />
+    </ItemGroup>
+
+    <MSBuild Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != ''"
+             Projects="$(MSBuildThisFileFullPath)"
+             Targets="_SponsorCheck_Announce___SC_PACKAGE_ID__"
+             Properties="@(_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__)"
+             RemoveProperties="TargetFramework;RuntimeIdentifier;Configuration;Platform" />
+  </Target>
+
+  <!-- The other half of the round trip, and the only place a consumer-side diagnostic is logged.
+       Reached only through the <MSBuild> call above, which builds this file as a project in its own
+       right — so what MSBuild dedupes on is this file's path plus the global properties that call
+       passes. An error announced here fails that call, and with it the project that made it.
+
+       The four paths are the task's Required inputs. Announcing reads none of them; they resolve
+       off MSBuildThisFileDirectory, which is the same folder either way. -->
+  <Target Name="_SponsorCheck_Announce___SC_PACKAGE_ID__">
+    <__SC_TASK_NAME__
+        AnnounceCode="$(_SponsorCheck_AnnounceCode)"
+        AnnounceSeverity="$(_SponsorCheck_AnnounceSeverity)"
+        AnnouncePayload="$(_SponsorCheck_AnnouncePayload)"
+        ThePackageId="$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)"
+        SponsorHashListPath="$(_SponsorCheck___SC_PACKAGE_ID___HashListPath)"
+        PackDatePath="$(_SponsorCheck___SC_PACKAGE_ID___PackDatePath)"
+        AuthorAccountsPath="$(_SponsorCheck___SC_PACKAGE_ID___AuthorAccountsPath)" />
   </Target>
 </Project>

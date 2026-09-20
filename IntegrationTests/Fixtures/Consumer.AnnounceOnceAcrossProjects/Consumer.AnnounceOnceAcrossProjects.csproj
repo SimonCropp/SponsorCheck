@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- Two sibling projects claiming the same exemption, so both verifiers render the same SC029 and
+       the build must carry one of them. No PackageReference and no exemption here: this project only
+       exists to pull both libs into one build, and ThePackageWithExemptions packs to build/, which
+       NuGet imports for direct references only — so there is no verifier in this project to also
+       account for. The libs reference no projects of their own, so nothing is skipped as covered. -->
+  <ItemGroup>
+    <ProjectReference Include="Lib1\Lib1.csproj" />
+    <ProjectReference Include="Lib2\Lib2.csproj" />
+  </ItemGroup>
+</Project>

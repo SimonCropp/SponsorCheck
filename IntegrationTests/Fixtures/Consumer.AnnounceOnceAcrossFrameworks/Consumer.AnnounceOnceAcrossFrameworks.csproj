@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- The verifier runs once per inner build, and MSBuild gives each inner build its own worker
+         process — which is what rules out an in-process run-once guard and leaves MSBuild's own
+         build-result cache as the only thing that spans them. Both target frameworks build with
+         the net10 SDK, no extra runtime needed. -->
+    <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackageWithExemptions"
+      Version="1.0.0"
+      SponsorshipExemption="Consulting" />
+  </ItemGroup>
+</Project>

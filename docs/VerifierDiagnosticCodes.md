@@ -8,6 +8,8 @@ Each paired scenario shares one author-side override metadatum: `NoLicenseSpecif
 
 Every emitted message is prefixed with the code's short **Name** (e.g. `No license specified. Package 'MyOssLib'...`) and suffixed with ` See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#<code>`. The Syntax/Example entries below show the inner format string only — the name and link wrap is added at log time.
 
+Each distinct message is reported **once per build** — not once per project, and not once per target framework of a multi-targeted one. The verifier itself still runs everywhere it did before, so nothing about enforcement changes; only the reporting collapses. Two projects needing *different* fixes render different messages, so each is still reported separately and nothing that names a file to fix is lost.
+
 The default severities below can be overridden by the OSS author at pack time, and the message body can be replaced with custom text, via paired metadata on `<PackageReference Include="SponsorCheck">`: `<Stem>SeverityOverride` and `<Stem>MessageOverride` for each of `NoLicenseSpecified` (SC001/SC002/SC021), `LicenseIgnored` (SC005/SC006/SC023), `InvalidAccount` (SC007/SC008/SC024), `LicenseExpired` (SC009/SC010/SC025). A single override value applies across the per-package, CPM, and owner-mode siblings. Other codes are consumer-side configuration bugs that the consumer must fix and so cannot be tuned. Severity values: `error`, `warning`, `message`. Message values: any string (the code's short Name and the docs link wrap still apply).
 
 <!-- include: verifier-flow. path: /docs/verifier-flow.include.md -->
