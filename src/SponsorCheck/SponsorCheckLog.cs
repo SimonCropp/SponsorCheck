@@ -56,7 +56,12 @@ public static class SponsorCheckLog
     // Emits a body that has already been through the wrapping above. The once-per-build announce
     // run takes this entry point: it replays what the deferred verify run captured, so re-wrapping
     // would double the name prefix and the See line.
-    public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, string fullMessage)
+    public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, string fullMessage) =>
+        EmitRendered(log, code, severity, fullMessage, BuildServerDetector.Detected);
+
+    // Pure overload, as with TokenSetupAdvice.MissingTokenMessage: tests pin onBuildServer rather
+    // than flipping real CI env vars, which the detector reads once into a static anyway.
+    public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, string fullMessage, bool onBuildServer)
     {
         switch (severity)
         {
@@ -67,9 +72,26 @@ public static class SponsorCheckLog
                 log.LogWarning(subcategory, code, "", "", 0, 0, 0, 0, fullMessage);
                 break;
             case Severity.Message:
-                log.LogMessage(subcategory, code, "", "", 0, 0, 0, 0, MessageImportance.High, fullMessage);
+                log.LogMessage(subcategory, code, "", "", 0, 0, 0, 0, ImportanceFor(onBuildServer), fullMessage);
                 break;
         }
+    }
+
+    // The message-severity codes (SC017, SC029/SC030/SC031, SC059) are an audit trail: which
+    // carve-out was claimed, or that an unverifiable attestation was trusted. The place that record
+    // is worth keeping is the CI log, which is what anyone reviews after the fact — so on a build
+    // server they stay high importance and show at the default minimal verbosity. On a developer
+    // machine the same line repeats on every build of every project while nothing is being kept, so
+    // it drops to low: still there under `-v detailed` for anyone looking, gone from the default
+    // log. Errors and warnings are untouched — importance does not apply to them.
+    static MessageImportance ImportanceFor(bool onBuildServer)
+    {
+        if (onBuildServer)
+        {
+            return MessageImportance.High;
+        }
+
+        return MessageImportance.Low;
     }
 
     public static string DocsUrl(string code)

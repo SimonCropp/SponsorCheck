@@ -2227,12 +2227,12 @@ public class VerifySponsorshipTaskTests
 
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
-        // A message, not a warning, so a warnings-as-errors build passes a valid claim. High
-        // importance keeps it in a default minimal-verbosity log, which is where the audit trail lands.
+        // A message, not a warning, so a warnings-as-errors build passes a valid claim. The
+        // importance it carries depends on whether this is a build server, so SponsorCheckLogTests
+        // pins that branch rather than this test, which would otherwise read the real environment.
         await Assert.That(engine.Warnings).IsEmpty();
         await Assert.That(engine.Messages).HasSingleItem();
         await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
-        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.High);
         await Assert.That(engine.Messages[0].Message!).Contains("Organizations that have engaged");
         await Verify(engine);
     }
@@ -3371,8 +3371,10 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Messages).HasSingleItem();
         await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
-        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.High);
         await Assert.That(engine.Messages[0].Message).IsEqualTo(body);
+        // Importance is deliberately not asserted here: the task takes the overload that reads
+        // BuildServerDetector, so it varies with where the suite runs. SponsorCheckLogTests pins
+        // both sides of that branch instead.
     }
 }
 

@@ -56,4 +56,39 @@ public class SponsorCheckLogTests
     public async Task DocsUrl_BundlerCode_PointsAtBundlerDoc() =>
         await Assert.That(SponsorCheckLog.DocsUrl("SC101"))
             .IsEqualTo("https://github.com/SimonCropp/SponsorCheck/blob/main/docs/BundlerDiagnosticCodes.md#sc101");
+
+    // Both cases pin onBuildServer rather than reading BuildServerDetector, so the result is the
+    // same whether the suite runs on a developer machine or in CI.
+    [Test]
+    public async Task MessageDiagnostic_OnBuildServer_IsHighImportance()
+    {
+        var engine = new StubBuildEngine();
+        SponsorCheckLog.EmitRendered(new TaskLoggingHelperFor(engine), "SC029", Severity.Message, "body", onBuildServer: true);
+        await Assert.That(engine.Messages).HasSingleItem();
+        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.High);
+    }
+
+    [Test]
+    public async Task MessageDiagnostic_LocalDev_IsLowImportance()
+    {
+        // Low, not Normal: `dotnet build` defaults to minimal verbosity and normal would still
+        // surface at `-v normal`, which is the verbosity anyone debugging a build reaches for.
+        var engine = new StubBuildEngine();
+        SponsorCheckLog.EmitRendered(new TaskLoggingHelperFor(engine), "SC029", Severity.Message, "body", onBuildServer: false);
+        await Assert.That(engine.Messages).HasSingleItem();
+        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.Low);
+    }
+
+    // Importance is a message-only concept, so the flag must not leak into the other two.
+    [Test]
+    public async Task ErrorAndWarning_AreUnaffectedByTheBuildServerFlag()
+    {
+        var engine = new StubBuildEngine();
+        var log = new TaskLoggingHelperFor(engine);
+        SponsorCheckLog.EmitRendered(log, "SC001", Severity.Error, "body", onBuildServer: false);
+        SponsorCheckLog.EmitRendered(log, "SC005", Severity.Warning, "body", onBuildServer: false);
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Messages).IsEmpty();
+    }
 }
