@@ -5,8 +5,15 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="ProjectDefaults" Version="1.0.181" />
-    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.10.1" />
-    <PackageVersion Include="Microsoft.Build.Framework" Version="18.10.1" />
+    <!-- Pinned to the last 17.11 patch deliberately, not floated. These are the MSBuild APIs the
+         bundler and verifier tasks bind against, and a task is loaded into whatever MSBuild the
+         consumer is running, so the reference belongs at the oldest host worth supporting rather
+         than the newest available. 17.11 is also the last line shipping lib/net8.0: from 17.12 on
+         the runtime assets are net9.0 and up, and by 18.x they are net11.0 only — which leaves a
+         net10.0 test project compiling against ref/netstandard2.0 and finding no assembly at all
+         at run time. Check lib/ before moving this. -->
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="17.11.48" Pinned="true" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="17.11.48" Pinned="true" />
     <PackageVersion Include="RemoteZip" Version="0.2.1" />
     <PackageVersion Include="System.Text.Json" Version="10.0.12" />
     <PackageVersion Include="Polyfill" Version="11.3.0" />
