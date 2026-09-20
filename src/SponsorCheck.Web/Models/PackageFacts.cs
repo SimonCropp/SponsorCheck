@@ -41,12 +41,12 @@ public sealed record PackageFacts(
     /// will not match — which is why the callers pair it with those two routes.</summary>
     public bool? Bundles(string platformId, string account)
     {
-        if (SponsorHashes is not { } hashes || string.IsNullOrWhiteSpace(account))
+        if (SponsorHashes is null || string.IsNullOrWhiteSpace(account))
         {
             return null;
         }
 
-        return hashes.Contains(SponsorAccountHash.For(platformId, account));
+        return SponsorHashes.Contains(SponsorAccountHash.For(platformId, account));
     }
 
     public PackageExemption? FindExemption(string name) =>

@@ -18,15 +18,15 @@ public static class TokenShape
         var described = prefix == null
             ? $"no recognized prefix, {trimmed.Length} chars"
             : $"{prefix}…, {trimmed.Length} chars";
-        if (trimmed.Length != token.Length)
+        if (trimmed.Length == token.Length)
         {
-            // A pasted-with-newline secret is a routine CI misconfiguration and is invisible in
-            // every UI that stores it, so it is worth naming explicitly rather than leaving the
-            // author to compare character counts.
-            return $"{described}, stored with surrounding whitespace";
+            return described;
         }
 
-        return described;
+        // A pasted-with-newline secret is a routine CI misconfiguration and is invisible in
+        // every UI that stores it, so it is worth naming explicitly rather than leaving the
+        // author to compare character counts.
+        return $"{described}, stored with surrounding whitespace";
     }
 
     /// The `xxx_` vendor marker at the start of a token, or null when there is no such marker.

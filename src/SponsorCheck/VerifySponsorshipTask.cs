@@ -6,10 +6,18 @@
 public class VerifySponsorshipTask :
     Microsoft.Build.Utilities.Task
 {
-    [Required] public string ThePackageId { get; set; } = "";
-    [Required] public string SponsorHashListPath { get; set; } = "";
-    [Required] public string PackDatePath { get; set; } = "";
-    [Required] public string AuthorAccountsPath { get; set; } = "";
+    [Required]
+    public string ThePackageId { get; set; } = "";
+
+    [Required]
+    public string SponsorHashListPath { get; set; } = "";
+
+    [Required]
+    public string PackDatePath { get; set; } = "";
+
+    [Required]
+    public string AuthorAccountsPath { get; set; } = "";
+
     public string SeverityOverridesPath { get; set; } = "";
     public string MessageOverridesPath { get; set; } = "";
     public string LandingUrlPath { get; set; } = "";
@@ -25,11 +33,17 @@ public class VerifySponsorshipTask :
     public string AnnounceSeverity { get; set; } = "";
     public string AnnouncePayload { get; set; } = "";
 
-    [Output] public string DiagnosticCode { get; set; } = "";
-    [Output] public string DiagnosticSeverity { get; set; } = "";
-    [Output] public string DiagnosticPayload { get; set; } = "";
+    [Output]
+    public string DiagnosticCode { get; set; } = "";
+
+    [Output]
+    public string DiagnosticSeverity { get; set; } = "";
+
+    [Output]
+    public string DiagnosticPayload { get; set; } = "";
 
     public string IsCpm { get; set; } = "";
+
     // Non-empty signals owner mode: the consumer configures sponsorship via global MSBuild
     // properties (passed through the *FromRef parameters) rather than per-package item metadata.
     public string OwnerId { get; set; } = "";
@@ -50,7 +64,9 @@ public class VerifySponsorshipTask :
     public string SponsorshipStartFromRef { get; set; } = "";
     public string SponsorshipStartFromVer { get; set; } = "";
     public string SponsorshipPrivateUntilFromRef { get; set; } = "";
+
     public string SponsorshipPrivateUntilFromVer { get; set; } = "";
+
     // The publisher's cap on a SponsorshipPrivateUntil claim, substituted into the generated
     // verifier targets at pack time. Empty (or unparseable) means the packed targets predate the
     // setting, so fall back to the documented default rather than failing the consumer's build for
@@ -144,14 +160,10 @@ public class VerifySponsorshipTask :
             // wrap each read in Lazy — a passing build (sponsor matches, or license valid) returns from
             // DecisionApplier without forcing any of them and reads only the pack date and hash list.
             // The landing-url read folds into the author-accounts lazy since it only shapes those URLs.
-            var authorAccounts = new Lazy<IReadOnlyList<AuthorAccount>>(
-                () => ResolveAuthorAccounts(AuthorAccountsPath, ReadLandingUrl(LandingUrlPath)));
-            var exemptionsDefined = new Lazy<IReadOnlyDictionary<string, ExemptionDefinition>>(
-                () => SponsorshipExemptionsFile.Read(ExemptionsPath));
-            var severityOverrides = new Lazy<IReadOnlyDictionary<string, Severity>>(
-                () => SeverityOverrideFile.Read(SeverityOverridesPath));
-            var messageOverrides = new Lazy<IReadOnlyDictionary<string, string>>(
-                () => MessageOverrideFile.Read(MessageOverridesPath));
+            var authorAccounts = new Lazy<IReadOnlyList<AuthorAccount>>(() => ResolveAuthorAccounts(AuthorAccountsPath, ReadLandingUrl(LandingUrlPath)));
+            var exemptionsDefined = new Lazy<IReadOnlyDictionary<string, ExemptionDefinition>>(() => SponsorshipExemptionsFile.Read(ExemptionsPath));
+            var severityOverrides = new Lazy<IReadOnlyDictionary<string, Severity>>(() => SeverityOverrideFile.Read(SeverityOverridesPath));
+            var messageOverrides = new Lazy<IReadOnlyDictionary<string, string>>(() => MessageOverrideFile.Read(MessageOverridesPath));
             return DecisionApplier.Apply(decision, SponsorHashListPath, PackDatePath, context, authorAccounts, exemptionsDefined, severityOverrides, messageOverrides, log, DateTime.UtcNow, ResolvePrivateSponsorMaxTermMonths());
         }
         catch (MaintenanceFeeException exception)
@@ -235,8 +247,15 @@ public class VerifySponsorshipTask :
         return false;
     }
 
-    static string FirstNonEmpty(string a, string b) =>
-        !string.IsNullOrWhiteSpace(a) ? a.Trim() : string.IsNullOrWhiteSpace(b) ? "" : b.Trim();
+    static string FirstNonEmpty(string a, string b)
+    {
+        if (!string.IsNullOrWhiteSpace(a))
+        {
+            return a.Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(b) ? "" : b.Trim();
+    }
 
     public static IReadOnlyList<AuthorAccount> ResolveAuthorAccounts(string authorAccountsPath, string? landingUrlOverride = null)
     {
@@ -249,11 +268,12 @@ public class VerifySponsorshipTask :
                 var url = string.IsNullOrWhiteSpace(landingUrlOverride)
                     ? platform!.SponsorPageUrl(entry.Value)
                     : landingUrlOverride!.Trim();
-                accounts.Add(new(
-                    entry.Key,
-                    entry.Value,
-                    url,
-                    ConsumerMetadataNames.For(entry.Key)));
+                accounts.Add(
+                    new(
+                        entry.Key,
+                        entry.Value,
+                        url,
+                        ConsumerMetadataNames.For(entry.Key)));
             }
         }
 
@@ -268,6 +288,11 @@ public class VerifySponsorshipTask :
         }
 
         var text = File.ReadAllText(path).Trim();
-        return text.Length == 0 ? null : text;
+        if (text.Length == 0)
+        {
+            return null;
+        }
+
+        return text;
     }
 }

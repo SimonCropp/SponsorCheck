@@ -653,6 +653,11 @@ public static class DecisionApplier
         }
 
         var text = File.ReadAllText(path).Trim();
-        return TryParseDate(text, out var date) ? date : null;
+        if (TryParseDate(text, out var date))
+        {
+            return date;
+        }
+
+        return null;
     }
 }

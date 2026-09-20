@@ -20,7 +20,7 @@ public sealed class PackageLookup(HttpClient http)
         MaxBufferLength = MaxNupkgBytes,
         // The browser HTTP cache can answer one range request with the cached body of
         // another; no-store keeps every range request on the network.
-        ConfigureRequest = request => request.SetBrowserRequestCache(BrowserRequestCache.NoStore)
+        ConfigureRequest = _ => _.SetBrowserRequestCache(BrowserRequestCache.NoStore)
     };
 
     public async Task<PackageFacts> Inspect(string packageId, string? version)

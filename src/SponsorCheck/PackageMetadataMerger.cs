@@ -25,6 +25,13 @@ public static class PackageMetadataMerger
             $"{metadataName}: set on both PackageReference ('{r}') and PackageVersion ('{v}'). Set on only one.");
     }
 
-    static string? Normalize(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value!.Trim();
+    static string? Normalize(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value!.Trim();
+    }
 }

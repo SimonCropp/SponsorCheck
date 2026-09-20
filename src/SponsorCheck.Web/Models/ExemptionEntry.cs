@@ -17,10 +17,18 @@ public sealed class ExemptionEntry
         !HasMaxTermMonths ||
         (int.TryParse(MaxTermMonths.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var months) && months > 0);
 
-    public int? ParsedMaxTermMonths =>
-        IsMaxTermMonthsValid && HasMaxTermMonths
-            ? int.Parse(MaxTermMonths.Trim(), NumberStyles.None, CultureInfo.InvariantCulture)
-            : null;
+    public int? ParsedMaxTermMonths
+    {
+        get
+        {
+            if (IsMaxTermMonthsValid && HasMaxTermMonths)
+            {
+                return int.Parse(MaxTermMonths.Trim(), NumberStyles.None, CultureInfo.InvariantCulture);
+            }
+
+            return null;
+        }
+    }
 
     public bool IsComplete => Name.Trim().Length > 0 && Message.Trim().Length > 0 && IsMaxTermMonthsValid;
     public bool IsBlank => Name.Trim().Length == 0 && Message.Trim().Length == 0 && !HasMaxTermMonths;
