@@ -78,7 +78,7 @@ public class VerifySponsorshipTask :
             }
 
             var capture = new CapturingBuildEngine();
-            var passed = Verify(new TaskLoggingHelper(capture, nameof(VerifySponsorshipTask)));
+            var passed = Verify(new(capture, nameof(VerifySponsorshipTask)));
             if (capture.Diagnostic is not { } diagnostic)
             {
                 return passed;

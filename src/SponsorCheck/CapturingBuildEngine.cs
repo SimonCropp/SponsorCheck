@@ -31,6 +31,6 @@ public sealed class CapturingBuildEngine :
     {
     }
 
-    public bool BuildProjectFile(string projectFileName, string[] targetNames, System.Collections.IDictionary globalProperties, System.Collections.IDictionary targetOutputs) =>
+    public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) =>
         throw new NotSupportedException();
 }
