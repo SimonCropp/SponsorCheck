@@ -205,7 +205,6 @@ public class ScreenSnapshotTests
         var page = await OpenPackage(nupkg, ".mode-cards");
         // sponsor
         await page.ClickAsync("button.mode-card >> nth=0");
-        await page.CheckAsync("#sponsor-GitHub");
         await page.FillAsync("#sponsor-account-GitHub", "alice");
         await page.WaitForSelectorAsync(".match-confirmed");
         return page;

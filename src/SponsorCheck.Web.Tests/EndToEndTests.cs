@@ -107,7 +107,6 @@ public class EndToEndTests
 
         // sponsor
         await page.ClickAsync("button.mode-card >> nth=0");
-        await page.CheckAsync("#sponsor-GitHub");
         await page.FillAsync("#sponsor-account-GitHub", "alice");
         // license mode -> output
         await page.ClickAsync("button.primary");
