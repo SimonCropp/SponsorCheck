@@ -31,13 +31,24 @@ public class VerifySponsorshipTask :
     public bool DeferDiagnostic { get; set; }
     public string AnnounceCode { get; set; } = "";
     public string AnnounceSeverity { get; set; } = "";
+    public string AnnounceImportance { get; set; } = "";
     public string AnnouncePayload { get; set; } = "";
+
+    // The consumer's SponsorCheckMessageLevel and SponsorCheckWarningLevel — see LogLevels. Empty keeps
+    // the defaults.
+    public string MessageLevel { get; set; } = "";
+    public string WarningLevel { get; set; } = "";
 
     [Output]
     public string DiagnosticCode { get; set; } = "";
 
+    // Already resolved against the consumer's log levels, so the announce run logs what it is handed
+    // and needs none of the consumer's properties. The importance is set for a message only.
     [Output]
     public string DiagnosticSeverity { get; set; } = "";
+
+    [Output]
+    public string DiagnosticImportance { get; set; } = "";
 
     [Output]
     public string DiagnosticPayload { get; set; } = "";
@@ -88,20 +99,33 @@ public class VerifySponsorshipTask :
                 return Announce();
             }
 
-            if (!DeferDiagnostic)
-            {
-                return Verify(Log);
-            }
-
+            // Both paths render into a capture first, so the consumer's log levels are applied in one
+            // place, to the finished diagnostic, whether it is then logged here or handed back. The
+            // levels are checked before verifying: a typo in either would otherwise go unnoticed on
+            // every build that has nothing to report.
             var capture = new CapturingBuildEngine();
-            var passed = Verify(new(capture, nameof(VerifySponsorshipTask)));
+            var log = new TaskLoggingHelper(capture, nameof(VerifySponsorshipTask));
+            var passed = TryResolveLogLevels(log, out var levels) &&
+                         Verify(log);
             if (capture.Diagnostic is not { } diagnostic)
             {
                 return passed;
             }
 
+            var (severity, importance) = levels.Apply(diagnostic.Severity, BuildServerDetector.Detected);
+            if (!DeferDiagnostic)
+            {
+                SponsorCheckLog.EmitRendered(Log, diagnostic.Code, severity, importance, diagnostic.Message);
+                return severity != Severity.Error;
+            }
+
             DiagnosticCode = diagnostic.Code;
-            DiagnosticSeverity = diagnostic.Severity.ToString().ToLowerInvariant();
+            DiagnosticSeverity = severity.ToString().ToLowerInvariant();
+            if (severity == Severity.Message)
+            {
+                DiagnosticImportance = importance.ToString().ToLowerInvariant();
+            }
+
             DiagnosticPayload = diagnostic.Encode();
             // Whether the build lives or dies is the announce run's call — it is the run that logs
             // the error, and MSBuild requires the task that returns false to be the one that logged
@@ -123,8 +147,38 @@ public class VerifySponsorshipTask :
         // parse means the property was mangled in transit. Severity.Error is the default, which
         // fails closed rather than quietly downgrading an error to a message.
         SeverityOverrideFile.TryParseSeverity(AnnounceSeverity, out var severity);
-        SponsorCheckLog.EmitRendered(Log, AnnounceCode.Trim(), severity, DeferredDiagnostic.Decode(AnnouncePayload));
+        SponsorCheckLog.EmitRendered(Log, AnnounceCode.Trim(), severity, ResolveAnnounceImportance(), DeferredDiagnostic.Decode(AnnouncePayload));
         return severity != Severity.Error;
+    }
+
+    // Travels as the name of a level, as the verify run resolved it. Anything else means the property
+    // was mangled in transit, and the build-server default is what the message would have had anyway
+    // unless the consumer asked otherwise.
+    MessageImportance ResolveAnnounceImportance()
+    {
+        LogLevels.TryParseLevel(AnnounceImportance, out var level);
+        return level switch
+        {
+            LogLevel.High => MessageImportance.High,
+            LogLevel.Normal => MessageImportance.Normal,
+            LogLevel.Low => MessageImportance.Low,
+            _ => SponsorCheckLog.DefaultImportance(BuildServerDetector.Detected)
+        };
+    }
+
+    bool TryResolveLogLevels(TaskLoggingHelper log, out LogLevels levels)
+    {
+        if (LogLevels.TryParse(MessageLevel, WarningLevel, out levels, out var invalid))
+        {
+            return true;
+        }
+
+        var problems = string.Join(" ", invalid.Select(_ => $"{_.Property}='{_.Value}' is not a log level."));
+        SponsorCheckLog.Error(
+            log,
+            "SC060",
+            $"Package '{ThePackageId}': {problems} Valid levels are warning, high, normal and low; an unset property keeps the default.");
+        return false;
     }
 
     bool Verify(TaskLoggingHelper log)

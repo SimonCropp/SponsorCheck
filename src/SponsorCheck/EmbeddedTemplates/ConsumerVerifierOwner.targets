@@ -83,9 +83,16 @@ __SC_INNER_IMPORT__
       <_SponsorCheck_OwnerVerified___SC_OWNER_ID__>true</_SponsorCheck_OwnerVerified___SC_OWNER_ID__>
     </PropertyGroup>
 
+    <!-- SponsorCheckMessageLevel and SponsorCheckWarningLevel are the consumer's say over how this
+         package's messages and warnings are logged. They are global and unprefixed, so one setting
+         covers every SponsorCheck package in the build. The task applies them before handing the
+         diagnostic back, so the announce build below receives a finished severity and importance
+         and needs neither property. -->
     <__SC_TASK_NAME__
         Condition="'@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
         DeferDiagnostic="true"
+        MessageLevel="$(SponsorCheckMessageLevel)"
+        WarningLevel="$(SponsorCheckWarningLevel)"
         ThePackageId="$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)"
         OwnerId="$(_SponsorCheck___SC_PACKAGE_ID___OwnerId)"
         SponsorHashListPath="$(_SponsorCheck___SC_PACKAGE_ID___HashListPath)"
@@ -108,6 +115,7 @@ __SC_INNER_IMPORT__
         PolarFromRef="$(__SC_OWNER_PREFIX__PolarSponsorAccount)">
       <Output TaskParameter="DiagnosticCode" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode" />
       <Output TaskParameter="DiagnosticSeverity" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticSeverity" />
+      <Output TaskParameter="DiagnosticImportance" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticImportance" />
       <Output TaskParameter="DiagnosticPayload" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticPayload" />
     </__SC_TASK_NAME__>
 
@@ -136,6 +144,7 @@ __SC_INNER_IMPORT__
     <ItemGroup>
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnounceCode=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)" />
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnounceSeverity=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticSeverity)" />
+      <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnounceImportance=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticImportance)" />
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnouncePayload=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticPayload)" />
     </ItemGroup>
     <ItemGroup Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticSeverity)' == 'warning'">
@@ -163,6 +172,7 @@ __SC_INNER_IMPORT__
     <__SC_TASK_NAME__
         AnnounceCode="$(_SponsorCheck_AnnounceCode)"
         AnnounceSeverity="$(_SponsorCheck_AnnounceSeverity)"
+        AnnounceImportance="$(_SponsorCheck_AnnounceImportance)"
         AnnouncePayload="$(_SponsorCheck_AnnouncePayload)"
         ThePackageId="$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)"
         SponsorHashListPath="$(_SponsorCheck___SC_PACKAGE_ID___HashListPath)"

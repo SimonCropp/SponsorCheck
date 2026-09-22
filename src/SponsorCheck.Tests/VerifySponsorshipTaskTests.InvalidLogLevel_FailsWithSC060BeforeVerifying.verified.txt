@@ -1,0 +1,11 @@
+﻿{
+  Errors: [
+    {
+      Code: SC060,
+      Message:
+Invalid log level. Package 'MyOssLib': SponsorCheckMessageLevel='loud' is not a log level. SponsorCheckWarningLevel='error' is not a log level. Valid levels are warning, high, normal and low; an unset property keeps the default.
+
+See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc060
+    }
+  ]
+}

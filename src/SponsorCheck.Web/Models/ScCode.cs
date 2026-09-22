@@ -44,6 +44,8 @@ public static class ScCode
             >= 21 and <= 28 => new(true, Placement.OwnerMode, false, null),
             59 => new(true, null, false,
                 "SC059 is the private-sponsorship audit message — it appears for any placement, so answer the questions below."),
+            60 => new(true, null, false,
+                "SC060 means SponsorCheckMessageLevel or SponsorCheckWarningLevel is set to something other than warning, high, normal or low — correct or remove that property; no license metadata change fixes it."),
             >= 29 and <= 58 => new(
                 true,
                 ((number - 29) % 3) switch

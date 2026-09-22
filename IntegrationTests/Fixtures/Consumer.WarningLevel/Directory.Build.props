@@ -1,0 +1,7 @@
+<Project>
+  <!-- begin-snippet: Consumer.WarningLevel.Directory.Build.props -->
+  <PropertyGroup>
+    <SponsorCheckWarningLevel>normal</SponsorCheckWarningLevel>
+  </PropertyGroup>
+  <!-- end-snippet -->
+</Project>

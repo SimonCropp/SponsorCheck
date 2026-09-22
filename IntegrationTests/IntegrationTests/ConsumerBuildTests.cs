@@ -553,6 +553,50 @@ public class ConsumerBuildTests
         await Assert.That(result.Combined).DoesNotContain(exemptionCriteria);
     }
 
+    // --- Consumer log levels (SponsorCheckMessageLevel / SponsorCheckWarningLevel) ---
+
+    [Test]
+    public async Task MessageLevel_Low_KeepsTheAuditMessageOutOfTheCiLog()
+    {
+        // The same claim NonCpmExemption_BuildsWithSC029Message makes on a build server, where it
+        // would be logged at high importance, with SponsorCheckMessageLevel=low in Directory.Build.props.
+        var result = await BuildFixture("Consumer.MessageLevel", authorFixture: "ThePackageWithExemptions");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC029");
+        await Assert.That(result.Combined).DoesNotContain(exemptionCriteria);
+    }
+
+    [Test]
+    public async Task WarningLevel_Normal_LowersSC005BelowTheDefaultLog()
+    {
+        // SponsorCheckWarningLevel=normal turns SC005 into a normal-importance message, which the
+        // minimal verbosity these builds read at leaves out.
+        var result = await BuildFixture("Consumer.WarningLevel");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC005");
+    }
+
+    [Test]
+    public async Task OwnerMode_MessageLevelHigh_ShowsTheAuditMessageOffABuildServer()
+    {
+        // Off a build server a message defaults to low importance and stays out of the log (see
+        // MessageDiagnostic_OffBuildServer_StaysOutOfTheDefaultLog). The consumer's level wins over
+        // that default, and this runs the owner-mode template, which wires the level separately.
+        var result = await BuildFixture("Consumer.OwnerMessageLevel", authorFixture: "ThePackageOwnerModeWithExemptions", onBuildServer: false);
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC031");
+        await Assert.That(result.Combined).Contains(exemptionCriteria);
+    }
+
+    [Test]
+    public async Task InvalidLogLevel_FailsWithSC060()
+    {
+        var result = await BuildFixture("Consumer.InvalidLogLevel");
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("SC060");
+        await Assert.That(result.Combined).Contains("SponsorCheckMessageLevel='loud'");
+    }
+
     // Announcements are counted by the criteria text, which each one carries once, rather than by
     // the bare code, which the console logger puts at the start of every line a diagnostic spans.
     // That keeps the two failures apart: a message growing a second line fails the one-line check

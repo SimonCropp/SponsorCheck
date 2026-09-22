@@ -3449,9 +3449,168 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Messages).HasSingleItem();
         await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
         await Assert.That(engine.Messages[0].Message).IsEqualTo(body);
-        // Importance is deliberately not asserted here: the task takes the overload that reads
-        // BuildServerDetector, so it varies with where the suite runs. SponsorCheckLogTests pins
-        // both sides of that branch instead.
+        // Importance is deliberately not asserted here: with no AnnounceImportance the task falls
+        // back to the build-server default, so it varies with where the suite runs.
+        // SponsorCheckLogTests pins both sides of that branch instead.
+    }
+
+    [Test]
+    public async Task Announce_LogsAtTheImportanceItIsHanded()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            SponsorHashListPath = WriteHashes(dir),
+            AuthorAccountsPath = WriteAuthorAccounts(dir),
+            AnnounceCode = "SC029",
+            AnnounceSeverity = "message",
+            AnnounceImportance = "normal",
+            AnnouncePayload = new DeferredDiagnostic("SC029", Severity.Message, "Exemption claimed.").Encode()
+        };
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Messages).HasSingleItem();
+        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.Normal);
+    }
+
+    // --- Consumer log levels (SponsorCheckMessageLevel / SponsorCheckWarningLevel) ---
+    //
+    // These run the immediate path, which applies the levels exactly as the deferred one does before
+    // handing the diagnostic back; DeferDiagnostic_HandsBackTheResolvedSeverityAndImportance covers
+    // that side.
+
+    static VerifySponsorshipTask ExemptionClaimTask(IBuildEngine engine, TempDirectory dir) =>
+        new()
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteExemptions(dir, ("Consulting", "Consulting carve-out.")),
+            SponsorshipExemptionFromRef = "Consulting"
+        };
+
+    static VerifySponsorshipTask IgnoredLicenseTask(IBuildEngine engine, TempDirectory dir) =>
+        new()
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            IgnoredFromRef = "true"
+        };
+
+    [Test]
+    public async Task MessageLevel_Low_LogsTheAuditMessageAtLowImportance()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = ExemptionClaimTask(engine, dir);
+        task.MessageLevel = "low";
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Messages).HasSingleItem();
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
+        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.Low);
+    }
+
+    [Test]
+    public async Task MessageLevel_Warning_RaisesTheAuditMessageToAWarning()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = ExemptionClaimTask(engine, dir);
+        task.MessageLevel = "warning";
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Messages).IsEmpty();
+        await Assert.That(engine.Warnings).HasSingleItem();
+        await Assert.That(engine.Warnings[0].Code).IsEqualTo("SC029");
+    }
+
+    [Test]
+    public async Task WarningLevel_Normal_LowersSC005ToAMessage()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = IgnoredLicenseTask(engine, dir);
+        task.WarningLevel = "normal";
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(engine.Warnings).IsEmpty();
+        await Assert.That(engine.Messages).HasSingleItem();
+        await Assert.That(engine.Messages[0].Code).IsEqualTo("SC005");
+        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.Normal);
+    }
+
+    [Test]
+    public async Task LogLevels_LeaveErrorsAlone()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = NoConfigTask(engine, dir);
+        task.MessageLevel = "low";
+        task.WarningLevel = "low";
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC001");
+    }
+
+    [Test]
+    public async Task InvalidLogLevel_FailsWithSC060BeforeVerifying()
+    {
+        // The sponsor matches, so the build would otherwise pass without a word. The typo is still
+        // reported: on a quiet build it would never be noticed any other way.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "MyOssLib",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            GitHubFromRef = "alice",
+            MessageLevel = "loud",
+            WarningLevel = "error"
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC060");
+        await Verify(engine);
+    }
+
+    [Test]
+    public async Task DeferDiagnostic_HandsBackTheResolvedSeverityAndImportance()
+    {
+        using var dir = new TempDirectory();
+        var claim = ExemptionClaimTask(new StubBuildEngine(), dir);
+        claim.DeferDiagnostic = true;
+        claim.MessageLevel = "normal";
+        await Assert.That(claim.Execute()).IsTrue();
+        await Assert.That(claim.DiagnosticSeverity).IsEqualTo("message");
+        await Assert.That(claim.DiagnosticImportance).IsEqualTo("normal");
+
+        var ignored = IgnoredLicenseTask(new StubBuildEngine(), dir);
+        ignored.DeferDiagnostic = true;
+        ignored.WarningLevel = "low";
+        await Assert.That(ignored.Execute()).IsTrue();
+        await Assert.That(ignored.DiagnosticSeverity).IsEqualTo("message");
+        await Assert.That(ignored.DiagnosticImportance).IsEqualTo("low");
+
+        // Importance means nothing to an error, so none is handed back to join the announce key.
+        var noConfig = NoConfigTask(new StubBuildEngine(), dir);
+        noConfig.DeferDiagnostic = true;
+        noConfig.MessageLevel = "low";
+        await Assert.That(noConfig.Execute()).IsTrue();
+        await Assert.That(noConfig.DiagnosticSeverity).IsEqualTo("error");
+        await Assert.That(noConfig.DiagnosticImportance).IsEmpty();
     }
 }
 

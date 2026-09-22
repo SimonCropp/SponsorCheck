@@ -339,6 +339,47 @@ Because the two sources don't interfere, a consumer can ride out the transition 
 Owner-mode packages read the property and per-package packages read the metadata, with no conflict — so a mixed fleet, where some referenced versions have flipped and some haven't, all builds cleanly. Once every referenced package is on the same mode, the now-unused declaration can be dropped.
 
 
+## Log levels
+
+Two optional properties control how SponsorCheck logs its messages and warnings. They are global rather than per-package, so one setting covers every package that uses SponsorCheck — Verify, for example. Set them in `Directory.Build.props`, in a project, or as an environment variable on a build server:
+
+<!-- snippet: Consumer.MessageLevel.Directory.Build.props -->
+<a id='snippet-Consumer.MessageLevel.Directory.Build.props'></a>
+```props
+<PropertyGroup>
+  <SponsorCheckMessageLevel>low</SponsorCheckMessageLevel>
+</PropertyGroup>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.MessageLevel/Directory.Build.props#L2-L6' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.MessageLevel.Directory.Build.props' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+ * `SponsorCheckMessageLevel` applies to the audit messages: [SC017](VerifierDiagnosticCodes.md#sc017), [SC029–SC031](VerifierDiagnosticCodes.md#sc029), [SC059](VerifierDiagnosticCodes.md#sc059), and any code a publisher downgraded to a message.
+ * `SponsorCheckWarningLevel` applies to the warnings: [SC005](VerifierDiagnosticCodes.md#sc005), [SC006](VerifierDiagnosticCodes.md#sc006), [SC023](VerifierDiagnosticCodes.md#sc023), and any code a publisher downgraded to a warning.
+
+Each takes one of these levels:
+
+| Level | Logged as |
+|---|---|
+| `warning` | A warning, so it fails a build that treats warnings as errors. |
+| `high` | A message, shown at minimal verbosity (the `dotnet build` default). |
+| `normal` | A message, shown from `-v normal`. |
+| `low` | A message, shown from `-v detailed`. Still recorded in a binary log. |
+
+Unset, a message is `high` on a build server and `low` elsewhere, and a warning stays a warning. So the snippet above keeps the audit line out of the default CI log while leaving it in the detailed one. Lowering a warning works the same way:
+
+<!-- snippet: Consumer.WarningLevel.Directory.Build.props -->
+<a id='snippet-Consumer.WarningLevel.Directory.Build.props'></a>
+```props
+<PropertyGroup>
+  <SponsorCheckWarningLevel>normal</SponsorCheckWarningLevel>
+</PropertyGroup>
+```
+<sup><a href='/IntegrationTests/Fixtures/Consumer.WarningLevel/Directory.Build.props#L2-L6' title='Snippet source file'>snippet source</a> | <a href='#snippet-Consumer.WarningLevel.Directory.Build.props' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Errors are never affected, so no level turns a failing build into a passing one. Any value other than the four levels fails the build with [SC060](VerifierDiagnosticCodes.md#sc060). A package that bundles an earlier SponsorCheck ignores both properties.
+
+
 ## How verification works
 
 The verifier runs in consumer projects on every build and:

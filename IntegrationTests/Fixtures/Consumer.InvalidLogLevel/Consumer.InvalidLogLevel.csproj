@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Not a level. The sponsor matches, so this is the only thing wrong with the build. -->
+    <SponsorCheckMessageLevel>loud</SponsorCheckMessageLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      GitHubSponsorAccount="alice" />
+  </ItemGroup>
+</Project>

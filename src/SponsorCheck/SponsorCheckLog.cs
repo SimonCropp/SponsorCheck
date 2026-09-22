@@ -50,8 +50,10 @@ public static class SponsorCheckLog
         return defaultMessage;
     }
 
+    // The verifier logs into a capture and applies the consumer's log levels to what it caught, so the
+    // importance chosen here only reaches a build from the bundler, which logs no messages through it.
     static void EmitInternal(TaskLoggingHelper log, string code, Severity severity, string message) =>
-        EmitRendered(log, code, severity, Wrap(code, severity, message));
+        EmitRendered(log, code, severity, DefaultImportance(BuildServerDetector.Detected), Wrap(code, severity, message));
 
     // The console logger repeats the location, code and project on every line of a multi-line
     // message, so a one-line message keeps its See link on that line. Messages are the audit trail
@@ -70,15 +72,12 @@ public static class SponsorCheckLog
         return $"{NameFor(code)}. {message}\n\nSee: {DocsUrl(code)}";
     }
 
-    // Emits a body that has already been through the wrapping above. The once-per-build announce
-    // run takes this entry point: it replays what the deferred verify run captured, so re-wrapping
-    // would double the name prefix and the See link.
-    public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, string fullMessage) =>
-        EmitRendered(log, code, severity, fullMessage, BuildServerDetector.Detected);
-
-    // Pure overload, as with TokenSetupAdvice.MissingTokenMessage: tests pin onBuildServer rather
-    // than flipping real CI env vars, which the detector reads once into a static anyway.
-    public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, string fullMessage, bool onBuildServer)
+    // Emits a body that has already been through the wrapping above, at a severity and importance
+    // already resolved against the consumer's log levels. The verifier takes this entry point for
+    // both halves of the once-per-build round trip: the announce run replays what the deferred verify
+    // run captured, so re-wrapping would double the name prefix and the See link. The importance only
+    // applies to a message.
+    public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, MessageImportance importance, string fullMessage)
     {
         switch (severity)
         {
@@ -89,19 +88,22 @@ public static class SponsorCheckLog
                 log.LogWarning(subcategory, code, "", "", 0, 0, 0, 0, fullMessage);
                 break;
             case Severity.Message:
-                log.LogMessage(subcategory, code, "", "", 0, 0, 0, 0, ImportanceFor(onBuildServer), fullMessage);
+                log.LogMessage(subcategory, code, "", "", 0, 0, 0, 0, importance, fullMessage);
                 break;
         }
     }
 
-    // The message-severity codes (SC017, SC029/SC030/SC031, SC059) are an audit trail: which
-    // carve-out was claimed, or that an unverifiable attestation was trusted. The place that record
-    // is worth keeping is the CI log, which is what anyone reviews after the fact — so on a build
-    // server they stay high importance and show at the default minimal verbosity. On a developer
-    // machine the same line repeats on every build of every project while nothing is being kept, so
-    // it drops to low: still there under `-v detailed` for anyone looking, gone from the default
-    // log. Errors and warnings are untouched — importance does not apply to them.
-    static MessageImportance ImportanceFor(bool onBuildServer)
+    // The importance of a message-severity code when the consumer set no SponsorCheckMessageLevel.
+    // Those codes (SC017, SC029/SC030/SC031, SC059) are an audit trail: which carve-out was claimed,
+    // or that an unverifiable attestation was trusted. The place that record is worth keeping is the
+    // CI log, which is what anyone reviews after the fact — so on a build server they stay high
+    // importance and show at the default minimal verbosity. On a developer machine the same line
+    // repeats on every build while nothing is being kept, so it drops to low: still there under
+    // `-v detailed` for anyone looking, gone from the default log.
+    //
+    // Takes the flag rather than reading BuildServerDetector, as with TokenSetupAdvice.MissingTokenMessage:
+    // tests pin it rather than flipping real CI env vars, which the detector reads once into a static.
+    public static MessageImportance DefaultImportance(bool onBuildServer)
     {
         if (onBuildServer)
         {
@@ -181,6 +183,7 @@ public static class SponsorCheckLog
         "SC057" => "Private sponsorship declaration expired",
         "SC058" => "Private sponsorship declaration expired",
         "SC059" => "Private sponsorship attestation trusted",
+        "SC060" => "Invalid log level",
         "SC100" => "Platform fetch failed",
         "SC101" => "No platform account configured",
         "SC102" => "Missing platform credential",
