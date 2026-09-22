@@ -79,6 +79,51 @@ public class SponsorCheckLogTests
         await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.Low);
     }
 
+    // The console logger repeats the location, code and project on every line of a multi-line
+    // message, so an audit record whose body is one line has to stay one line of log.
+    [Test]
+    public async Task MessageDiagnostic_KeepsTheLinkOnItsLine()
+    {
+        var engine = new StubBuildEngine();
+        SponsorCheckLog.HighMessage(new TaskLoggingHelperFor(engine), "SC029", "Package 'MyOssLib': claimed.");
+        await Assert.That(engine.Messages[0].Message)
+            .IsEqualTo("Exemption claimed. Package 'MyOssLib': claimed. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029");
+    }
+
+    // A publisher can downgrade SC009 to a message. Its body already spans lines and ends in a
+    // sponsor URL, so the docs link stays apart instead of running on after that URL.
+    [Test]
+    public async Task MultiLineMessageBody_KeepsTheLinkApart()
+    {
+        var engine = new StubBuildEngine();
+        var severityOverrides = new Dictionary<string, Severity>
+        {
+            ["SC009"] = Severity.Message
+        };
+        SponsorCheckLog.Emit(
+            new TaskLoggingHelperFor(engine),
+            "SC009",
+            Severity.Error,
+            severityOverrides,
+            null,
+            "Package 'MyOssLib': expired.\n\nSponsor at https://github.com/sponsors/acmecorp");
+        await Assert.That(engine.Messages[0].Message)
+            .IsEqualTo("License expired. Package 'MyOssLib': expired.\n\nSponsor at https://github.com/sponsors/acmecorp\n\nSee: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc009");
+    }
+
+    [Test]
+    public async Task ErrorAndWarning_KeepTheLinkOnItsOwnLine()
+    {
+        var engine = new StubBuildEngine();
+        var log = new TaskLoggingHelperFor(engine);
+        SponsorCheckLog.Error(log, "SC018", "Package 'MyOssLib': missing.");
+        SponsorCheckLog.Warning(log, "SC005", "Package 'MyOssLib': ignored.");
+        await Assert.That(engine.Errors[0].Message)
+            .IsEqualTo("Bundled sponsor hash file missing. Package 'MyOssLib': missing.\n\nSee: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc018");
+        await Assert.That(engine.Warnings[0].Message)
+            .IsEqualTo("License ignored. Package 'MyOssLib': ignored.\n\nSee: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc005");
+    }
+
     // Importance is a message-only concept, so the flag must not leak into the other two.
     [Test]
     public async Task ErrorAndWarning_AreUnaffectedByTheBuildServerFlag()
