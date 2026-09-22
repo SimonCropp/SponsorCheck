@@ -51,11 +51,28 @@ public static class SponsorCheckLog
     }
 
     static void EmitInternal(TaskLoggingHelper log, string code, Severity severity, string message) =>
-        EmitRendered(log, code, severity, $"{NameFor(code)}. {message}\n\nSee: {DocsUrl(code)}");
+        EmitRendered(log, code, severity, Wrap(code, severity, message));
+
+    // The console logger repeats the location, code and project on every line of a multi-line
+    // message, so a one-line message keeps its See link on that line. Messages are the audit trail
+    // logged on passing builds, and the blank separator plus a line for the link turned each record
+    // into three lines of log, the middle one empty. Errors and warnings keep the link apart from
+    // their remediation block, as does a message whose body already spans lines — a publisher can
+    // downgrade SC009 to a message, and its body ends in a sponsor URL of its own.
+    static string Wrap(string code, Severity severity, string message)
+    {
+        if (severity == Severity.Message &&
+            !message.Contains('\n'))
+        {
+            return $"{NameFor(code)}. {message} See: {DocsUrl(code)}";
+        }
+
+        return $"{NameFor(code)}. {message}\n\nSee: {DocsUrl(code)}";
+    }
 
     // Emits a body that has already been through the wrapping above. The once-per-build announce
     // run takes this entry point: it replays what the deferred verify run captured, so re-wrapping
-    // would double the name prefix and the See line.
+    // would double the name prefix and the See link.
     public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, string fullMessage) =>
         EmitRendered(log, code, severity, fullMessage, BuildServerDetector.Detected);
 

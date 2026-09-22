@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- Suppresses a warning Lib1 doesn't, as projects in one solution routinely do. Nothing here
+         raises CS1591; the point is that the two projects' warning settings differ, and warning
+         settings can't change an audit message, so they must not split its announcement. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference

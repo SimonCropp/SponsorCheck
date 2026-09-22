@@ -63,6 +63,18 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task IgnoredLicense_NoWarnSC005_SuppressesTheWarning()
+    {
+        // SC005 is logged by the announce build, a project of its own, and MSBuild applies warning
+        // suppression from the project that logs the warning. The consumer's NoWarn reaches it only
+        // because the verifier forwards warning settings along with a warning — the one severity
+        // it still forwards them for.
+        var result = await BuildFixture("Consumer.IgnoredLicenseNoWarn");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC005");
+    }
+
+    [Test]
     public async Task NoConfig_FailsWithSC001()
     {
         var result = await BuildFixture("Consumer.NoConfig");
@@ -519,7 +531,9 @@ public class ConsumerBuildTests
     {
         // The other half of once-per-build: two projects in one build claiming the same exemption
         // render identical text, so one announcement covers both. A project whose diagnostic differs
-        // — it names a file to fix that the other doesn't — still gets its own.
+        // — it names a file to fix that the other doesn't — still gets its own. The two also set
+        // different NoWarn, as projects in one solution do; warning settings can't change a
+        // message, so they must not split its announcement.
         var result = await BuildFixture("Consumer.AnnounceOnceAcrossProjects", authorFixture: "ThePackageWithExemptions");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
         await Assert.That(Occurrences(result.Combined, exemptionCriteria)).IsEqualTo(1).Because(result.Combined);
@@ -539,9 +553,10 @@ public class ConsumerBuildTests
         await Assert.That(result.Combined).DoesNotContain(exemptionCriteria);
     }
 
-    // Counted instead of the bare code: the console logger prefixes every line of a multi-line
-    // message with it, so "SC029" appears once per line of the body but the criteria text appears
-    // once per announcement.
+    // Announcements are counted by the criteria text, which each one carries once, rather than by
+    // the bare code, which the console logger puts at the start of every line a diagnostic spans.
+    // That keeps the two failures apart: a message growing a second line fails the one-line check
+    // in NonCpmExemption_BuildsWithSC029Message, not these, where it would read as a duplicate.
     const string exemptionCriteria = "Organizations that have engaged";
 
     static int Occurrences(string haystack, string needle)
@@ -565,6 +580,9 @@ public class ConsumerBuildTests
         await Assert.That(result.Combined).Contains("SC029");
         // Logged as a message, so a warnings-as-errors build still passes a valid claim.
         await Assert.That(result.Combined).DoesNotContain("warning SC029");
+        // On one line of log. The console logger repeats the location, code and project on every
+        // line of a multi-line message, so a See link on a line of its own tripled the record.
+        await Assert.That(Occurrences(result.Combined, "SC029")).IsEqualTo(1).Because(result.Combined);
         // Audit-trail guarantee: the publisher's verbatim criteria text appears in the build log.
         await Assert.That(result.Combined).Contains("Organizations that have engaged");
     }

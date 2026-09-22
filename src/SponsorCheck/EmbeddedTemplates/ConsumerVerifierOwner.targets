@@ -128,11 +128,17 @@ __SC_INNER_IMPORT__
          split the key and announce twice. The warning-severity properties travel the other way:
          MSBuild applies those from the project that logs the warning, so without forwarding them a
          consumer's <NoWarn>SC005</NoWarn> would quietly stop working. They join the key too, so
-         projects that suppress differently announce separately — again what they asked for. -->
+         projects that suppress differently announce separately — again what they asked for.
+
+         Only a warning carries them, because a warning is all they act on. Passed with a message
+         they would change nothing but the key, and projects in one solution rarely share a NoWarn,
+         so the same audit line would be announced once per distinct set of warning settings. -->
     <ItemGroup>
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnounceCode=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)" />
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnounceSeverity=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticSeverity)" />
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="_SponsorCheck_AnnouncePayload=$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticPayload)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticSeverity)' == 'warning'">
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="NoWarn=$([MSBuild]::Escape('$(NoWarn)'))" />
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="MSBuildWarningsAsMessages=$([MSBuild]::Escape('$(MSBuildWarningsAsMessages)'))" />
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="MSBuildWarningsAsErrors=$([MSBuild]::Escape('$(MSBuildWarningsAsErrors)'))" />

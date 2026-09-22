@@ -901,7 +901,18 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Messages.Any(_ => _.Message?.Contains("trusting unverified sponsor") == true)).IsTrue();
-        await Verify(engine);
+        await Verify(engine)
+            .Snapshot(
+                """
+                {
+                  Messages: [
+                    {
+                      Code: SC017,
+                      Message: Sponsorship attestation trusted. Package 'MyOssLib': trusting unverified sponsor declaration (GitHubSponsors=carol): SponsorshipStart=2026-04-30 is later than package release 2026-04-15, so the bundled sponsor list cannot contain this account. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc017
+                    }
+                  ]
+                }
+                """);
     }
 
     [Test]
@@ -2234,7 +2245,18 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Messages).HasSingleItem();
         await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
         await Assert.That(engine.Messages[0].Message!).Contains("Organizations that have engaged");
-        await Verify(engine);
+        await Verify(engine)
+            .Snapshot(
+                """
+                {
+                  Messages: [
+                    {
+                      Code: SC029,
+                      Message: Exemption claimed. Package 'Papyrine': SponsorshipExemption="Consulting" claimed on the <PackageReference>. Publisher's exemption criteria: Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029
+                    }
+                  ]
+                }
+                """);
     }
 
     [Test]
@@ -2330,7 +2352,18 @@ public class VerifySponsorshipTaskTests
         var message = engine.Messages[0].Message!;
         await Assert.That(message).Contains("\"consulting\"");
         await Assert.That(message).Contains("Consulting carve-out.");
-        await Verify(engine);
+        await Verify(engine)
+            .Snapshot(
+                """
+                {
+                  Messages: [
+                    {
+                      Code: SC029,
+                      Message: Exemption claimed. Package 'Papyrine': SponsorshipExemption="consulting" claimed on the <PackageReference>. Publisher's exemption criteria: Consulting carve-out. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029
+                    }
+                  ]
+                }
+                """);
     }
 
     // --- Time-bounded exemptions (MaxTermMonths / SponsorshipExemptionUntil) ---
@@ -2394,7 +2427,18 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Errors).IsEmpty();
         await Assert.That(engine.Messages[0].Code).IsEqualTo("SC029");
         await Assert.That(engine.Messages[0].Message!).Contains("until 2026-11");
-        await Verify(engine);
+        await Verify(engine)
+            .Snapshot(
+                """
+                {
+                  Messages: [
+                    {
+                      Code: SC029,
+                      Message: Exemption claimed. Package 'MyOssLib': SponsorshipExemption="Consulting" claimed on the <PackageReference> until 2026-11. Publisher's exemption criteria: Consulting carve-out. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc029
+                    }
+                  ]
+                }
+                """);
     }
 
     [Test]
@@ -2725,7 +2769,18 @@ public class VerifySponsorshipTaskTests
         await Assert.That(task.Execute()).IsTrue();
         await Assert.That(engine.Messages[0].Code).IsEqualTo("SC030");
         await Assert.That(engine.Messages[0].Message!).Contains("Small-revenue carve-out.");
-        await Verify(engine);
+        await Verify(engine)
+            .Snapshot(
+                """
+                {
+                  Messages: [
+                    {
+                      Code: SC030,
+                      Message: Exemption claimed. Package 'Papyrine': SponsorshipExemption="SmallRevenue" claimed on the <PackageVersion> in Directory.Packages.props. Publisher's exemption criteria: Small-revenue carve-out. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc030
+                    }
+                  ]
+                }
+                """);
     }
 
     [Test]
@@ -2775,7 +2830,18 @@ public class VerifySponsorshipTaskTests
         await Assert.That(engine.Messages[0].Code).IsEqualTo("SC031");
         await Assert.That(engine.Messages[0].Message!).Contains("papyrine_SponsorshipExemption");
         await Assert.That(engine.Messages[0].Message!).Contains("Consulting carve-out.");
-        await Verify(engine);
+        await Verify(engine)
+            .Snapshot(
+                """
+                {
+                  Messages: [
+                    {
+                      Code: SC031,
+                      Message: Exemption claimed. Package 'Papyrine': papyrine_SponsorshipExemption="Consulting" property is set. Publisher's exemption criteria: Consulting carve-out. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc031
+                    }
+                  ]
+                }
+                """);
     }
 
     [Test]
@@ -2973,7 +3039,18 @@ public class VerifySponsorshipTaskTests
         // The account and the end month are the entire audit trail — nothing else records them.
         await Assert.That(engine.Messages[0].Message!).Contains("GitHubSponsors=dave");
         await Assert.That(engine.Messages[0].Message!).Contains("2026-09");
-        await Verify(engine);
+        await Verify(engine)
+            .Snapshot(
+                """
+                {
+                  Messages: [
+                    {
+                      Code: SC059,
+                      Message: Private sponsorship attestation trusted. Package 'MyOssLib': trusting unverified private sponsor declaration (GitHubSponsors=dave): SponsorshipPrivateUntil=2026-09, so the bundled sponsor list is not expected to contain this account. See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc059
+                    }
+                  ]
+                }
+                """);
     }
 
     [Test]
