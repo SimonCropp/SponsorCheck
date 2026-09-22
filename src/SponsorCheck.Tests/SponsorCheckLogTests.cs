@@ -58,25 +58,28 @@ public class SponsorCheckLogTests
             .IsEqualTo("https://github.com/SimonCropp/SponsorCheck/blob/main/docs/BundlerDiagnosticCodes.md#sc101");
 
     // Both cases pin onBuildServer rather than reading BuildServerDetector, so the result is the
-    // same whether the suite runs on a developer machine or in CI.
+    // same whether the suite runs on a developer machine or in CI. With no SponsorCheckMessageLevel
+    // set, this is the importance every message-severity code is logged at.
     [Test]
-    public async Task MessageDiagnostic_OnBuildServer_IsHighImportance()
-    {
-        var engine = new StubBuildEngine();
-        SponsorCheckLog.EmitRendered(new TaskLoggingHelperFor(engine), "SC029", Severity.Message, "body", onBuildServer: true);
-        await Assert.That(engine.Messages).HasSingleItem();
-        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.High);
-    }
+    public async Task MessageDiagnostic_OnBuildServer_IsHighImportance() =>
+        await Assert.That(LogLevels.Default.Apply(Severity.Message, onBuildServer: true))
+            .IsEqualTo((Severity.Message, MessageImportance.High));
 
     [Test]
-    public async Task MessageDiagnostic_LocalDev_IsLowImportance()
-    {
+    public async Task MessageDiagnostic_LocalDev_IsLowImportance() =>
         // Low, not Normal: `dotnet build` defaults to minimal verbosity and normal would still
         // surface at `-v normal`, which is the verbosity anyone debugging a build reaches for.
+        await Assert.That(LogLevels.Default.Apply(Severity.Message, onBuildServer: false))
+            .IsEqualTo((Severity.Message, MessageImportance.Low));
+
+    [Test]
+    public async Task EmitRendered_LogsAMessageAtTheImportanceItIsHanded()
+    {
         var engine = new StubBuildEngine();
-        SponsorCheckLog.EmitRendered(new TaskLoggingHelperFor(engine), "SC029", Severity.Message, "body", onBuildServer: false);
+        SponsorCheckLog.EmitRendered(new TaskLoggingHelperFor(engine), "SC029", Severity.Message, MessageImportance.Normal, "body");
         await Assert.That(engine.Messages).HasSingleItem();
-        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.Low);
+        await Assert.That(engine.Messages[0].Importance).IsEqualTo(MessageImportance.Normal);
+        await Assert.That(engine.Messages[0].Message).IsEqualTo("body");
     }
 
     // The console logger repeats the location, code and project on every line of a multi-line
@@ -128,10 +131,13 @@ public class SponsorCheckLogTests
     [Test]
     public async Task ErrorAndWarning_AreUnaffectedByTheBuildServerFlag()
     {
+        await Assert.That(LogLevels.Default.Apply(Severity.Error, onBuildServer: false).Severity).IsEqualTo(Severity.Error);
+        await Assert.That(LogLevels.Default.Apply(Severity.Warning, onBuildServer: false).Severity).IsEqualTo(Severity.Warning);
+
         var engine = new StubBuildEngine();
         var log = new TaskLoggingHelperFor(engine);
-        SponsorCheckLog.EmitRendered(log, "SC001", Severity.Error, "body", onBuildServer: false);
-        SponsorCheckLog.EmitRendered(log, "SC005", Severity.Warning, "body", onBuildServer: false);
+        SponsorCheckLog.EmitRendered(log, "SC001", Severity.Error, MessageImportance.Low, "body");
+        SponsorCheckLog.EmitRendered(log, "SC005", Severity.Warning, MessageImportance.Low, "body");
         await Assert.That(engine.Errors).HasSingleItem();
         await Assert.That(engine.Warnings).HasSingleItem();
         await Assert.That(engine.Messages).IsEmpty();

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <acme_SponsorshipExemption>Consulting</acme_SponsorshipExemption>
+    <!-- Above the low importance a message gets off a build server, so the audit line reaches
+         the default log of a local build too. -->
+    <SponsorCheckMessageLevel>high</SponsorCheckMessageLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerModeWithExemptions" Version="1.0.0" />
+  </ItemGroup>
+</Project>

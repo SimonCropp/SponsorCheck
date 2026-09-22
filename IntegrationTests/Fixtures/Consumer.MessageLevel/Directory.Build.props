@@ -1,0 +1,7 @@
+<Project>
+  <!-- begin-snippet: Consumer.MessageLevel.Directory.Build.props -->
+  <PropertyGroup>
+    <SponsorCheckMessageLevel>low</SponsorCheckMessageLevel>
+  </PropertyGroup>
+  <!-- end-snippet -->
+</Project>

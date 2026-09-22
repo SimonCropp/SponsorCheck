@@ -72,6 +72,7 @@ public class ScCodeTests
     [Arguments("SC017")]
     [Arguments("SC018")]
     [Arguments("SC059")]
+    [Arguments("SC060")]
     public async Task RecognizedWithoutPlacement(string code)
     {
         var classification = ScCode.Classify(code);
@@ -97,7 +98,7 @@ public class ScCodeTests
     [Arguments("SC")]
     [Arguments("SC0")]
     [Arguments("SC000")]
-    [Arguments("SC060")]
+    [Arguments("SC061")]
     [Arguments("SC099")]
     [Arguments("SC200")]
     [Arguments("SC-01")]
