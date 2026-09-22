@@ -67,10 +67,8 @@ public class LicenseModeStepTests : WebTestContext
         await Assert.That(changed).IsEqualTo(5);
     }
 
-    [Test]
-    public async Task ExemptionSelectNotifies()
+    static ConsumerModel ModelWithFacts(params PackagePlatformAccount[] platforms)
     {
-        // With facts the exemption name is a <select>, bound on change rather than input.
         var model = new ConsumerModel
         {
             PackageId = "ThePackage"
@@ -84,10 +82,51 @@ public class LicenseModeStepTests : WebTestContext
             OwnerId: null,
             PackDate: "2026-01-15",
             LandingUrl: null,
-            Platforms: [new(PlatformKind.GitHub, "acmecorp")],
+            Platforms: platforms,
             Exemptions: [new("Consulting", "Consulting clients are exempt for 6 months.", 6)],
             Severities: new Dictionary<string, string>(),
             PrivateSponsorMaxTermMonths: PackageFacts.DefaultPrivateSponsorMaxTermMonths));
+        return model;
+    }
+
+    [Test]
+    public async Task SinglePlatformRendersAsTextNotCheckbox()
+    {
+        var model = new ConsumerModel();
+        // ticked before the lookup, and not a platform this package accepts
+        model.Selection(PlatformKind.Polar).Enabled = true;
+        var facts = ModelWithFacts(new PackagePlatformAccount(PlatformKind.GitHub, "acmecorp")).Facts!;
+        model.ApplyFacts(facts);
+        var cut = RenderStep(model);
+
+        await cut.FindAll("button.mode-card")[0].ClickAsync();
+
+        await Assert.That(cut.FindAll("#sponsor-GitHub").Count).IsEqualTo(0);
+        await Assert.That(cut.Find(".platform-name").TextContent).IsEqualTo("GitHub Sponsors");
+        await Assert.That(model.Selection(PlatformKind.GitHub).Enabled).IsTrue();
+        await Assert.That(model.Selection(PlatformKind.Polar).Enabled).IsFalse();
+
+        await cut.Find("#sponsor-account-GitHub").InputAsync("alice");
+        await Assert.That(model.HasPlatform).IsTrue();
+    }
+
+    [Test]
+    public async Task MultiplePlatformsKeepCheckboxes()
+    {
+        var model = ModelWithFacts(new PackagePlatformAccount(PlatformKind.GitHub, "acmecorp"), new PackagePlatformAccount(PlatformKind.OpenCollective, "acme"));
+        var cut = RenderStep(model);
+
+        await cut.FindAll("button.mode-card")[0].ClickAsync();
+
+        await Assert.That(cut.FindAll("input[type=checkbox][id^=sponsor-]").Count).IsEqualTo(2);
+        await Assert.That(cut.FindAll(".platform-name").Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task ExemptionSelectNotifies()
+    {
+        // With facts the exemption name is a <select>, bound on change rather than input.
+        var model = ModelWithFacts(new PackagePlatformAccount(PlatformKind.GitHub, "acmecorp"));
         var cut = RenderStep(model);
 
         await cut.FindAll("button.mode-card")[2].ClickAsync();

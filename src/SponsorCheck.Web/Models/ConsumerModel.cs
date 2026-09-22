@@ -134,6 +134,18 @@ public sealed class ConsumerModel
             PrivateUntilMonth = "";
         }
 
+        // A package that accepts exactly one platform leaves nothing to choose, so the step renders
+        // that platform as plain text rather than a checkbox. Its selection has to be enabled here
+        // for the generator to emit it, and any other platform ticked before the lookup would
+        // otherwise survive as a hidden attribute in the generated snippet.
+        if (facts.Platforms is [var only])
+        {
+            foreach (var (kind, selection) in Platforms)
+            {
+                selection.Enabled = kind == only.Kind;
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(PackageVersion))
         {
             PackageVersion = facts.Version;

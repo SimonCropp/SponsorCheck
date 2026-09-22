@@ -373,6 +373,10 @@ select {
     margin-bottom: .75rem;
 }
 
+.platform-row .platform-name {
+    font-weight: 600;
+}
+
 .platform-row .account {
     margin-top: .5rem;
 }
