@@ -13,7 +13,7 @@ public class LogLevelsTests
     public async Task TryParse_IgnoresCaseAndSurroundingWhitespace()
     {
         await Assert.That(LogLevels.TryParse(" Low ", "WARNING", out var levels, out _)).IsTrue();
-        await Assert.That(levels).IsEqualTo(new LogLevels(LogLevel.Low, LogLevel.Warning));
+        await Assert.That(levels).IsEqualTo(new(LogLevel.Low, LogLevel.Warning));
     }
 
     [Test]
@@ -21,12 +21,12 @@ public class LogLevelsTests
     {
         await Assert.That(LogLevels.TryParse(" loud ", "error", out var levels, out var invalid)).IsFalse();
         await Assert.That(levels).IsEqualTo(LogLevels.Default);
-        await Assert.That(invalid).IsEquivalentTo(
-            new[]
-            {
+        await Assert.That(invalid)
+            .IsEquivalentTo(
+            [
                 ("SponsorCheckMessageLevel", "loud"),
                 ("SponsorCheckWarningLevel", "error")
-            });
+            ]);
     }
 
     // A consumer's level decides both ways: above the local default of low, and below the
