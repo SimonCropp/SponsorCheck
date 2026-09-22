@@ -27,7 +27,6 @@ public class PackagePageTests : WebTestContext
     static async Task SponsorAs(IRenderedComponent<SponsorCheck.Web.Pages.Package> cut, string account)
     {
         await cut.FindAll("button.mode-card")[0].ClickAsync();
-        await cut.Find("#sponsor-GitHub").ChangeAsync(true);
         await cut.Find("#sponsor-account-GitHub").InputAsync(account);
     }
 
@@ -73,7 +72,6 @@ public class PackagePageTests : WebTestContext
         await cut.FindAll("button.mode-card")[0].ClickAsync();
         await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsTrue();
 
-        await cut.Find("#sponsor-GitHub").ChangeAsync(true);
         await cut.Find("#sponsor-account-GitHub").InputAsync("alice");
         await Assert.That(cut.Find("button.primary").HasAttribute("disabled")).IsFalse();
 

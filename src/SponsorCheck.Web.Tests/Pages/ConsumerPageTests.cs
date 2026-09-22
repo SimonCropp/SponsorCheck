@@ -211,7 +211,6 @@ public class ConsumerPageTests : WebTestContext
         // situation -> license mode
         await cut.Find("button.primary").ClickAsync();
         await cut.FindAll("button.mode-card")[0].ClickAsync();
-        await cut.Find("#sponsor-GitHub").ChangeAsync(true);
         return cut;
     }
 
@@ -325,7 +324,7 @@ public class ConsumerPageTests : WebTestContext
         await cut.FindAll("button.mode-card")[0].ClickAsync();
 
         await Assert.That(cut.FindAll("#privateSponsorship").Count).IsEqualTo(0);
-        await Assert.That(cut.FindAll("#sponsor-Polar").Count).IsEqualTo(1);
+        await Assert.That(cut.FindAll("#sponsor-account-Polar").Count).IsEqualTo(1);
     }
 
     [Test]

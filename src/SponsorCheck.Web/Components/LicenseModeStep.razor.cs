@@ -37,6 +37,10 @@ public partial class LicenseModeStep
         }
     }
 
+    /// <summary>With a single accepted platform there is nothing to enable or disable — the step
+    /// shows its name as text and <see cref="ConsumerModel.ApplyFacts"/> has already enabled it.</summary>
+    bool SinglePlatform => SponsorPlatforms.Count() == 1;
+
     // Only GitHub Sponsors and Open Collective have a private/incognito notion at all. Polar
     // supporters are billing customers, not a published list, so there is nothing to be excluded
     // from — a Polar-only package must not offer the route or describe it in terms of two platforms
