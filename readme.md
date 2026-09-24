@@ -1,6 +1,6 @@
 # <img src="/src/icon.png" height="30px"> SponsorCheck
 
-[![Build status](https://img.shields.io/appveyor/build/SimonCropp/SponsorCheck)](https://ci.appveyor.com/project/SimonCropp/SponsorCheck)
+[![Build status](https://github.com/SimonCropp/SponsorCheck/actions/workflows/build.yml/badge.svg)](https://github.com/SimonCropp/SponsorCheck/actions/workflows/build.yml)
 [![NuGet Status](https://img.shields.io/nuget/v/SponsorCheck.svg?label=SponsorCheck)](https://www.nuget.org/packages/SponsorCheck/)
 
 
