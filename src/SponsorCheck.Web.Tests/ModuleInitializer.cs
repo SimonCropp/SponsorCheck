@@ -4,7 +4,6 @@ static class ModuleInitializer
     public static void Init()
     {
         VerifyPlaywright.Initialize();
-        VerifyDiffPlex.Initialize(OutputType.Compact);
         VerifierSettings.InitializePlugins();
         VerifierSettings.Inline(maxLines: 10, applyMaxLinesToExisting: true);
 
