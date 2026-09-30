@@ -1,5 +1,3 @@
-using VerifyTests.DiffPlex;
-
 static class ModuleInitializer
 {
     [ModuleInitializer]
