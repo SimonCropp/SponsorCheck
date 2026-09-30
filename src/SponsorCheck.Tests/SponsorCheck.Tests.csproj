@@ -19,7 +19,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Verify.TUnit" />
     <PackageReference Include="Verify" />
-    <PackageReference Include="Verify.DiffPlex" />
     <PackageReference Include="DiffEngine" />
   </ItemGroup>
 </Project>
