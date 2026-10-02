@@ -17,11 +17,13 @@ Option — Sponsor privately (a private or incognito sponsorship is never bundle
 Option — Time-bounded license (replace yyyy-MM with the last covered month):
   <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipLicensedUntil="yyyy-MM" />
 
-Option — Claim a publisher-defined exemption (replace the name with one of the exemptions below):
+Option — Claim a publisher-defined exemption (use the example under the one that applies):
   - MaintainerConsulting: Consulting carve-out. [time-bounded: SponsorshipExemptionUntil required, at most 6 months out]
+    <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="MaintainerConsulting" SponsorshipExemptionUntil="yyyy-MM" />
   - OpenSource: Non-revenue open source. [time-bounded: SponsorshipExemptionUntil required, at most 12 months out]
+    <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="OpenSource" SponsorshipExemptionUntil="yyyy-MM" />
   - Uncapped: Open-ended carve-out.
-  <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="MaintainerConsulting" SponsorshipExemptionUntil="yyyy-MM" />
+    <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="Uncapped" />
 
 Option — Mark as ignored (you accept that the build is in breach of the package license):
   <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipLicenseIgnored="true" />

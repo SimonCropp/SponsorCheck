@@ -7,12 +7,10 @@ Unknown exemption. Package 'Papyrine': SponsorshipExemption="MadeUpName" on the 
 
 Available exemptions:
   - Consulting: Consulting carve-out.
+    <PackageVersion Include="Papyrine" Version="1.0.0" SponsorshipExemption="Consulting" />
 
 Claim one in:
   C:/Consumer/Directory.Packages.props
-
-Example format:
-  <PackageVersion Include="Papyrine" Version="1.0.0" SponsorshipExemption="Consulting" />
 
 See: https://github.com/SimonCropp/SponsorCheck/blob/main/docs/VerifierDiagnosticCodes.md#sc033
     }
