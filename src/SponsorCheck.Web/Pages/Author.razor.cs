@@ -2,7 +2,7 @@ namespace SponsorCheck.Web.Pages;
 
 public partial class Author
 {
-    readonly string[] steps =
+    string[] steps =
     [
         "Package",
         "Platforms",

@@ -17,9 +17,17 @@ public class PackageLookupTests
 
     static HttpResponseMessage NotFound() => new(HttpStatusCode.NotFound);
 
-    static HttpResponseMessage Json(string json) => new(HttpStatusCode.OK) { Content = new StringContent(json) };
+    static HttpResponseMessage Json(string json) =>
+        new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json)
+        };
 
-    static HttpResponseMessage Bytes(byte[] bytes) => new(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
+    static HttpResponseMessage Bytes(byte[] bytes) =>
+        new(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(bytes)
+        };
 
     [Test]
     public async Task UnknownPackageReportsNotFound()

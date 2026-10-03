@@ -34,29 +34,27 @@ public class ConsumerConfigGeneratorTests
     static string Dump(ConsumerModel model)
     {
         var output = ConsumerConfigGenerator.Generate(model);
-        var builder = new StringBuilder();
-        builder.AppendLine($"=== Snippet ({output.SnippetTitle}) ===");
-        builder.AppendLine(output.Snippet);
-        builder.AppendLine();
-        builder.AppendLine("=== File to edit ===");
-        builder.AppendLine(output.FileToEdit);
-        builder.AppendLine();
-        builder.AppendLine("=== Instruction ===");
-        builder.AppendLine(output.Instruction);
-        builder.AppendLine();
-        builder.AppendLine("=== Build outcome ===");
-        builder.AppendLine(output.BuildOutcome);
-        builder.AppendLine();
-        builder.AppendLine("=== Notes ===");
-        foreach (var note in output.Notes)
-        {
-            builder.AppendLine($"- {note}");
-        }
+        // each note brings its own leading newline, so an empty list leaves no blank line behind
+        var notes = string.Concat(output.Notes.Select(_ => $"{Environment.NewLine}- {_}"));
+        return $"""
+                === Snippet ({output.SnippetTitle}) ===
+                {output.Snippet}
 
-        builder.AppendLine();
-        builder.AppendLine("=== Markdown ===");
-        builder.AppendLine(output.Markdown);
-        return builder.ToString();
+                === File to edit ===
+                {output.FileToEdit}
+
+                === Instruction ===
+                {output.Instruction}
+
+                === Build outcome ===
+                {output.BuildOutcome}
+
+                === Notes ==={notes}
+
+                === Markdown ===
+                {output.Markdown}
+
+                """;
     }
 
     [Test]

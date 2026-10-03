@@ -15,9 +15,9 @@ public sealed class FakeNuGetFeed
 {
     public const string Glob = "https://api.nuget.org/**";
 
-    readonly byte[]? nupkg;
-    readonly string version;
-    readonly Lock requestsLock = new();
+    byte[]? nupkg;
+    string version;
+    Lock requestsLock = new();
 
     /// <summary>Every request the page made, as "METHOD url". Proves the runtime consumed the fake.</summary>
     public List<string> Requests { get; } = [];

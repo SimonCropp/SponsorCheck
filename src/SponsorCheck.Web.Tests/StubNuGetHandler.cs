@@ -8,7 +8,7 @@ namespace SponsorCheck.Web.Tests;
 /// </summary>
 public sealed class StubNuGetHandler(byte[] nupkg, string version) : HttpMessageHandler
 {
-    readonly Lock requestsLock = new();
+    Lock requestsLock = new();
 
     public string Version { get; set; } = version;
 

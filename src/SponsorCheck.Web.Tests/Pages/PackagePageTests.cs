@@ -269,7 +269,7 @@ public class PackagePageTests : WebTestContext
     /// <summary>Holds every request until released, so the loading state can be observed.</summary>
     sealed class GatedHandler(HttpMessageHandler inner) : DelegatingHandler(inner)
     {
-        readonly TaskCompletionSource gate = new();
+        TaskCompletionSource gate = new();
 
         public void Release() => gate.SetResult();
 

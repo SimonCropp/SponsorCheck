@@ -5,7 +5,7 @@ public partial class Consumer
     [Inject]
     public required PackageLookup PackageLookup { get; set; }
 
-    readonly string[] steps = [
+    string[] steps = [
         "Package",
         "Situation",
         "License mode",

@@ -7,8 +7,8 @@ namespace SponsorCheck.Web.Tests;
 /// </summary>
 public sealed class PublishedWizard : IAsyncDisposable
 {
-    readonly WebApplication app;
-    readonly IPlaywright playwright;
+    WebApplication app;
+    IPlaywright playwright;
 
     public IBrowser Browser { get; }
     public int Port { get; }
@@ -43,7 +43,7 @@ public sealed class PublishedWizard : IAsyncDisposable
     /// cache nothing else read. The wizard keeps no browser storage, so sharing the context leaks no
     /// state between tests. Routes stay page-level (<see cref="FakeNuGetFeed"/>).
     /// </summary>
-    readonly IBrowserContext context;
+    IBrowserContext context;
 
     PublishedWizard(WebApplication app, IPlaywright playwright, IBrowser browser, IBrowserContext context, int port)
     {

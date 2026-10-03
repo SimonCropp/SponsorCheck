@@ -20,22 +20,23 @@ public class AuthorConfigGeneratorTests
     static string Dump(AuthorModel model)
     {
         var output = AuthorConfigGenerator.Generate(model);
-        var builder = new StringBuilder();
-        builder.AppendLine($"=== Reference ({output.ReferenceTitle}) ===");
-        builder.AppendLine(output.Reference);
-        builder.AppendLine();
-        builder.AppendLine("=== Credentials ===");
-        builder.AppendLine(output.Credentials);
-        builder.AppendLine();
-        builder.AppendLine("=== Release notes ===");
-        builder.AppendLine(output.ReleaseNotes);
-        builder.AppendLine();
-        builder.AppendLine("=== Checklist ===");
-        builder.AppendLine(output.Checklist);
-        builder.AppendLine();
-        builder.AppendLine("=== Markdown ===");
-        builder.AppendLine(output.Markdown);
-        return builder.ToString();
+        return $"""
+                === Reference ({output.ReferenceTitle}) ===
+                {output.Reference}
+
+                === Credentials ===
+                {output.Credentials}
+
+                === Release notes ===
+                {output.ReleaseNotes}
+
+                === Checklist ===
+                {output.Checklist}
+
+                === Markdown ===
+                {output.Markdown}
+
+                """;
     }
 
     [Test]
@@ -116,16 +117,20 @@ public class AuthorConfigGeneratorTests
     {
         var model = BaseModel();
         Enable(model, PlatformKind.GitHub, "acmecorp");
-        model.Exemptions.Add(new()
-        {
-            Name = "Consulting",
-            Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months."
-        });
-        model.Exemptions.Add(new()
-        {
-            Name = "SmallRevenue",
-            Message = "Consumers under US$10,000 annual gross revenue are exempt."
-        });
+        model.Exemptions
+            .Add(
+                new()
+                {
+                    Name = "Consulting",
+                    Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months."
+                });
+        model.Exemptions
+            .Add(
+                new()
+                {
+                    Name = "SmallRevenue",
+                    Message = "Consumers under US$10,000 annual gross revenue are exempt."
+                });
         await Verify(Dump(model));
     }
 
@@ -157,11 +162,13 @@ public class AuthorConfigGeneratorTests
         Enable(model, PlatformKind.GitHub, "acmecorp");
         model.OwnerMode = true;
         model.OwnerId = "acme";
-        model.Exemptions.Add(new()
-        {
-            Name = "Consulting",
-            Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months."
-        });
+        model.Exemptions
+            .Add(
+                new()
+                {
+                    Name = "Consulting",
+                    Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months."
+                });
         await Verify(Dump(model));
     }
 
@@ -172,17 +179,21 @@ public class AuthorConfigGeneratorTests
         // fail their next build with SC038.
         var model = BaseModel();
         Enable(model, PlatformKind.GitHub, "acmecorp");
-        model.Exemptions.Add(new()
-        {
-            Name = "Consulting",
-            Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months.",
-            MaxTermMonths = "6"
-        });
-        model.Exemptions.Add(new()
-        {
-            Name = "SmallRevenue",
-            Message = "Consumers under US$10,000 annual gross revenue are exempt."
-        });
+        model.Exemptions
+            .Add(
+                new()
+                {
+                    Name = "Consulting",
+                    Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months.",
+                    MaxTermMonths = "6"
+                });
+        model.Exemptions
+            .Add(
+                new()
+                {
+                    Name = "SmallRevenue",
+                    Message = "Consumers under US$10,000 annual gross revenue are exempt."
+                });
         await Verify(Dump(model));
     }
 
@@ -193,12 +204,14 @@ public class AuthorConfigGeneratorTests
         Enable(model, PlatformKind.GitHub, "acmecorp");
         model.OwnerMode = true;
         model.OwnerId = "acme";
-        model.Exemptions.Add(new()
-        {
-            Name = "Consulting",
-            Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months.",
-            MaxTermMonths = "6"
-        });
+        model.Exemptions
+            .Add(
+                new()
+                {
+                    Name = "Consulting",
+                    Message = "Organizations that engaged a maintainer for consulting are exempt for 6 months.",
+                    MaxTermMonths = "6"
+                });
         await Verify(Dump(model));
     }
 
@@ -207,12 +220,14 @@ public class AuthorConfigGeneratorTests
     {
         var model = BaseModel();
         Enable(model, PlatformKind.GitHub, "acmecorp");
-        model.Exemptions.Add(new()
-        {
-            Name = "Consulting",
-            Message = "Consulting carve-out.",
-            MaxTermMonths = "six"
-        });
+        model.Exemptions
+            .Add(
+                new()
+                {
+                    Name = "Consulting",
+                    Message = "Consulting carve-out.",
+                    MaxTermMonths = "six"
+                });
         await Assert.That(model.ExemptionErrors).IsNotEmpty();
         await Assert.That(model.IsComplete).IsFalse();
         // Invalid rows are excluded from the generated config rather than emitted as a broken item.
