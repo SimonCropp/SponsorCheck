@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="ProjectDefaults" Version="1.0.182" />
+    <PackageVersion Include="ProjectFiles" Version="1.4.0" />
     <!-- Pinned to the last 17.11 patch deliberately, not floated. These are the MSBuild APIs the
          bundler and verifier tasks bind against, and a task is loaded into whatever MSBuild the
          consumer is running, so the reference belongs at the oldest host worth supporting rather

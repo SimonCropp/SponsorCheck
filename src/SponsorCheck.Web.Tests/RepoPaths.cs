@@ -2,25 +2,9 @@
 /// against the shipped MSBuild targets, templates, and docs.</summary>
 public static class RepoPaths
 {
-    public static string SrcDirectory { get; } = FindSrcDirectory();
+    public static string SrcDirectory { get; } = Path.GetDirectoryName(ProjectFiles.SolutionFile.FullPath)!;
 
-    public static string RepoRoot { get; } = Path.GetFullPath(Path.Combine(FindSrcDirectory(), ".."));
-
-    static string FindSrcDirectory()
-    {
-        var directory = AppContext.BaseDirectory;
-        while (directory != null)
-        {
-            if (File.Exists(Path.Combine(directory, "SponsorCheck.slnx")))
-            {
-                return directory;
-            }
-
-            directory = Path.GetDirectoryName(directory);
-        }
-
-        throw new($"Could not locate the src directory (SponsorCheck.slnx) above {AppContext.BaseDirectory}");
-    }
+    public static string RepoRoot { get; } = Path.GetFullPath(Path.Combine(SrcDirectory, ".."));
 
     public static string SrcFile(params string[] segments) =>
         Path.Combine([SrcDirectory, .. segments]);
