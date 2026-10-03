@@ -2,7 +2,7 @@ public class MonthBoundTests
 {
     // A fixed clock, not DateTime.UtcNow: every case here is a boundary, and a boundary asserted
     // against the wall clock stops testing the boundary the moment the month turns over.
-    static readonly DateTime now = new(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+    static DateTime now = new(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
 
     [Test]
     [Arguments("2026-09", false)] // the current month is valid through its own end

@@ -7,7 +7,7 @@ public class RepoContractTests
 {
     static string ReadSrc(params string[] segments) => File.ReadAllText(RepoPaths.SrcFile(segments));
 
-    static readonly string[] consumerModeNames =
+    static string[] consumerModeNames =
     [
         "SponsorshipLicensedUntil",
         "SponsorshipLicenseIgnored",

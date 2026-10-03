@@ -1,6 +1,6 @@
 internal static class HttpClientFactory
 {
-    static readonly Lazy<HttpClient> shared = new(() =>
+    static Lazy<HttpClient> shared = new(() =>
     {
         var client = new HttpClient
         {

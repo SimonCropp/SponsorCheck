@@ -24,8 +24,8 @@ public partial class Package
         Output
     }
 
-    static readonly IReadOnlyList<PackageStep> perPackageSteps = [PackageStep.Situation, PackageStep.LicenseMode, PackageStep.Output];
-    static readonly IReadOnlyList<PackageStep> ownerModeSteps = [PackageStep.LicenseMode, PackageStep.Output];
+    static IReadOnlyList<PackageStep> perPackageSteps = [PackageStep.Situation, PackageStep.LicenseMode, PackageStep.Output];
+    static IReadOnlyList<PackageStep> ownerModeSteps = [PackageStep.LicenseMode, PackageStep.Output];
 
     IReadOnlyList<PackageStep> steps = perPackageSteps;
     IReadOnlyList<string> stepLabels = [];

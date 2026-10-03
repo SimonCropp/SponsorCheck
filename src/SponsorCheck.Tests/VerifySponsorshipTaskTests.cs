@@ -58,10 +58,10 @@ public class VerifySponsorshipTaskTests
 
     // Empty lazy sidecars for direct DecisionApplier.Apply calls. They mirror the Lazy wrapping
     // VerifySponsorshipTask does; forcing .Value just yields an empty collection (no file read).
-    static readonly Lazy<IReadOnlyList<AuthorAccount>> noAuthorAccounts = new(() => []);
-    static readonly Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> noExemptions = new(() => new Dictionary<string, ExemptionDefinition>());
-    static readonly Lazy<IReadOnlyDictionary<string, Severity>> noSeverityOverrides = new(() => new Dictionary<string, Severity>());
-    static readonly Lazy<IReadOnlyDictionary<string, string>> noMessageOverrides = new(() => new Dictionary<string, string>());
+    static Lazy<IReadOnlyList<AuthorAccount>> noAuthorAccounts = new(() => []);
+    static Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> noExemptions = new(() => new Dictionary<string, ExemptionDefinition>());
+    static Lazy<IReadOnlyDictionary<string, Severity>> noSeverityOverrides = new(() => new Dictionary<string, Severity>());
+    static Lazy<IReadOnlyDictionary<string, string>> noMessageOverrides = new(() => new Dictionary<string, string>());
 
     [Test]
     public async Task NoConfig_FailsWithSC001()
@@ -2372,7 +2372,7 @@ public class VerifySponsorshipTaskTests
     // code below is decided against utcNow, and a rendered ceiling month baked into a snapshot
     // would otherwise change every month. May 2026 + a 6 month cap puts the ceiling at 2026-11.
 
-    static readonly DateTime clock = new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc);
+    static DateTime clock = new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc);
 
     static Lazy<IReadOnlyDictionary<string, ExemptionDefinition>> Exemptions(params (string name, string message, int? maxTermMonths)[] entries) =>
         new(() => entries.ToDictionary(

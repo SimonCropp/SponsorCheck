@@ -1,6 +1,6 @@
 public static class PlatformRegistry
 {
-    static readonly Dictionary<string, ISponsorshipPlatform> platforms = BuildBuiltins();
+    static Dictionary<string, ISponsorshipPlatform> platforms = BuildBuiltins();
 
     static Dictionary<string, ISponsorshipPlatform> BuildBuiltins()
     {

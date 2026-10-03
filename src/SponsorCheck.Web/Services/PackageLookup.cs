@@ -15,7 +15,7 @@ public sealed class PackageLookup(HttpClient http)
     public const long MaxNupkgBytes = 30_000_000;
     const string flatContainer = "https://api.nuget.org/v3-flatcontainer";
 
-    static readonly RemoteZipOptions options = new()
+    static RemoteZipOptions options = new()
     {
         MaxBufferLength = MaxNupkgBytes,
         // The browser HTTP cache can answer one range request with the cached body of

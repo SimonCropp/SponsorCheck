@@ -3,7 +3,7 @@
 // because it has to match the literal attribute names baked into ConsumerVerifier.targets.
 public static class ConsumerMetadataNames
 {
-    static readonly Dictionary<string, string> map = new(StringComparer.OrdinalIgnoreCase)
+    static Dictionary<string, string> map = new(StringComparer.OrdinalIgnoreCase)
     {
         ["GitHubSponsors"] = "GitHubSponsorAccount",
         ["OpenCollective"] = "OpenCollectiveSponsorAccount",
