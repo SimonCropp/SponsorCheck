@@ -65,11 +65,8 @@ public static class ConsumerMetadataExamples
         if (includeExemptionOption && exemptionsDefined is { Count: > 0 })
         {
             lines.Add("");
-            lines.Add("Option — Claim a publisher-defined exemption (replace the name with one of the exemptions below):");
-            // Every name is listed, not just the one in the example — otherwise the consumer can
-            // only ever discover the alphabetically-first exemption without opening the nupkg.
-            AddExemptionList(lines, exemptionsDefined);
-            lines.Add($"  {RenderExemptionExample(context, exemptionsDefined)}");
+            lines.Add("Option — Claim a publisher-defined exemption (use the example under the one that applies):");
+            AddExemptionList(lines, context, exemptionsDefined);
         }
 
         // Omitted when the warning being rendered is itself the "license ignored" warning —
@@ -92,9 +89,9 @@ public static class ConsumerMetadataExamples
     }
 
     // Renders the body of SC032/SC033/SC034 (unknown-exemption errors). When the publisher has
-    // defined exemptions, lists each name with its full criteria text and shows a copy-paste
-    // example. When no exemptions are defined, says so directly so the consumer knows they need
-    // to talk to the publisher instead of guessing names.
+    // defined exemptions, lists each name with its full criteria text and a copy-paste claim.
+    // When no exemptions are defined, says so directly so the consumer knows they need to talk
+    // to the publisher instead of guessing names.
     public static string RenderAvailableExemptions(
         ConsumerContext context,
         IReadOnlyDictionary<string, ExemptionDefinition> exemptionsDefined)
@@ -105,25 +102,17 @@ public static class ConsumerMetadataExamples
         }
 
         var lines = new List<string> { "Available exemptions:" };
-        AddExemptionList(lines, exemptionsDefined);
+        AddExemptionList(lines, context, exemptionsDefined);
 
-        var example = RenderExemptionExample(context, exemptionsDefined);
+        lines.Add("");
         if (context.IsOwner)
         {
-            lines.Add("");
-            lines.Add($"Claim one by setting the {context.OwnerId}_SponsorshipExemption property in Directory.Build.props or the consuming project.");
-            lines.Add("");
-            lines.Add("Example format:");
-            lines.Add($"  {example}");
+            lines.Add("Claim one by setting the properties under it in Directory.Build.props or the consuming project.");
             return string.Join(newline, lines);
         }
 
-        lines.Add("");
         lines.Add("Claim one in:");
         lines.Add($"  {context.TargetFilePath}");
-        lines.Add("");
-        lines.Add("Example format:");
-        lines.Add($"  {example}");
         return string.Join(newline, lines);
     }
 
@@ -220,7 +209,14 @@ public static class ConsumerMetadataExamples
              """;
     }
 
-    static void AddExemptionList(List<string> lines, IReadOnlyDictionary<string, ExemptionDefinition> exemptionsDefined)
+    // Each exemption carries its own claim. A single example under the list could only ever name
+    // one of them, so it read as a recommendation of the alphabetically-first exemption, and the
+    // consumer was left to rewrite it for any other — including working out whether the one they
+    // picked needs an end month too.
+    static void AddExemptionList(
+        List<string> lines,
+        ConsumerContext context,
+        IReadOnlyDictionary<string, ExemptionDefinition> exemptionsDefined)
     {
         foreach (var pair in exemptionsDefined)
         {
@@ -230,20 +226,23 @@ public static class ConsumerMetadataExamples
                 ? $" [time-bounded: SponsorshipExemptionUntil required, at most {MonthsWord(months)} out]"
                 : "";
             lines.Add($"  - {pair.Key}: {pair.Value.Message}{bound}");
+            foreach (var line in RenderItemLines(context, ExemptionClaim(pair.Key, pair.Value)))
+            {
+                lines.Add($"    {line}");
+            }
         }
     }
 
-    // A capped exemption is only claimable with an end month, so the example has to show both
+    // A capped exemption is only claimable with an end month, so its claim has to show both
     // attributes — pasting the name alone would just trade the error for SC038.
-    static string RenderExemptionExample(ConsumerContext context, IReadOnlyDictionary<string, ExemptionDefinition> exemptionsDefined)
+    static (string Attribute, string Value)[] ExemptionClaim(string name, ExemptionDefinition definition)
     {
-        var first = exemptionsDefined.First();
-        if (first.Value.MaxTermMonths is null)
+        if (definition.MaxTermMonths is null)
         {
-            return RenderItem(context, ("SponsorshipExemption", first.Key));
+            return [("SponsorshipExemption", name)];
         }
 
-        return RenderExemptionUntilExample(context, first.Key, null);
+        return [("SponsorshipExemption", name), ("SponsorshipExemptionUntil", "yyyy-MM")];
     }
 
     // The copy-pasteable snippet shared by every SponsorshipExemptionUntil block: the claimed
@@ -630,7 +629,12 @@ public static class ConsumerMetadataExamples
         return string.Join(newline, lines);
     }
 
-    static string RenderItem(ConsumerContext context, params (string Attribute, string Value)[] extraAttributes)
+    // Continuation lines are indented two spaces so multi-property examples stay aligned under
+    // the caller's leading indent.
+    static string RenderItem(ConsumerContext context, params (string Attribute, string Value)[] extraAttributes) =>
+        string.Join($"{newline}  ", RenderItemLines(context, extraAttributes));
+
+    static IEnumerable<string> RenderItemLines(ConsumerContext context, (string Attribute, string Value)[] extraAttributes)
     {
         // Owner mode is property-based: render each license mode as its own MSBuild property element
         // rather than item metadata on a <PackageReference>/<PackageVersion>. The property names are
@@ -638,11 +642,10 @@ public static class ConsumerMetadataExamples
         // so a consumer of multiple owner-mode packages can configure each one independently — the
         // verifier targets file built for each owner reads $({owner}_GitHubSponsorAccount). The
         // owner id was validated at pack time (BundleSponsorListTask.IsValidOwnerId) to be a
-        // safe MSBuild property name prefix. Continuation lines are indented two spaces so
-        // multi-property examples stay aligned under the caller's leading indent.
+        // safe MSBuild property name prefix.
         if (context.IsOwner)
         {
-            return string.Join($"{newline}  ", extraAttributes.Select(_ => $"<{context.OwnerId}_{_.Attribute}>{_.Value}</{context.OwnerId}_{_.Attribute}>"));
+            return extraAttributes.Select(_ => $"<{context.OwnerId}_{_.Attribute}>{_.Value}</{context.OwnerId}_{_.Attribute}>");
         }
 
         // Both <PackageReference> (no-CPM) and <PackageVersion> (CPM) carry a Version attribute,
@@ -656,7 +659,7 @@ public static class ConsumerMetadataExamples
         }
 
         builder.Append(" />");
-        return builder.ToString();
+        return [builder.ToString()];
     }
 
     // Lives here rather than in DecisionApplier because both message renderers and the SC0xx

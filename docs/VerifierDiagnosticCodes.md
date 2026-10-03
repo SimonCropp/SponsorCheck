@@ -91,9 +91,9 @@ flowchart TD
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicensedUntil="yyyy-MM" />
 
-  Option — Claim a publisher-defined exemption (replace the name with one of the exemptions below):
+  Option — Claim a publisher-defined exemption (use the example under the one that applies):
     - {exemptionName}: {publisherMessage}[ [time-bounded: SponsorshipExemptionUntil required, at most {maxTermMonths} months out]]
-    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{firstExemptionName}"[ SponsorshipExemptionUntil="yyyy-MM"] />
+      <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{exemptionName}"[ SponsorshipExemptionUntil="yyyy-MM"] />
 
   Option — Mark as ignored (you accept that the build is in breach of the package license):
     <PackageReference Include="{PackageId}" Version="{version}" SponsorshipLicenseIgnored="true" />
@@ -102,7 +102,7 @@ flowchart TD
     {sponsorUrls}
   ```
 
-  The "Claim a publisher-defined exemption" option renders only when the publisher defined at least one `<SponsorExemption>`. Every exemption is listed, one line each, with its criteria text and — for a time-bounded one — its cap; the example claims the first, including `SponsorshipExemptionUntil` when that exemption is time-bounded.
+  The "Claim a publisher-defined exemption" option renders only when the publisher defined at least one `<SponsorExemption>`. Every exemption is listed with its criteria text, its cap when time-bounded, and its own claim beneath it. A time-bounded exemption's claim includes `SponsorshipExemptionUntil`, because the name alone would only trade this error for [SC038](#sc038).
 
   One "Sponsor on..." option is rendered per platform the author has enabled. SponsorshipLicenseIgnored is listed last so the breach-of-license escape hatch sits after the legitimate options. When only one platform is configured the "Sponsor at:" block collapses to a single inline line: `Sponsor at {sponsorUrl}`.
 
@@ -536,12 +536,19 @@ flowchart TD
   Option — Time-bounded license (replace yyyy-MM with the last covered month):
     <{OwnerId}_SponsorshipLicensedUntil>yyyy-MM</{OwnerId}_SponsorshipLicensedUntil>
 
+  Option — Claim a publisher-defined exemption (use the example under the one that applies):
+    - {exemptionName}: {publisherMessage}[ [time-bounded: SponsorshipExemptionUntil required, at most {maxTermMonths} months out]]
+      <{OwnerId}_SponsorshipExemption>{exemptionName}</{OwnerId}_SponsorshipExemption>
+      [<{OwnerId}_SponsorshipExemptionUntil>yyyy-MM</{OwnerId}_SponsorshipExemptionUntil>]
+
   Option — Mark as ignored (you accept that the build is in breach of the package license):
     <{OwnerId}_SponsorshipLicenseIgnored>true</{OwnerId}_SponsorshipLicenseIgnored>
 
   Sponsor at:
     {sponsorUrls}
   ```
+
+  The exemption option follows the same rules as in [SC001](#sc001); a time-bounded exemption's claim is two properties, both under it.
 
   One "Sponsor on..." option is rendered per platform the author has enabled. The property names are the per-package metadata names prefixed with the package's owner id (e.g. `<acme_GitHubSponsorAccount>` when `SponsorOwner="acme"`) — this keeps two owner-mode packages from different authors independently configurable in the same consumer project. The "Sponsor at:" block collapses to a single inline line when only one platform is configured.
 
@@ -761,17 +768,16 @@ flowchart TD
   Package '{PackageId}': SponsorshipExemption="{name}" on the <PackageReference> does not name a known exemption.
 
   Available exemptions:
-    - {name1}: {message1}
+    - {name1}: {message1}[ [time-bounded: SponsorshipExemptionUntil required, at most {maxTermMonths} months out]]
+      <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{name1}"[ SponsorshipExemptionUntil="yyyy-MM"] />
     - {name2}: {message2}
+      <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{name2}" />
 
   Claim one in:
     {csprojPath}
-
-  Example format:
-    <PackageReference Include="{PackageId}" Version="{version}" SponsorshipExemption="{name1}" />
   ```
 
-  When the publisher has not defined any exemptions the "Available exemptions" block is replaced with `The publisher has not defined any exemptions for this package.`
+  Each exemption carries its own claim, built the same way as in [SC001](#sc001). When the publisher has not defined any exemptions the "Available exemptions" block is replaced with `The publisher has not defined any exemptions for this package.`
 - **Example:**
 
   ```
@@ -779,13 +785,12 @@ flowchart TD
 
   Available exemptions:
     - Consulting: Organizations that have engaged any of the core maintainers in consulting work could be exempt from the Maintenance Fee for 6 months from the final date of that work.
+      <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="Consulting" />
     - SmallRevenue: Consumers under US$10,000 annual gross revenue are exempt.
+      <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="SmallRevenue" />
 
   Claim one in:
     /work/MyApp/MyApp.csproj
-
-  Example format:
-    <PackageReference Include="Papyrine" Version="1.0.0" SponsorshipExemption="Consulting" />
   ```
 
 
@@ -803,7 +808,7 @@ flowchart TD
 - **Name:** Unknown exemption
 - **Level**: Error
 - **Meaning:** Owner-mode equivalent of [SC032](#sc032)/[SC033](#sc033): the `{OwnerId}_SponsorshipExemption` property names an exemption the publisher did not define.
-- **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemption="{name}" does not name a known exemption.` (body uses the owner-mode "Claim one by setting the property" remediation block.)
+- **Syntax:** `Package '{PackageId}': {OwnerId}_SponsorshipExemption="{name}" does not name a known exemption.` (each listed exemption's claim is rendered as owner-prefixed properties, and the body closes with `Claim one by setting the properties under it in Directory.Build.props or the consuming project.`)
 - **Example opener:** `Package 'Papyrine': papyrine_SponsorshipExemption="MadeUpName" does not name a known exemption.`
 
 

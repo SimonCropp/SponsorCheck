@@ -2914,6 +2914,33 @@ public class VerifySponsorshipTaskTests
         await Verify(engine);
     }
 
+    // Owner mode renders a time-bounded claim as two property elements, so this pins that both
+    // land indented under their own exemption rather than only the first exemption getting one.
+    [Test]
+    public async Task SC021_WithMultipleExemptionsDefined_EachExemptionCarriesItsOwnClaim()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var task = new VerifySponsorshipTask
+        {
+            BuildEngine = engine,
+            ThePackageId = "Papyrine",
+            OwnerId = "papyrine",
+            ConsumerProjectPath = consumerProject,
+            SponsorHashListPath = WriteHashes(dir, ("GitHubSponsors", "alice")),
+            AuthorAccountsPath = WriteAuthorAccounts(dir, ("GitHubSponsors", "acmecorp")),
+            ExemptionsPath = WriteBoundedExemptions(
+                dir,
+                ("MaintainerConsulting", "Consulting carve-out.", 6),
+                ("OpenSource", "Non-revenue open source.", 12),
+                ("Uncapped", "Open-ended carve-out.", null))
+        };
+
+        await Assert.That(task.Execute()).IsFalse();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC021");
+        await Verify(engine);
+    }
+
     [Test]
     public async Task SC001_WithoutExemptionsDefined_BodyOmitsExemptionOption()
     {
