@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests;
-
 /// <summary>Builds in-memory nupkgs whose SponsorCheck sidecar files mirror what the real bundler
 /// writes (formats pinned by RepoContractTests), for NupkgParser and lookup tests.</summary>
 public static class TestNupkg

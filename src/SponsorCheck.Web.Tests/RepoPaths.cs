@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests;
-
 /// <summary>Locates real repo files so the anti-rot tests can compare the wizard's hardcoded names
 /// against the shipped MSBuild targets, templates, and docs.</summary>
 public static class RepoPaths

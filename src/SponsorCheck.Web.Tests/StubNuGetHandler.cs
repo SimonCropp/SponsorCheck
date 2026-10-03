@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests;
-
 /// <summary>
 /// An in-memory nuget.org flat container for bunit tests: one package, one version. The nupkg is
 /// served whole with 200 regardless of the Range header (RemoteZip's fallback for a server without

@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests.Pages;
-
 public class ConsumerPageTests : WebTestContext
 {
     static void EnterPackage(IRenderedComponent<SponsorCheck.Web.Pages.Consumer> cut, string packageId = "ThePackage")

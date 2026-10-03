@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests;
-
 /// <summary>
 /// Behavioural end-to-end journeys over the published app (see <see cref="PublishedWizard"/>).
 /// Text/selector assertions only — per-screen visual coverage lives in <see cref="ScreenSnapshotTests"/>.

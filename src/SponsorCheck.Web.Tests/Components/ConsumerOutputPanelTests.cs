@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests.Components;
-
 public class ConsumerOutputPanelTests : WebTestContext
 {
     static ConsumerModel SponsorModel()

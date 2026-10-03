@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests.Models;
-
 public class SponsorAccountHashTests
 {
     [Test]

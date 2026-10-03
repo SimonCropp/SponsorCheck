@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests.Services;
-
 public class NupkgParserTests
 {
     /// <summary>

@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests.Pages;
-
 public class PackagePageTests : WebTestContext
 {
     IRenderedComponent<SponsorCheck.Web.Pages.Package> Open(string id = "ThePackage") =>

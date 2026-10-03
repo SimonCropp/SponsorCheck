@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests;
-
 /// <summary>
 /// Fakes api.nuget.org inside the browser for the Playwright tests. The package page fetches on
 /// landing, so a test that does not route the feed hits the real network: register this before

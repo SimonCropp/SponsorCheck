@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests.Models;
-
 public class MonthBoundTests
 {
     // A fixed clock, not DateTime.UtcNow: every case here is a boundary, and a boundary asserted

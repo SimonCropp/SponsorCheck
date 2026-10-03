@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests;
-
 /// <summary>
 /// Anti-rot checks: every name the wizard emits must exist in the real SponsorCheck MSBuild
 /// targets/templates/docs shipped from this repo. Drift fails these tests, which run in the Pages

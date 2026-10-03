@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests.Pages;
-
 public class HomeTests : WebTestContext
 {
     [Test]

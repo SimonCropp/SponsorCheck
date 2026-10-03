@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests.Services;
-
 public class PackageLookupTests
 {
     sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler

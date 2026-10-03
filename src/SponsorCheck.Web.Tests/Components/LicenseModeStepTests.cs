@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests.Components;
-
 /// <summary>
 /// The step mutates a model its parent page owns, and a DOM event handled in a child re-renders only
 /// the child, so every input has to raise Changed or the page's Next button goes stale. The page tests

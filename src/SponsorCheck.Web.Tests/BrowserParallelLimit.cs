@@ -1,5 +1,3 @@
-namespace SponsorCheck.Web.Tests;
-
 /// <summary>
 /// Caps how many browser tests drive a page at once. Every page boots its own .NET WASM runtime, which
 /// is CPU-bound even with the runtime already cached, so on a two-core CI agent a dozen concurrent boots
