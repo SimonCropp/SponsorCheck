@@ -2,28 +2,11 @@ namespace SponsorCheck.IntegrationTests;
 
 public static class TestEnvironment
 {
-    static readonly Lazy<string> RepoRootValue = new(FindRepoRoot);
-    public static string RepoRoot => RepoRootValue.Value;
+    public static string RepoRoot { get; } = Path.GetFullPath(Path.Combine(ProjectFiles.ProjectDirectory, "..", ".."));
 
     public static string SrcNugetsDir => Path.Combine(RepoRoot, "nugets");
     public static string FixturesDir => Path.Combine(RepoRoot, "IntegrationTests", "Fixtures");
-    public static string OverrideListPath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "sponsors-override.json");
-
-    static string FindRepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "license.txt")))
-        {
-            dir = dir.Parent;
-        }
-
-        if (dir == null)
-        {
-            throw new InvalidOperationException("Could not locate repo root (no license.txt found above test bin).");
-        }
-
-        return dir.FullName;
-    }
+    public static string OverrideListPath => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ProjectFiles.Fixtures.sponsors_override_json));
 
     public static string MakeWorkDir([CallerMemberName] string caller = "")
     {
