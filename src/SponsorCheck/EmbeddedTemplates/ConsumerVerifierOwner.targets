@@ -34,12 +34,12 @@ __SC_INNER_IMPORT__
 
   <!-- Project-reference coverage responders. When a transitive consumer (this project's verifier
        was imported via buildTransitive/) has a sibling ProjectReference that already covers
-       ThePackage directly, this project's verification is redundant — the direct consumer's
+       ThePackage directly, this project's diagnostic is redundant — the direct consumer's
        verifier will fire with the authoritative metadata. The verifier target below queries each
-       direct ProjectReference with the "deep" responder; the deep responder also walks ITS own
-       direct ProjectReferences via the "shallow" responder, giving depth-2 visibility (self,
-       refs, refs-of-refs). The responder names are package-id-scoped so multiple SponsorCheck
-       packages in the same project don't clash. -->
+       direct ProjectReference with the "deep" responder, but only once it has a diagnostic to
+       suppress; the deep responder also walks ITS own direct ProjectReferences via the "shallow"
+       responder, giving depth-2 visibility (self, refs, refs-of-refs). The responder names are
+       package-id-scoped so multiple SponsorCheck packages in the same project don't clash. -->
   <Target Name="_SponsorCheck_CoversDeep___SC_PACKAGE_ID__"
           Returns="@(_SponsorCheck_Covered___SC_PACKAGE_ID__)">
     <ItemGroup>
@@ -72,13 +72,6 @@ __SC_INNER_IMPORT__
   <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__"
           BeforeTargets="BeforeBuild"
           Condition="'$(_SponsorCheck_OwnerVerified___SC_OWNER_ID__)' != 'true'">
-    <MSBuild Projects="@(ProjectReference)"
-             Targets="_SponsorCheck_CoversDeep___SC_PACKAGE_ID__"
-             SkipNonexistentTargets="true"
-             Condition="'@(ProjectReference)' != ''">
-      <Output TaskParameter="TargetOutputs" ItemName="_SponsorCheck_RefCovers___SC_PACKAGE_ID__" />
-    </MSBuild>
-
     <PropertyGroup>
       <_SponsorCheck_OwnerVerified___SC_OWNER_ID__>true</_SponsorCheck_OwnerVerified___SC_OWNER_ID__>
     </PropertyGroup>
@@ -89,7 +82,6 @@ __SC_INNER_IMPORT__
          diagnostic back, so the announce build below receives a finished severity and importance
          and needs neither property. -->
     <__SC_TASK_NAME__
-        Condition="'@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
         DeferDiagnostic="true"
         MessageLevel="$(SponsorCheckMessageLevel)"
         WarningLevel="$(SponsorCheckWarningLevel)"
@@ -118,6 +110,23 @@ __SC_INNER_IMPORT__
       <Output TaskParameter="DiagnosticImportance" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticImportance" />
       <Output TaskParameter="DiagnosticPayload" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticPayload" />
     </__SC_TASK_NAME__>
+
+    <!-- Coverage is asked about only once there is a diagnostic it could suppress, which is why the
+         task runs first. The question itself is trivial, but an <MSBuild> call is served by the
+         node that owns the referenced project, and late in a large build those nodes are busy
+         compiling: this project then sits blocked until each reference gets a turn. Asked up
+         front, every consumer paid that on every build — tens of seconds per project in a
+         solution of several hundred — including the ones whose declaration is valid and have
+         nothing to announce. A clean verification now never leaves this project.
+
+         A covering reference suppresses the announcement below rather than the verification, so
+         what a covered project reports is unchanged: nothing. -->
+    <MSBuild Projects="@(ProjectReference)"
+             Targets="_SponsorCheck_CoversDeep___SC_PACKAGE_ID__"
+             SkipNonexistentTargets="true"
+             Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != '' and '@(ProjectReference)' != ''">
+      <Output TaskParameter="TargetOutputs" ItemName="_SponsorCheck_RefCovers___SC_PACKAGE_ID__" />
+    </MSBuild>
 
     <!-- The verifier runs in every project that references ThePackage, and again in every target
          framework of a multi-targeted one, but a build only needs to be told its result once. So
@@ -154,7 +163,7 @@ __SC_INNER_IMPORT__
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="MSBuildTreatWarningsAsErrors=$(MSBuildTreatWarningsAsErrors)" />
     </ItemGroup>
 
-    <MSBuild Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != ''"
+    <MSBuild Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != '' and '@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
              Projects="$(MSBuildThisFileFullPath)"
              Targets="_SponsorCheck_Announce___SC_PACKAGE_ID__"
              Properties="@(_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__)"

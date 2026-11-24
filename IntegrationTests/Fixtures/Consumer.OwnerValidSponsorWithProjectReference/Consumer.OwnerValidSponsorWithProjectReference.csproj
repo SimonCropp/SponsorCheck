@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- Same shape as Consumer.OwnerCoveredByProjectReference, except the sponsor property is set for
+       the whole directory (Directory.Build.props), so this project's own verification passes. With
+       nothing to announce there is nothing for coverage to suppress, and the verifier must not
+       call into Lib to ask about it. -->
+  <ItemGroup>
+    <ProjectReference Include="Lib\Lib.csproj" />
+  </ItemGroup>
+</Project>

@@ -5,13 +5,13 @@ public class ConsumerBuildTests
     // onBuildServer is pinned rather than inherited — see DotnetCliRunner.PinBuildServerDetection.
     // It defaults to true because that is where every diagnostic is visible at minimal verbosity,
     // which is what most of these assertions are reading.
-    static async Task<CliResult> BuildFixture(string fixtureName, string configuration = "Release", string authorFixture = "ThePackage", bool onBuildServer = true)
+    static async Task<CliResult> BuildFixture(string fixtureName, string configuration = "Release", string authorFixture = "ThePackage", bool onBuildServer = true, string verbosity = "minimal")
     {
         var feed = await ThePackageBuilder.EnsureBuilt(authorFixture);
-        return await BuildFixtureInFeed(fixtureName, feed, configuration, onBuildServer);
+        return await BuildFixtureInFeed(fixtureName, feed, configuration, onBuildServer, verbosity);
     }
 
-    static async Task<CliResult> BuildFixtureInFeed(string fixtureName, string feed, string configuration = "Release", bool onBuildServer = true)
+    static async Task<CliResult> BuildFixtureInFeed(string fixtureName, string feed, string configuration = "Release", bool onBuildServer = true, string verbosity = "minimal")
     {
         var workDir = TestEnvironment.MakeWorkDir(fixtureName);
         TestEnvironment.CopyDirectory(Path.Combine(TestEnvironment.FixturesDir, fixtureName), workDir);
@@ -35,7 +35,7 @@ public class ConsumerBuildTests
         Directory.CreateDirectory(packagesDir);
         var project = Directory.GetFiles(workDir)
             .Single(f => f.EndsWith(".csproj") || f.EndsWith(".fsproj") || f.EndsWith(".vbproj"));
-        return await DotnetCliRunner.Run("build", project, configuration, null, workDir, packagesDir, onBuildServer);
+        return await DotnetCliRunner.Run("build", project, configuration, null, workDir, packagesDir, onBuildServer, verbosity);
     }
 
     [Test]
@@ -321,13 +321,69 @@ public class ConsumerBuildTests
         // the project-reference coverage check this build would fail with SC021 in the top-level
         // (no property set there). The coverage check sees that the Lib sibling — reachable via a
         // <ProjectReference> — has the package directly and that Lib's verifier will do the
-        // authoritative check, so the top-level's verifier skips.
+        // authoritative check, so the top-level's SC021 is never announced.
+        //
+        // Built at detailed verbosity so the walk itself is in the log (see coverageResponder). Here
+        // it has to be: the top-level has a diagnostic, so it must ask. That is also what makes
+        // its absence in OwnerMode_ValidSponsor_DoesNotWalkProjectReferences mean something.
         var result = await BuildFixture(
             "Consumer.OwnerCoveredByProjectReference",
-            authorFixture: "ThePackageOwnerModeTransitive");
+            authorFixture: "ThePackageOwnerModeTransitive",
+            verbosity: "detailed");
         await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
         await Assert.That(result.Combined).DoesNotContain("SC021");
         await Assert.That(result.Combined).DoesNotContain("SC024");
+        await Assert.That(result.Combined).Contains(coverageResponder);
+    }
+
+    [Test]
+    public async Task OwnerMode_ValidSponsor_DoesNotWalkProjectReferences()
+    {
+        // Coverage exists to suppress a redundant diagnostic, so a project with nothing to announce
+        // has nothing to ask its references. It used to ask anyway, before verifying, and each
+        // question is an <MSBuild> call that waits for the node owning the referenced project —
+        // tens of seconds per consuming project late in a large build, for sponsors included.
+        //
+        // Same shape as the fixture above, but the sponsor property covers the whole directory, so
+        // the top-level project passes on its own and must not call into Lib.
+        var result = await BuildFixture(
+            "Consumer.OwnerValidSponsorWithProjectReference",
+            authorFixture: "ThePackageOwnerModeTransitive",
+            verbosity: "detailed");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC021");
+        await Assert.That(result.Combined).DoesNotContain(coverageResponder);
+    }
+
+    [Test]
+    public async Task ProjectReferenceCoverage_SuppressesTheTransitiveDiagnostic()
+    {
+        // Per-package counterpart of OwnerMode_ProjectReferenceCoverage_SkipsRedundantVerification.
+        // The top-level project has no <PackageReference> to carry a sponsor account, so the
+        // transitively imported verifier renders SC001 there. Lib has the direct reference and a
+        // valid account, so that SC001 is dropped — after asking Lib, which is the walk in the log.
+        var result = await BuildFixture(
+            "Consumer.CoveredByProjectReference",
+            authorFixture: "ThePackageTransitive",
+            verbosity: "detailed");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC001");
+        await Assert.That(result.Combined).Contains(coverageResponder);
+    }
+
+    [Test]
+    public async Task ValidSponsor_DoesNotWalkProjectReferences()
+    {
+        // Per-package counterpart of OwnerMode_ValidSponsor_DoesNotWalkProjectReferences: the
+        // top-level project carries a valid account on its own <PackageReference>, so it never
+        // asks Lib whether it is covered.
+        var result = await BuildFixture(
+            "Consumer.ValidSponsorWithProjectReference",
+            authorFixture: "ThePackageTransitive",
+            verbosity: "detailed");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("SC001");
+        await Assert.That(result.Combined).DoesNotContain(coverageResponder);
     }
 
     [Test]
@@ -602,6 +658,13 @@ public class ConsumerBuildTests
     // That keeps the two failures apart: a message growing a second line fails the one-line check
     // in NonCpmExemption_BuildsWithSC029Message, not these, where it would read as a duplicate.
     const string exemptionCriteria = "Organizations that have engaged";
+
+    // The target a verifier calls on each <ProjectReference> to ask whether it covers the package.
+    // At detailed verbosity MSBuild logs every target it runs, so the name is in the log exactly when
+    // a walk happened; normal is not enough, since it names a called project only once something
+    // inside it logs. Only the prefix is matched: the rest is the sanitized package id, which ends
+    // in a hash.
+    const string coverageResponder = "_SponsorCheck_CoversDeep_";
 
     static int Occurrences(string haystack, string needle)
     {
