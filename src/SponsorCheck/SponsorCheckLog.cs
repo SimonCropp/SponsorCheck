@@ -3,14 +3,29 @@ public static class SponsorCheckLog
     const string subcategory = "SponsorCheck";
     const string docsBaseUrl = "https://github.com/SimonCropp/SponsorCheck/blob/main/docs/";
 
+    // Marks a diagnostic that records a declaration the verifier accepted — the audit messages and
+    // the ignored-license warning — rather than one it rejected. The generated targets ask a
+    // project's references about coverage only to suppress a rejection, so this is what lets an
+    // accepted claim skip that walk.
+    //
+    // It rides on the event as its help keyword because the verifier renders into
+    // CapturingBuildEngine and an event is all that crosses that boundary; the keyword is the one
+    // field nothing else here uses. It never reaches a build: the task replays a captured
+    // diagnostic through EmitRendered, which sets none. Deciding it here, where each diagnostic's
+    // default severity is declared, is what keeps it from drifting — a separate list of codes
+    // would need updating with every new audit message, and forgetting would cost nothing but
+    // build time, so nobody would notice.
+    public const string AcceptedClaimKeyword = "SponsorCheck.AcceptedClaim";
+
     public static void Error(TaskLoggingHelper log, string code, string message) =>
-        EmitInternal(log, code, Severity.Error, message);
+        EmitInternal(log, code, Severity.Error, message, acceptedClaim: false);
 
     public static void Warning(TaskLoggingHelper log, string code, string message) =>
-        EmitInternal(log, code, Severity.Warning, message);
+        EmitInternal(log, code, Severity.Warning, message, acceptedClaim: false);
 
+    // Every message-severity diagnostic is the audit record of a claim that was accepted.
     public static void HighMessage(TaskLoggingHelper log, string code, string message) =>
-        EmitInternal(log, code, Severity.Message, message);
+        EmitInternal(log, code, Severity.Message, message, acceptedClaim: true);
 
     // Emit honoring author-supplied severity and message overrides. Returns true if the build
     // can continue (severity is Warning or Message); false if it was emitted as an Error.
@@ -24,7 +39,13 @@ public static class SponsorCheckLog
     {
         var severity = GetSeverity(code, defaultSeverity, severityOverrides);
         var message = GetMessage(code, messageOverrides, defaultMessage);
-        EmitInternal(log, code, severity, message);
+        // Accepted means the build is let through by default, which a rejection never is. Both
+        // halves matter: a publisher who downgrades the missing-config error has not made that
+        // project's declaration any more present, and one who raises the ignored-license warning to
+        // an error has turned an accepted claim into a rejection.
+        var acceptedClaim = defaultSeverity != Severity.Error &&
+                            severity != Severity.Error;
+        EmitInternal(log, code, severity, message, acceptedClaim);
         return severity != Severity.Error;
     }
 
@@ -52,8 +73,11 @@ public static class SponsorCheckLog
 
     // The verifier logs into a capture and applies the consumer's log levels to what it caught, so the
     // importance chosen here only reaches a build from the bundler, which logs no messages through it.
-    static void EmitInternal(TaskLoggingHelper log, string code, Severity severity, string message) =>
-        EmitRendered(log, code, severity, DefaultImportance(BuildServerDetector.Detected), Wrap(code, severity, message));
+    static void EmitInternal(TaskLoggingHelper log, string code, Severity severity, string message, bool acceptedClaim)
+    {
+        var helpKeyword = acceptedClaim ? AcceptedClaimKeyword : "";
+        Log(log, code, severity, DefaultImportance(BuildServerDetector.Detected), Wrap(code, severity, message), helpKeyword);
+    }
 
     // The console logger repeats the location, code and project on every line of a multi-line
     // message, so a one-line message keeps its See link on that line. Messages are the audit trail
@@ -77,18 +101,21 @@ public static class SponsorCheckLog
     // both halves of the once-per-build round trip: the announce run replays what the deferred verify
     // run captured, so re-wrapping would double the name prefix and the See link. The importance only
     // applies to a message.
-    public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, MessageImportance importance, string fullMessage)
+    public static void EmitRendered(TaskLoggingHelper log, string code, Severity severity, MessageImportance importance, string fullMessage) =>
+        Log(log, code, severity, importance, fullMessage, helpKeyword: "");
+
+    static void Log(TaskLoggingHelper log, string code, Severity severity, MessageImportance importance, string fullMessage, string helpKeyword)
     {
         switch (severity)
         {
             case Severity.Error:
-                log.LogError(subcategory, code, "", "", 0, 0, 0, 0, fullMessage);
+                log.LogError(subcategory, code, helpKeyword, "", 0, 0, 0, 0, fullMessage);
                 break;
             case Severity.Warning:
-                log.LogWarning(subcategory, code, "", "", 0, 0, 0, 0, fullMessage);
+                log.LogWarning(subcategory, code, helpKeyword, "", 0, 0, 0, 0, fullMessage);
                 break;
             case Severity.Message:
-                log.LogMessage(subcategory, code, "", "", 0, 0, 0, 0, importance, fullMessage);
+                log.LogMessage(subcategory, code, helpKeyword, "", 0, 0, 0, 0, importance, fullMessage);
                 break;
         }
     }

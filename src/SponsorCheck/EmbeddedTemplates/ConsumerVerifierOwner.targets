@@ -36,7 +36,7 @@ __SC_INNER_IMPORT__
        was imported via buildTransitive/) has a sibling ProjectReference that already covers
        ThePackage directly, this project's diagnostic is redundant — the direct consumer's
        verifier will fire with the authoritative metadata. The verifier target below queries each
-       direct ProjectReference with the "deep" responder, but only once it has a diagnostic to
+       direct ProjectReference with the "deep" responder, but only once it has a rejection to
        suppress; the deep responder also walks ITS own direct ProjectReferences via the "shallow"
        responder, giving depth-2 visibility (self, refs, refs-of-refs). The responder names are
        package-id-scoped so multiple SponsorCheck packages in the same project don't clash. -->
@@ -109,22 +109,29 @@ __SC_INNER_IMPORT__
       <Output TaskParameter="DiagnosticSeverity" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticSeverity" />
       <Output TaskParameter="DiagnosticImportance" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticImportance" />
       <Output TaskParameter="DiagnosticPayload" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticPayload" />
+      <Output TaskParameter="DiagnosticAcceptedClaim" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticAcceptedClaim" />
     </__SC_TASK_NAME__>
 
-    <!-- Coverage is asked about only once there is a diagnostic it could suppress, which is why the
+    <!-- Coverage is asked about only once there is a rejection it could suppress, which is why the
          task runs first. The question itself is trivial, but an <MSBuild> call is served by the
          node that owns the referenced project, and late in a large build those nodes are busy
          compiling: this project then sits blocked until each reference gets a turn. Asked up
          front, every consumer paid that on every build — tens of seconds per project in a
-         solution of several hundred — including the ones whose declaration is valid and have
-         nothing to announce. A clean verification now never leaves this project.
+         solution of several hundred — including the ones whose declaration is valid.
+
+         So two kinds of result never leave this project. A clean verification has nothing to
+         announce. An accepted claim (DiagnosticAcceptedClaim: an exemption, a private or recent
+         sponsorship, an ignored license) has something to announce, on every build, but nothing
+         for coverage to suppress: coverage is for a project with no acceptable declaration of
+         its own, leaning on a referenced project that has one. The announce call below already
+         reports an identical line once per build.
 
          A covering reference suppresses the announcement below rather than the verification, so
-         what a covered project reports is unchanged: nothing. -->
+         a covered project whose own declaration was rejected still reports nothing. -->
     <MSBuild Projects="@(ProjectReference)"
              Targets="_SponsorCheck_CoversDeep___SC_PACKAGE_ID__"
              SkipNonexistentTargets="true"
-             Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != '' and '@(ProjectReference)' != ''">
+             Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != '' and '$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticAcceptedClaim)' != 'true' and '@(ProjectReference)' != ''">
       <Output TaskParameter="TargetOutputs" ItemName="_SponsorCheck_RefCovers___SC_PACKAGE_ID__" />
     </MSBuild>
 

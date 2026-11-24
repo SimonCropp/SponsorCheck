@@ -1,7 +1,11 @@
 // A rendered consumer-side diagnostic, carried from the per-project verify run to the
 // once-per-build announce run that actually logs it. See the announce round trip in
 // EmbeddedTemplates/ConsumerVerifier.targets for why the two are separate runs.
-public sealed record DeferredDiagnostic(string Code, Severity Severity, string Message)
+//
+// AcceptedClaim says the diagnostic records a declaration the verifier accepted rather than one
+// it rejected — see SponsorCheckLog.AcceptedClaimKeyword. It does not travel to the announce run,
+// which only logs; it decides whether the verify run asks about coverage at all.
+public sealed record DeferredDiagnostic(string Code, Severity Severity, string Message, bool AcceptedClaim = false)
 {
     // The message travels as base64 because it lands in the <MSBuild> task's Properties list, and
     // that list is both split on ';' and property-expanded on the way through: a ';' would truncate

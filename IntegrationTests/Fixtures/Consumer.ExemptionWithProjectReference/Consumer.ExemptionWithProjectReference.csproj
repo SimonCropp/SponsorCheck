@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- Per-package counterpart of Consumer.OwnerExemptionWithProjectReference: an accepted claim on
+       this project's own <PackageReference>, alongside a ProjectReference to a project making the
+       same claim. The audit message is not a rejection, so the verifier must not call into Lib to
+       ask whether it covers this project. -->
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackageWithExemptions"
+      Version="1.0.0"
+      SponsorshipExemption="Consulting" />
+    <ProjectReference Include="Lib\Lib.csproj" />
+  </ItemGroup>
+</Project>

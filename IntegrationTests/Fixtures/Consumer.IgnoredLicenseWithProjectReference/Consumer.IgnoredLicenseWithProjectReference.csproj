@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- Two projects that each ignore the license on their own <PackageReference>, one referencing
+       the other. SC005 names the file to edit, so the two render different text and each is
+       announced. This project used to stay silent: it asked Lib, found the package there, and
+       dropped its own warning. An ignored license is a claim the verifier accepted, not a rejection
+       for coverage to suppress, so it no longer asks. -->
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackage"
+      Version="1.0.0"
+      SponsorshipLicenseIgnored="true" />
+    <ProjectReference Include="Lib\Lib.csproj" />
+  </ItemGroup>
+</Project>

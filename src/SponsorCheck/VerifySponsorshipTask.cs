@@ -53,6 +53,13 @@ public class VerifySponsorshipTask :
     [Output]
     public string DiagnosticPayload { get; set; } = "";
 
+    // True when the diagnostic records a declaration that was accepted — an audit message or the
+    // ignored-license warning — rather than one that was rejected. The generated targets ask a
+    // project's references whether they cover the package only to suppress a rejection, and that
+    // walk is what costs a large build its time, so an accepted claim skips it.
+    [Output]
+    public bool DiagnosticAcceptedClaim { get; set; }
+
     public string IsCpm { get; set; } = "";
 
     // Non-empty signals owner mode: the consumer configures sponsorship via global MSBuild
@@ -127,6 +134,7 @@ public class VerifySponsorshipTask :
             }
 
             DiagnosticPayload = diagnostic.Encode();
+            DiagnosticAcceptedClaim = diagnostic.AcceptedClaim;
             // Whether the build lives or dies is the announce run's call — it is the run that logs
             // the error, and MSBuild requires the task that returns false to be the one that logged
             // one. The <MSBuild> call driving it fails this project in turn.
