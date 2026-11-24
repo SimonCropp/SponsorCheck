@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
-    <NoWarn>CS1591;NU1608;NU1109;NU1901;PolyfillTargetsForNuget</NoWarn>
+    <NoWarn>CS1591;NU1608;NU1109;NU1901;PolyfillTargetsForNuget;BL0016</NoWarn>
     <Version>0.27.0</Version>
     <LangVersion>preview</LangVersion>
     <!-- Do NOT pin AssemblyVersion. SponsorCheck.dll is an MSBuild task assembly shipped inside many
