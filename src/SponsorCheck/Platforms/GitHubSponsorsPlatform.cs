@@ -200,12 +200,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
             ["cursor"] = userCursor ?? orgCursor
         };
 
-        var payload = JsonSerializer.Serialize(
-            new
-            {
-                query,
-                variables
-            });
+        var payload = GraphQlPayload.Write(query, variables);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {

@@ -112,6 +112,18 @@ Regression coverage: `ConsumerBuildTests.RepeatedDiagnostic_AcrossTargetFramewor
 
 The Tests project references the netstandard2.0 build via `SetTargetFramework="TargetFramework=netstandard2.0"`.
 
+## The task assembly is trimmed
+
+`SponsorCheck.csproj` references [Squash](https://github.com/SimonCropp/Squash), which runs the IL linker over each Release build of `SponsorCheck.dll` and removes what nothing reaches. Every package that bundles SponsorCheck carries a copy of that assembly per target framework, so its size is paid by every consumer of every such package. What goes is the Polyfill source compiled into it: about 660 KB down to about 220 KB per framework, and the `tasks/` folders a package carries from 4.1 MB to 3.3 MB. The rest of those folders is System.Text.Json and its dependencies, which Squash does not touch — it trims the one assembly.
+
+Consequences worth knowing:
+
+- **Nothing here may hand `JsonSerializer` a type of its own.** The linker follows code, not reflection. The two GraphQL request bodies used to be an anonymous type passed to `JsonSerializer.Serialize`; nothing in IL calls that type's getters, so they were removed, the request went out as `{}`, and GitHub answered "A query attribute must be specified". `GraphQlPayload` writes the body with `Utf8JsonWriter` instead, and `MessageOverrideFile` reads and writes its file with `JsonDocument`/`Utf8JsonWriter` for the same reason. Both produce byte for byte what the serializer did, and tests compare against the serializer to pin that.
+- **IL2026 is left as the error it is.** The linker raises it at every `JsonSerializer` call, and `TreatWarningsAsErrors` fails the build. Don't add it to `NoWarn`: with it suppressed the build is green and the fetch is broken.
+- **The tests run against the trimmed assembly**, because the test project references the Release netstandard2.0 build. That is what makes `GitHubSponsorsPlatformTests.FetchSponsorAccounts_SendsTheQueryAndTheLogin` and the Open Collective tests that read the captured request body real guards: with the anonymous type put back (and IL2026 suppressed) the first fails, as does `LiveLookup`. A Debug build is not trimmed.
+- All of SponsorCheck's own types are public and in the global namespace, so they are roots and stay whole; `obj/Release/<tfm>/Squash/removed.txt` should list Polyfill and compiler-generated leftovers only. Read it after adding anything internal that is reached by reflection or by name.
+- Squash needs a .NET 11 runtime on the build machine, which the SDK this repo already builds with includes.
+
 ## Token resolution precedence
 
 In `BundleSponsorListTask.TokenFor`:

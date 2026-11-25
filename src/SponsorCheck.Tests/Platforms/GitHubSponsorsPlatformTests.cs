@@ -315,6 +315,34 @@ public class GitHubSponsorsPlatformTests
     }
 
     [Test]
+    public async Task FetchSponsorAccounts_SendsTheQueryAndTheLogin()
+    {
+        // The tests reference the Release build of the task assembly, which is the trimmed one.
+        // When the request body was an anonymous type handed to JsonSerializer, the trimmer
+        // removed its getters, the body went out as "{}", and GitHub answered that no query was
+        // specified. Nothing that only reads a canned response notices that.
+        var capture = new RequestCapturingHandler("""{ "data": { "user": null, "organization": null } }""");
+        using var client = new HttpClient(capture);
+        var platform = new GitHubSponsorsPlatform(client);
+        var log = new TaskLoggingHelperFor(new StubBuildEngine());
+
+        try
+        {
+            await platform.FetchSponsorAccounts("alice-the-user", token: "fake", log, Cancel.None);
+        }
+        catch (MaintenanceFeeException)
+        {
+            // Neither a user nor an organization: the request is what is under test.
+        }
+
+        using var body = System.Text.Json.JsonDocument.Parse(capture.LastRequestBody!);
+        await Assert.That(body.RootElement.GetProperty("query").GetString()!).Contains("sponsorshipsAsMaintainer");
+        var variables = body.RootElement.GetProperty("variables");
+        await Assert.That(variables.GetProperty("login").GetString()).IsEqualTo("alice-the-user");
+        await Assert.That(variables.GetProperty("cursor").ValueKind).IsEqualTo(System.Text.Json.JsonValueKind.Null);
+    }
+
+    [Test]
     public async Task IsValidAt_RecurringActive_Included()
     {
         var entry = new GitHubSponsorsPlatform.SponsorshipEntry(
@@ -738,6 +766,24 @@ public class GitHubSponsorsPlatformTests
         var sponsors = await platform.FetchSponsorAccounts("acmecorp", token: "fake", new TaskLoggingHelperFor(engine), Cancel.None);
         await Assert.That(sponsors).IsEmpty();
         await Assert.That(engine.Messages.Any(_ => _.Message!.Contains("excluded from the bundled list"))).IsFalse();
+    }
+
+    sealed class RequestCapturingHandler(string body) : HttpMessageHandler
+    {
+        public string? LastRequestBody { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
+        {
+            if (request.Content != null)
+            {
+                LastRequestBody = await request.Content.ReadAsStringAsync(cancel);
+            }
+
+            return new(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+        }
     }
 
     sealed class StubHandler(string body) : HttpMessageHandler

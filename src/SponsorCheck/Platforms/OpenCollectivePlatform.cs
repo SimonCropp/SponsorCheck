@@ -88,12 +88,7 @@ public sealed class OpenCollectivePlatform(HttpClient? client = null) : ISponsor
             ["slug"] = slug,
             ["offset"] = offset
         };
-        var payload = JsonSerializer.Serialize(
-            new
-            {
-                query,
-                variables
-            });
+        var payload = GraphQlPayload.Write(query, variables);
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
