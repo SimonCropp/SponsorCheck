@@ -189,8 +189,28 @@ Regression coverage: `GitHubSponsorsPlatformTests.FetchSponsorAccounts_ExcludesP
 
 ## Diagnostic code conventions
 
-- `SC0xx` — consumer-side (verifier). 001-007 are license-mode errors; 008 is the `SponsorshipStart` trust-attestation info message; 009 is corrupt install; 010-011 are `SponsorshipStart` errors.
-- `SC1xx` — author-side (bundler). 100 = catch-all for `MaintenanceFeeException` (HTTP/GraphQL errors); 101 = no platform metadata; 102 = required platform credential missing (typed via `MissingCredentialException`); 103 = user-secrets read warning.
+`docs/VerifierDiagnosticCodes.md` and `docs/BundlerDiagnosticCodes.md` are the full reference, and `SponsorCheckLog.NameFor` holds each code's short name. The layout:
+
+- `SC0xx` — consumer-side (verifier). Everything is an error except the warnings SC005/SC006/SC023 (license ignored) and the messages SC017, SC029–SC031 and SC059 (the audit trail below).
+  - **SC001–SC016: placement pairs.** The odd code is `<PackageReference>`, the even code is CPM's `<PackageVersion>`. Pairs: no license (001/002), conflicting modes (003/004), license ignored (005/006), invalid account (007/008), license expired (009/010), invalid license date (011/012), invalid `SponsorshipStart` format (013/014), `SponsorshipStart` in the future (015/016).
+  - **SC017–SC020: unpaired.** SC017 is the `SponsorshipStart` attestation-trusted message, SC018 is a missing bundled hash file (corrupt install), SC019 is metadata set on both `<PackageReference>` and `<PackageVersion>`, and SC020 is sponsor metadata in the wrong location.
+  - **SC021–SC028: owner mode.** One code per pair above, in the same order (SC021↔SC001/SC002 … SC028↔SC015/SC016).
+  - **SC029–SC058: triples** — non-CPM, CPM, owner mode. Exemption claimed (029–031), unknown exemption (032–034), license too far in the future (035–037), exemption end date required (038–040), invalid exemption end date (041–043), exemption end date too far out (044–046), exemption expired (047–049), invalid private-sponsorship end date (050–052), private-sponsorship end date too far out (053–055), private-sponsorship declaration expired (056–058).
+  - **SC059 and SC060: unpaired.** SC059 is the private-sponsorship attestation message. SC060 is an invalid `SponsorCheckMessageLevel`/`SponsorCheckWarningLevel`, which has no placement.
+  - **Adding a code.** A scenario whose message depends on placement takes the next triple; a placement-agnostic one takes a single code.
+- `SC1xx` — author-side (bundler). All errors except SC103.
+  - SC100: catch-all for `MaintenanceFeeException` (HTTP/GraphQL errors).
+  - SC101: no platform account configured.
+  - SC102: required platform credential missing (`MissingCredentialException`).
+  - SC103: user-secrets read failed (a warning).
+  - SC104: invalid severity override.
+  - SC105: invalid `SponsorOwner`.
+  - SC106: invalid `<SponsorExemption>` definition.
+  - SC107: credential rejected by the platform (`InvalidCredentialException`).
+  - SC108: rate limit exhausted (`RateLimitedException`).
+  - SC109: invalid `PrivateSponsorMaxTermMonths`.
+
+  SC100/SC102/SC107/SC108 can come from the shared fetch. `SharedFetchFailure` keeps the exception's kind so that each project reports the code its own fetch would have raised (see "The platform fetch is shared across a build").
 
 **Message-severity codes are high importance only on a build server.** SC017, SC029/SC030/SC031 and SC059 are the audit trail — which carve-out was claimed, or that an unverifiable attestation was trusted — so `SponsorCheckLog.EmitRendered` logs them at `MessageImportance.High` when `BuildServerDetector.Detected` and `Low` otherwise. The CI log keeps the record at default verbosity; a local build stays quiet and `-v detailed` brings it back. Errors and warnings are untouched.
 
