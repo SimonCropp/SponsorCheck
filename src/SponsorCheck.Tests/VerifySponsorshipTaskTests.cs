@@ -3639,6 +3639,149 @@ public class VerifySponsorshipTaskTests
         await Assert.That(noConfig.DiagnosticSeverity).IsEqualTo("error");
         await Assert.That(noConfig.DiagnosticImportance).IsEmpty();
     }
+
+    // --- Accepted claims (DiagnosticAcceptedClaim) ---
+    //
+    // The generated targets ask a project's references about coverage only to suppress a rejection,
+    // and skip that walk for a diagnostic the task marks as an accepted claim. So what is and is
+    // not marked decides both what a covered project reports and what a large build pays.
+
+    [Test]
+    public async Task DeferDiagnostic_MarksEveryKindOfAcceptedClaim()
+    {
+        using var dir = new TempDirectory();
+
+        var exemption = ExemptionClaimTask(new StubBuildEngine(), dir);
+        exemption.DeferDiagnostic = true;
+        await Assert.That(exemption.Execute()).IsTrue();
+        await Assert.That(exemption.DiagnosticCode).IsEqualTo("SC029");
+        await Assert.That(exemption.DiagnosticAcceptedClaim).IsTrue();
+
+        var ignored = IgnoredLicenseTask(new StubBuildEngine(), dir);
+        ignored.DeferDiagnostic = true;
+        await Assert.That(ignored.Execute()).IsTrue();
+        await Assert.That(ignored.DiagnosticCode).IsEqualTo("SC005");
+        await Assert.That(ignored.DiagnosticAcceptedClaim).IsTrue();
+
+        var privateSponsor = NoConfigTask(new StubBuildEngine(), dir);
+        privateSponsor.DeferDiagnostic = true;
+        privateSponsor.GitHubFromRef = "dave";
+        privateSponsor.SponsorshipPrivateUntilFromRef = $"{DateTime.UtcNow.AddMonths(1):yyyy-MM}";
+        await Assert.That(privateSponsor.Execute()).IsTrue();
+        await Assert.That(privateSponsor.DiagnosticCode).IsEqualTo("SC059");
+        await Assert.That(privateSponsor.DiagnosticAcceptedClaim).IsTrue();
+
+        var packDate = Path.Combine(dir, "packdate.txt");
+        await File.WriteAllTextAsync(packDate, "2026-04-15");
+        var recentSponsor = NoConfigTask(new StubBuildEngine(), dir);
+        recentSponsor.DeferDiagnostic = true;
+        recentSponsor.PackDatePath = packDate;
+        recentSponsor.GitHubFromRef = "carol";
+        recentSponsor.SponsorshipStartFromRef = "2026-04-30";
+        await Assert.That(recentSponsor.Execute()).IsTrue();
+        await Assert.That(recentSponsor.DiagnosticCode).IsEqualTo("SC017");
+        await Assert.That(recentSponsor.DiagnosticAcceptedClaim).IsTrue();
+    }
+
+    [Test]
+    public async Task DeferDiagnostic_ARejectionIsNotAnAcceptedClaim()
+    {
+        using var dir = new TempDirectory();
+
+        var noConfig = NoConfigTask(new StubBuildEngine(), dir);
+        noConfig.DeferDiagnostic = true;
+        await Assert.That(noConfig.Execute()).IsTrue();
+        await Assert.That(noConfig.DiagnosticCode).IsEqualTo("SC001");
+        await Assert.That(noConfig.DiagnosticAcceptedClaim).IsFalse();
+
+        var invalidSponsor = NoConfigTask(new StubBuildEngine(), dir);
+        invalidSponsor.DeferDiagnostic = true;
+        invalidSponsor.GitHubFromRef = "dave";
+        await Assert.That(invalidSponsor.Execute()).IsTrue();
+        await Assert.That(invalidSponsor.DiagnosticCode).IsEqualTo("SC007");
+        await Assert.That(invalidSponsor.DiagnosticAcceptedClaim).IsFalse();
+    }
+
+    [Test]
+    public async Task DeferDiagnostic_NothingToReport_IsNotAnAcceptedClaim()
+    {
+        // A matching sponsor hands back no diagnostic at all, and the walk is already skipped for
+        // that on the empty code. The flag stays false rather than claiming something was accepted.
+        using var dir = new TempDirectory();
+        var task = NoConfigTask(new StubBuildEngine(), dir);
+        task.DeferDiagnostic = true;
+        task.GitHubFromRef = "alice";
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(task.DiagnosticCode).IsEmpty();
+        await Assert.That(task.DiagnosticAcceptedClaim).IsFalse();
+    }
+
+    [Test]
+    public async Task DeferDiagnostic_DowngradedRejection_IsStillARejection()
+    {
+        // A publisher can soften the missing-config error to a warning. The project still has no
+        // declaration of its own, which is exactly the case coverage exists for, so it must keep
+        // asking its references: marking it accepted would make every covered transitive project
+        // announce that warning.
+        using var dir = new TempDirectory();
+        var task = NoConfigTask(new StubBuildEngine(), dir);
+        task.DeferDiagnostic = true;
+        task.SeverityOverridesPath = WriteOverrides(dir, ("SC001", Severity.Warning));
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(task.DiagnosticSeverity).IsEqualTo("warning");
+        await Assert.That(task.DiagnosticAcceptedClaim).IsFalse();
+    }
+
+    [Test]
+    public async Task DeferDiagnostic_IgnoredLicenseRaisedToAnError_IsARejection()
+    {
+        // The other direction: a publisher who makes ignoring the license an error has turned that
+        // claim into a rejection, and an error is what coverage has always been allowed to suppress.
+        using var dir = new TempDirectory();
+        var task = IgnoredLicenseTask(new StubBuildEngine(), dir);
+        task.DeferDiagnostic = true;
+        task.SeverityOverridesPath = WriteOverrides(dir, ("SC005", Severity.Error));
+
+        await Assert.That(task.Execute()).IsTrue();
+        await Assert.That(task.DiagnosticSeverity).IsEqualTo("error");
+        await Assert.That(task.DiagnosticAcceptedClaim).IsFalse();
+    }
+
+    [Test]
+    public async Task DeferDiagnostic_ConsumerLogLevels_DoNotChangeWhatIsAccepted()
+    {
+        // The levels decide how a diagnostic is logged, not what it is. An audit message raised to
+        // a warning is still the record of an accepted claim.
+        using var dir = new TempDirectory();
+        var raised = ExemptionClaimTask(new StubBuildEngine(), dir);
+        raised.DeferDiagnostic = true;
+        raised.MessageLevel = "warning";
+        await Assert.That(raised.Execute()).IsTrue();
+        await Assert.That(raised.DiagnosticSeverity).IsEqualTo("warning");
+        await Assert.That(raised.DiagnosticAcceptedClaim).IsTrue();
+
+        var lowered = IgnoredLicenseTask(new StubBuildEngine(), dir);
+        lowered.DeferDiagnostic = true;
+        lowered.WarningLevel = "low";
+        await Assert.That(lowered.Execute()).IsTrue();
+        await Assert.That(lowered.DiagnosticSeverity).IsEqualTo("message");
+        await Assert.That(lowered.DiagnosticAcceptedClaim).IsTrue();
+    }
+
+    [Test]
+    public async Task ImmediatePath_DoesNotLeakTheAcceptedClaimMarker()
+    {
+        // The marker rides on the captured event as its help keyword. It is internal plumbing and
+        // must not reach a real build log, which is what the immediate path writes to.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+
+        await Assert.That(ExemptionClaimTask(engine, dir).Execute()).IsTrue();
+        await Assert.That(engine.Messages).HasSingleItem();
+        await Assert.That(engine.Messages[0].HelpKeyword ?? "").IsEmpty();
+    }
 }
 
 internal sealed class TaskLoggingHelperFor(IBuildEngine engine) :

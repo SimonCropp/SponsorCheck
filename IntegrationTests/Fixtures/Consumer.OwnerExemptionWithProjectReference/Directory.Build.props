@@ -1,0 +1,6 @@
+<Project>
+  <!-- Owner mode, declared once for every project under this directory. -->
+  <PropertyGroup>
+    <acme_SponsorshipExemption>Consulting</acme_SponsorshipExemption>
+  </PropertyGroup>
+</Project>

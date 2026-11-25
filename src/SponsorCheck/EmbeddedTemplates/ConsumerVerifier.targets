@@ -141,15 +141,17 @@ __SC_INNER_IMPORT__
       <Output TaskParameter="DiagnosticSeverity" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticSeverity" />
       <Output TaskParameter="DiagnosticImportance" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticImportance" />
       <Output TaskParameter="DiagnosticPayload" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticPayload" />
+      <Output TaskParameter="DiagnosticAcceptedClaim" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticAcceptedClaim" />
     </__SC_TASK_NAME__>
 
-    <!-- Coverage is asked about only once there is a diagnostic it could suppress, which is why the
-         task runs first — see ConsumerVerifierOwner.targets for what asking up front cost. A
-         covering reference suppresses the announcement below rather than the verification. -->
+    <!-- Coverage is asked about only once there is a rejection it could suppress, which is why the
+         task runs first, and why an accepted claim (DiagnosticAcceptedClaim) skips the question
+         too — see ConsumerVerifierOwner.targets for what asking cost. A covering reference
+         suppresses the announcement below rather than the verification. -->
     <MSBuild Projects="@(ProjectReference)"
              Targets="_SponsorCheck_CoversDeep___SC_PACKAGE_ID__"
              SkipNonexistentTargets="true"
-             Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != '' and '@(ProjectReference)' != ''">
+             Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != '' and '$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticAcceptedClaim)' != 'true' and '@(ProjectReference)' != ''">
       <Output TaskParameter="TargetOutputs" ItemName="_SponsorCheck_RefCovers___SC_PACKAGE_ID__" />
     </MSBuild>
 

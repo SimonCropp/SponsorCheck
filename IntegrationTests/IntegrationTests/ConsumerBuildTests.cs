@@ -387,6 +387,55 @@ public class ConsumerBuildTests
     }
 
     [Test]
+    public async Task OwnerMode_AcceptedClaim_DoesNotWalkProjectReferences()
+    {
+        // "Nothing to announce" spared a matching sponsor the walk, but not a consumer whose
+        // declaration is accepted with an audit message: an exemption, a private sponsorship or a
+        // recent one logs on every build, so those consumers still walked on every build. The
+        // message is the record of a claim that was accepted, not a rejection for coverage to
+        // suppress, so the verifier no longer asks.
+        //
+        // Lib references the package too, which is the layout where the walk used to find coverage
+        // and drop this project's line. Both projects now render it; it is the same text, so the
+        // build is still told once.
+        var result = await BuildFixture(
+            "Consumer.OwnerExemptionWithProjectReference",
+            authorFixture: "ThePackageOwnerModeWithExemptions",
+            verbosity: "detailed");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain(coverageResponder);
+        await Assert.That(Occurrences(result.Combined, exemptionCriteria)).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task AcceptedClaim_DoesNotWalkProjectReferences()
+    {
+        // Per-package counterpart of OwnerMode_AcceptedClaim_DoesNotWalkProjectReferences: the claim
+        // sits on each project's own <PackageReference>.
+        var result = await BuildFixture(
+            "Consumer.ExemptionWithProjectReference",
+            authorFixture: "ThePackageWithExemptions",
+            verbosity: "detailed");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain(coverageResponder);
+        await Assert.That(Occurrences(result.Combined, exemptionCriteria)).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task IgnoredLicense_InAProjectAndItsReference_WarnsForEach()
+    {
+        // The one place skipping the walk for an accepted claim changes what a build says. Two
+        // projects each ignore the license on their own <PackageReference>, and SC005 names the
+        // file to edit, so they render different text. The referencing project used to find the
+        // package in Lib and drop its own warning; an ignored license is a claim it made itself,
+        // so it now keeps it. (Under central package management, and in owner mode, the text is
+        // the same for every project and one warning still covers them all.)
+        var result = await BuildFixture("Consumer.IgnoredLicenseWithProjectReference");
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).Contains("2 Warning(s)").Because(result.Combined);
+    }
+
+    [Test]
     public async Task OwnerMode_ProjectReferenceCoverage_Depth2_SkipsRedundantVerification()
     {
         // Top → Mid (ProjectReference) → Lib (ProjectReference) → ThePackage (PackageReference).

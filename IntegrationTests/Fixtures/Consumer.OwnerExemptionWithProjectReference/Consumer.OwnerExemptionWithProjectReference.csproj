@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- An accepted claim in a project that also has a ProjectReference. The exemption is declared for
+       the whole directory (Directory.Build.props), so this project and Lib both log its audit
+       message — the same text, announced once. That message is not a rejection, so there is
+       nothing for coverage to suppress and the verifier must not call into Lib to ask. Lib
+       references the package directly, which is the layout where the old walk found coverage. -->
+  <ItemGroup>
+    <PackageReference Include="ThePackageOwnerModeWithExemptions" Version="1.0.0" />
+    <ProjectReference Include="Lib\Lib.csproj" />
+  </ItemGroup>
+</Project>

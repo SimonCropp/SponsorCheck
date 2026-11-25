@@ -8,6 +8,7 @@
 - `src/SponsorCheck.Web` — the Blazor WASM [setup wizard](https://simoncropp.github.io/SponsorCheck/), deployed to GitHub Pages by `.github/workflows/deploy-blazor.yml`
 - `src/SponsorCheck.Web.Tests` — generator snapshot tests, anti-rot checks against the shipped targets/docs, bUnit component tests, and Playwright end-to-end tests over the published WASM output
 - `IntegrationTests/IntegrationTests` — end-to-end tests that pack ThePackage with the just-built SponsorCheck and build consumer fixtures (C#, F#, VB) against it
+- `IntegrationTests/Benchmarks` — times the verifier in a generated multi-project solution; see [Benchmark](#benchmark)
 
 
 ## Build & test
@@ -31,6 +32,32 @@ dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -
 ```
 
 Integration tests depend on the `SponsorCheck` nupkg that building `src` produces at `nugets/`, so rebuild `src` after changing the bundler or verifier before running them.
+
+
+## Benchmark
+
+`IntegrationTests/Benchmarks` measures what the verifier costs a build. It is built with the integration tests but never run by them or by CI.
+
+```pwsh
+dotnet build src --configuration Release
+dotnet build IntegrationTests --configuration Release
+dotnet run  --project IntegrationTests/Benchmarks --configuration Release --no-build
+```
+
+It packs an owner-mode package against the `SponsorCheck` nupkg in `nugets/`, generates a solution (by default 36 libraries in three layers and 8 test-style projects that reference the package and six libraries each), and does three clean builds for each way a consumer can declare sponsorship: a matching sponsor, an exemption claim, and an ignored license. `--help` lists the options for resizing it.
+
+To compare against another build of SponsorCheck, pass its nupkg:
+
+```pwsh
+dotnet run --project IntegrationTests/Benchmarks --configuration Release --no-build -- --baseline C:\other\SponsorCheck.0.27.0.nupkg
+```
+
+Two things to know when reading the result:
+
+- **The number that matters is "blocked in the verifier"**, the time spent inside the verifier's target summed over the consuming projects. The verification itself is a hash lookup; what costs time is any `<MSBuild>` call the verifier makes into another project, because that call waits for the node owning that project, and in a busy build that is about one compile per call. The libraries are generated with real code for that reason: with idle nodes there is nothing to measure.
+- **Overall build time barely moves**, and is noisy. A project blocked in such a call hands its node back, so other projects keep compiling. The wait reaches the wall-clock only when the consuming projects are the last things to finish.
+
+Run it on an otherwise idle machine. Each build uses every core, and anything else running lands in the numbers.
 
 
 ## The wizard bundles its own fonts

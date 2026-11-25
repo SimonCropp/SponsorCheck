@@ -22,10 +22,14 @@ public sealed class CapturingBuildEngine :
         Diagnostic = new(e.Code ?? "", Severity.Error, e.Message ?? "");
 
     public void LogWarningEvent(BuildWarningEventArgs e) =>
-        Diagnostic = new(e.Code ?? "", Severity.Warning, e.Message ?? "");
+        Diagnostic = new(e.Code ?? "", Severity.Warning, e.Message ?? "", IsAcceptedClaim(e.HelpKeyword));
 
     public void LogMessageEvent(BuildMessageEventArgs e) =>
-        Diagnostic = new(e.Code ?? "", Severity.Message, e.Message ?? "");
+        Diagnostic = new(e.Code ?? "", Severity.Message, e.Message ?? "", IsAcceptedClaim(e.HelpKeyword));
+
+    // An error is never an accepted claim, so LogErrorEvent has nothing to read.
+    static bool IsAcceptedClaim(string? helpKeyword) =>
+        string.Equals(helpKeyword, SponsorCheckLog.AcceptedClaimKeyword, StringComparison.Ordinal);
 
     public void LogCustomEvent(CustomBuildEventArgs e)
     {
