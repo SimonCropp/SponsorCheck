@@ -360,6 +360,112 @@ public class AuthorPackTests
         await Assert.That(result.Combined).Contains("GitHub Sponsors: API token required");
     }
 
+    // The line FetchSponsorListTask logs each time it runs, at low importance, so a detailed log
+    // says how many times a build went to the platform.
+    const string fetchedOnce = "SponsorCheck: fetching the GitHubSponsors sponsor list of 'acmecorp' once for this build.";
+
+    // The line BundleSponsorListTask logs when what it reports is that fetch's failure and not one
+    // of its own.
+    const string reportedShared = "SponsorCheck: reporting the failure of the GitHubSponsors fetch for 'acmecorp' made once for this build.";
+
+    [Test]
+    public async Task SharedFetch_SeveralPackagesInOneBuild_FetchOnce()
+    {
+        // Three packages that sponsor-check the same account, packed in one build. The bundler runs
+        // in each, but the platform is asked once: the fetch is a build of SponsorCheck's own targets
+        // file, and MSBuild serves that one result to every project.
+        //
+        // No token, as in MissingCredential_FailsPackWithSC102, so the fetch fails before making a
+        // request and the suite stays off the network. That is still the whole mechanism: the fetch
+        // runs once, and what it found reaches every project. One of the three is multi-targeted,
+        // which packs from buildMultiTargeting\SponsorCheck.targets where the others use build\.
+        var (result, _) = await ThePackageBuilder.TryPackToFeed(
+            "SharedFetch",
+            useOverrideList: false,
+            extraProperties: new Dictionary<string, string>
+            {
+                ["GitHubToken"] = ""
+            },
+            projectFile: "SharedFetch.slnx",
+            verbosity: "detailed");
+
+        await Assert.That(result.ExitCode).IsNotEqualTo(0).Because(result.Combined);
+        await Assert.That(Occurrences(result.Combined, fetchedOnce)).IsEqualTo(1).Because(result.Combined);
+
+        // And all three took what that one fetch found, where each would otherwise have gone on to
+        // fetch for itself and failed the same way.
+        await Assert.That(Occurrences(result.Combined, reportedShared)).IsEqualTo(3).Because(result.Combined);
+
+        // Each project still reports the failure itself, with the code its own fetch raises.
+        var failures = result.Combined
+            .Split('\n')
+            .Where(_ => _.Contains("error SC102"))
+            .ToList();
+        foreach (var project in new[] {"PackageOne.csproj", "PackageTwo.csproj", "PackageMulti.csproj"})
+        {
+            await Assert.That(failures.Any(_ => _.Contains(project))).IsTrue().Because($"{project} should report SC102:\n{result.Combined}");
+        }
+    }
+
+    [Test]
+    public async Task SharedFetch_NotAskedForWithAnOverrideList()
+    {
+        // An override list is a file the bundler reads, so there is nothing to share and the build
+        // of SponsorCheck's targets file never starts.
+        var (result, _) = await ThePackageBuilder.TryPackToFeed("ThePackage", verbosity: "detailed");
+
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Combined);
+        await Assert.That(result.Combined).DoesNotContain("_SponsorCheck_FetchSponsorList");
+    }
+
+    [Test]
+    public async Task SharedFetch_DoesNotHandTheTokensToTheCall()
+    {
+        // The shared fetch is an <MSBuild> call, and that task prints every property it is handed
+        // ("Global Properties:", then Name=Value) at detailed verbosity, wherever the value came
+        // from. So the tokens are not among them: the fetch reads them as the bundler does, from
+        // properties of the same name.
+        //
+        // This is about that one place. MSBuild prints a value it expands from the environment
+        // itself, at the same verbosity and whether or not the fetch is shared, which is why the
+        // assertion is on the Name=Value form the call would add and not on the token alone. The
+        // token arrives as an environment variable for the same reason: on the command line it
+        // would be in the echoed arguments in exactly that form. It is a Polar token because
+        // nothing in the fixture asks Polar anything, so the value is never sent anywhere.
+        const string token = "not-a-real-token-0123456789";
+        var (result, _) = await ThePackageBuilder.TryPackToFeed(
+            "SharedFetch",
+            useOverrideList: false,
+            extraProperties: new Dictionary<string, string>
+            {
+                ["GitHubToken"] = ""
+            },
+            projectFile: "SharedFetch.slnx",
+            verbosity: "detailed",
+            environment: new Dictionary<string, string>
+            {
+                ["PolarToken"] = token
+            });
+
+        await Assert.That(Occurrences(result.Combined, fetchedOnce)).IsEqualTo(1).Because(result.Combined);
+        // The properties the call does pass are printed, which is what makes the absence mean something.
+        await Assert.That(result.Combined).Contains("_SponsorCheck_FetchGitHub=acmecorp");
+        await Assert.That(result.Combined).DoesNotContain($"PolarToken={token}");
+    }
+
+    static int Occurrences(string haystack, string needle)
+    {
+        var count = 0;
+        var index = haystack.IndexOf(needle, StringComparison.Ordinal);
+        while (index >= 0)
+        {
+            count++;
+            index = haystack.IndexOf(needle, index + needle.Length, StringComparison.Ordinal);
+        }
+
+        return count;
+    }
+
     [Test]
     public async Task PullRequestBuild_SkipsBundling()
     {

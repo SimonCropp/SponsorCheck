@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- See PackageOne.csproj. Multi-targeted on purpose: a multi-targeted project packs from its
+         outer build, which imports buildMultiTargeting\SponsorCheck.targets where the other two
+         import build\SponsorCheck.targets. The shared fetch has to be keyed on one of them. -->
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp" />
+  </ItemGroup>
+</Project>

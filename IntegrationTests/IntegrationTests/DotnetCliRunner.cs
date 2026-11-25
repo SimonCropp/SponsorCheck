@@ -16,6 +16,7 @@ public static class DotnetCliRunner
         string? packagesDir = null,
         bool onBuildServer = true,
         string verbosity = "minimal",
+        IReadOnlyDictionary<string, string>? environment = null,
         CancellationToken cancellation = default)
     {
         var psi = new ProcessStartInfo("dotnet")
@@ -32,6 +33,14 @@ public static class DotnetCliRunner
         if (packagesDir != null)
         {
             psi.Environment["NUGET_PACKAGES"] = packagesDir;
+        }
+
+        if (environment != null)
+        {
+            foreach (var pair in environment)
+            {
+                psi.Environment[pair.Key] = pair.Value;
+            }
         }
 
         psi.ArgumentList.Add(command);

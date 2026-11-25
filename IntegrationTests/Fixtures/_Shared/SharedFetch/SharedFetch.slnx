@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="PackageOne/PackageOne.csproj" />
+  <Project Path="PackageTwo/PackageTwo.csproj" />
+  <Project Path="PackageMulti/PackageMulti.csproj" />
+</Solution>

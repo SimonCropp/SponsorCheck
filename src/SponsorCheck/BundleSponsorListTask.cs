@@ -19,6 +19,11 @@ public sealed class BundleSponsorListTask :
     public string UserSecretsId { get; set; } = "";
     public string OverrideListPath { get; set; } = "";
 
+    // What FetchSponsorListTask fetched once for the whole build, one item per platform. Empty for
+    // a direct caller and whenever SponsorCheck.targets skipped the shared fetch; this task then
+    // fetches for itself.
+    public ITaskItem[] SharedFetch { get; set; } = [];
+
     public string SponsorLandingUrlFromRef { get; set; } = "";
     public string SponsorLandingUrlFromVer { get; set; } = "";
 
@@ -440,12 +445,14 @@ public sealed class BundleSponsorListTask :
 
     async Task<IReadOnlyList<SponsorEntry>> FetchFromPlatformsAsync(Dictionary<string, string> enabled)
     {
+        var shared = SharedFetchResult.FromItems(SharedFetch);
         var results = new List<SponsorEntry>();
         foreach (var pair in enabled)
         {
             var platform = PlatformRegistry.Get(pair.Key);
             var tokens = TokensFor(pair.Key);
-            var accounts = await FetchWithCandidateTokens(platform, pair.Value, tokens)
+            var accounts = FromSharedFetch(shared, platform, pair.Value, tokens);
+            accounts ??= await SponsorFetch.WithCandidateTokens(platform, pair.Value, tokens, Log)
                 .ConfigureAwait(false);
             foreach (var account in accounts)
             {
@@ -459,65 +466,41 @@ public sealed class BundleSponsorListTask :
         return results;
     }
 
-    // Tries each candidate token in turn (explicit MSBuild property first, then user-secret) so
-    // that a stale env-var-promoted property doesn't shadow a working user-secret token — the
-    // common shape when the env var was set up before a scope was added and the user has since
-    // refreshed only the user-secret. With zero candidates, falls through with null so the
-    // platform throws the typed MissingCredentialException (SC102).
-    async Task<IReadOnlyList<string>> FetchWithCandidateTokens(
+    // The fetch SponsorCheck.targets ran once for the build, if it is this project's own: the same
+    // platform and account, asked with the credentials this project would have used. Null sends
+    // the project to its own fetch, which is what it does when nothing was shared at all, so a
+    // result that does not match costs a call and never changes what is bundled.
+    //
+    // A shared failure is thrown as the exception it was, so it reaches the same catch block and
+    // the same SC code as a failure of this project's own fetch.
+    IReadOnlyList<string>? FromSharedFetch(
+        IReadOnlyList<SharedFetchResult> shared,
         ISponsorshipPlatform platform,
         string ownerAccount,
         IReadOnlyList<TokenCandidate> tokens)
     {
-        if (tokens.Count == 0)
+        var credentials = SharedFetchResult.Fingerprint(tokens);
+        var result = shared.FirstOrDefault(_ => _.IsFor(platform.Id, ownerAccount, credentials));
+        if (result == null)
         {
-            return await platform.FetchSponsorAccounts(ownerAccount, null, Log, Cancel.None)
-                .ConfigureAwait(false);
-        }
-
-        MaintenanceFeeException? lastError = null;
-        for (var i = 0; i < tokens.Count; i++)
-        {
-            try
+            // Said out loud because nothing else shows it: the pack succeeds either way, and the
+            // only symptom is a fetch per project where one was expected.
+            if (shared.Any(_ => _.IsFor(platform.Id, ownerAccount, _.Credentials)))
             {
-                return await platform.FetchSponsorAccounts(ownerAccount, tokens[i].Value, Log, Cancel.None)
-                    .ConfigureAwait(false);
+                Log.LogMessage(MessageImportance.Low, $"SponsorCheck: the {platform.Id} sponsor list of '{ownerAccount}' fetched once for this build was fetched with other credentials than this project's, so the project fetches its own.");
             }
-            catch (MaintenanceFeeException exception)
-            {
-                lastError = exception;
-                if (i < tokens.Count - 1)
-                {
-                    Log.LogMessage(
-                        MessageImportance.Normal,
-                        $"SponsorCheck: {platform.Id} candidate token #{i + 1} failed ({exception.Message.Split('\n')[0]}); trying next candidate.");
-                }
-            }
+
+            return null;
         }
 
-        throw WithCredentialSources(lastError!, tokens);
-    }
-
-    // A platform knows the credential was rejected but not where it was stored, so the source is
-    // grafted on here. Only for a rejection: for a transient HTTP failure naming the token source
-    // would point the author at the one thing that isn't broken.
-    static MaintenanceFeeException WithCredentialSources(
-        MaintenanceFeeException error,
-        IReadOnlyList<TokenCandidate> tokens)
-    {
-        if (error is not InvalidCredentialException)
+        if (result.Failure != null)
         {
-            return error;
+            Log.LogMessage(MessageImportance.Low, $"SponsorCheck: reporting the failure of the {platform.Id} fetch for '{ownerAccount}' made once for this build.");
+            throw result.Failure.ToException();
         }
 
-        if (tokens.Count == 1)
-        {
-            return new InvalidCredentialException($"{error.Message} The rejected credential was read from {tokens[0].Source}.");
-        }
-
-        var sources = string.Join(", then ", tokens.Select(_ => _.Source));
-        return new InvalidCredentialException(
-            $"{error.Message} SponsorCheck tried {tokens.Count} configured credentials in order and none were accepted: {sources}. The detail above is from the last attempt.");
+        Log.LogMessage(MessageImportance.Low, $"SponsorCheck: using the {platform.Id} sponsor list of '{ownerAccount}' fetched once for this build.");
+        return result.Accounts;
     }
 
     IReadOnlyDictionary<string, string> UserSecrets => field ??= LoadUserSecrets();

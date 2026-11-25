@@ -6,9 +6,16 @@
     <_SponsorCheck_TasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(_SponsorCheck_TasksDir)net472\SponsorCheck.dll</_SponsorCheck_TasksAssembly>
     <_SponsorCheck_VerifierTemplate>$(MSBuildThisFileDirectory)ConsumerVerifier.targets</_SponsorCheck_VerifierTemplate>
     <_SponsorCheck_VerifierOwnerTemplate>$(MSBuildThisFileDirectory)ConsumerVerifierOwner.targets</_SponsorCheck_VerifierOwnerTemplate>
+    <!-- The file the shared platform fetch is built from (see _SponsorCheck_FetchSponsorList). Always
+         the build\ copy: this file also ships under buildMultiTargeting\, which is the one a
+         multi-targeted project imports, and a path that differed between the two would give them a
+         fetch each. -->
+    <_SponsorCheck_FetchProject>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'build', 'SponsorCheck.targets'))</_SponsorCheck_FetchProject>
   </PropertyGroup>
 
   <UsingTask TaskName="BundleSponsorListTask"
+             AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
+  <UsingTask TaskName="FetchSponsorListTask"
              AssemblyFile="$(_SponsorCheck_TasksAssembly)" />
 
   <!-- <SponsorExemption Include="SmallRevenue" ... /> puts a *name* in Include, not a file path.
@@ -204,6 +211,53 @@
       <_SponsorCheck_InnerImportArg Condition="'$(_SponsorCheck_HasAuthorOwnTargets)' == 'true'">$(_SponsorCheck_InnerTargetsFileName)</_SponsorCheck_InnerImportArg>
     </PropertyGroup>
 
+    <!-- Fetch each platform's sponsor list once for the build, not once per packable project.
+
+         Every project asks the same question of the same API, so the fetch is a separate <MSBuild>
+         call on this file, keyed by the accounts being asked about. MSBuild caches build results per
+         (project file, global properties, targets) for the life of the build, in the scheduler, so
+         the first project's call runs the fetch and every other project is served its result, on
+         whatever node it is building. That is the same mechanism the generated verifier uses to
+         announce a diagnostic once, and the same reason an in-process cache would not do: projects
+         pack on different nodes.
+
+         The tokens are deliberately not among the properties passed. The <MSBuild> task prints the
+         properties it is given ("Global Properties:") at detailed verbosity, so a token there would
+         be printed wherever it came from, including one set in a project file, which nothing prints
+         today. The fetch reads them the way this target does, from properties of the same name,
+         which reach it from the environment or from the build's own global properties (a call
+         inherits those). A token a project sets in its own file reaches neither; the result says
+         which credentials it was fetched with, and the bundler ignores one that is not its own and
+         fetches for itself.
+
+         RemoveProperties drops the globals MSBuild varies per project instance, as the verifier's
+         announce call does: one left in would split the key and fetch again. The account values are
+         the unmerged PackageReference-or-PackageVersion ones; the bundler does the real merge and
+         only uses a result fetched for the account it resolved.
+
+         Skipped for an override list, which is a file read and not a fetch. -->
+    <PropertyGroup>
+      <_SponsorCheck_FetchGitHub>$(_SponsorCheck_GitHubFromRef)</_SponsorCheck_FetchGitHub>
+      <_SponsorCheck_FetchGitHub Condition="'$(_SponsorCheck_FetchGitHub)' == ''">$(_SponsorCheck_GitHubFromVer)</_SponsorCheck_FetchGitHub>
+      <_SponsorCheck_FetchOpenCollective>$(_SponsorCheck_OpenCollectiveFromRef)</_SponsorCheck_FetchOpenCollective>
+      <_SponsorCheck_FetchOpenCollective Condition="'$(_SponsorCheck_FetchOpenCollective)' == ''">$(_SponsorCheck_OpenCollectiveFromVer)</_SponsorCheck_FetchOpenCollective>
+      <_SponsorCheck_FetchPolar>$(_SponsorCheck_PolarFromRef)</_SponsorCheck_FetchPolar>
+      <_SponsorCheck_FetchPolar Condition="'$(_SponsorCheck_FetchPolar)' == ''">$(_SponsorCheck_PolarFromVer)</_SponsorCheck_FetchPolar>
+    </PropertyGroup>
+    <ItemGroup>
+      <_SponsorCheck_FetchProps Include="_SponsorCheck_FetchGitHub=$([MSBuild]::Escape('$(_SponsorCheck_FetchGitHub)'))" />
+      <_SponsorCheck_FetchProps Include="_SponsorCheck_FetchOpenCollective=$([MSBuild]::Escape('$(_SponsorCheck_FetchOpenCollective)'))" />
+      <_SponsorCheck_FetchProps Include="_SponsorCheck_FetchPolar=$([MSBuild]::Escape('$(_SponsorCheck_FetchPolar)'))" />
+      <_SponsorCheck_FetchProps Include="_SponsorCheck_FetchUserSecretsId=$([MSBuild]::Escape('$(UserSecretsId)'))" />
+    </ItemGroup>
+    <MSBuild Condition="'$(SponsorListOverride)' == '' and '$(_SponsorCheck_FetchGitHub)$(_SponsorCheck_FetchOpenCollective)$(_SponsorCheck_FetchPolar)' != ''"
+             Projects="$(_SponsorCheck_FetchProject)"
+             Targets="_SponsorCheck_FetchSponsorList"
+             Properties="@(_SponsorCheck_FetchProps)"
+             RemoveProperties="TargetFramework;RuntimeIdentifier;Configuration;Platform">
+      <Output TaskParameter="TargetOutputs" ItemName="_SponsorCheck_SharedFetch" />
+    </MSBuild>
+
     <BundleSponsorListTask
         GitHubSponsorsAccountFromRef="$(_SponsorCheck_GitHubFromRef)"
         GitHubSponsorsAccountFromVer="$(_SponsorCheck_GitHubFromVer)"
@@ -238,6 +292,7 @@
         PolarToken="$(PolarToken)"
         UserSecretsId="$(UserSecretsId)"
         OverrideListPath="$(SponsorListOverride)"
+        SharedFetch="@(_SponsorCheck_SharedFetch)"
         VerifierTargetsTemplatePath="$(_SponsorCheck_VerifierTemplate)"
         VerifierOwnerTargetsTemplatePath="$(_SponsorCheck_VerifierOwnerTemplate)"
         InnerTargetsImportFileName="$(_SponsorCheck_InnerImportArg)"
@@ -329,5 +384,24 @@
             PackagePath="tasks/net472/"
             Visible="false" />
     </ItemGroup>
+  </Target>
+
+  <!-- The shared platform fetch. Reached only through the <MSBuild> call in the target above, which
+       builds this file as a project in its own right, so what MSBuild dedupes on is this file's path
+       plus the global properties that call passes. Nothing here is an error: a fetch that fails is
+       handed back as a result and reported by each project that asked for it, with the code its own
+       fetch would have raised. -->
+  <Target Name="_SponsorCheck_FetchSponsorList"
+          Returns="@(_SponsorCheck_Fetched)">
+    <FetchSponsorListTask
+        GitHubSponsorsAccount="$(_SponsorCheck_FetchGitHub)"
+        OpenCollectiveAccount="$(_SponsorCheck_FetchOpenCollective)"
+        PolarAccount="$(_SponsorCheck_FetchPolar)"
+        GitHubToken="$(GitHubToken)"
+        OpenCollectiveToken="$(OpenCollectiveToken)"
+        PolarToken="$(PolarToken)"
+        UserSecretsId="$(_SponsorCheck_FetchUserSecretsId)">
+      <Output TaskParameter="Fetched" ItemName="_SponsorCheck_Fetched" />
+    </FetchSponsorListTask>
   </Target>
 </Project>

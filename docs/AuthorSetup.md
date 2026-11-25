@@ -139,7 +139,7 @@ Each csproj declares the bare reference:
 <PackageReference Include="SponsorCheck" PrivateAssets="all" />
 ```
 
-Each project still bundles independently at its own pack time (one platform fetch per packable project).
+Each project still bundles at its own pack time, but projects packed in the same build fetch each platform's sponsor list once between them, so a repo of twenty packages makes one call per platform and draws once on its rate limit. For that the token has to reach the build as an environment variable, a `-p:` property or user-secrets. A project that sets a token in its own project file fetches for itself, as every project did before.
 
 
 ## Owner mode
