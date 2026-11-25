@@ -1313,4 +1313,155 @@ public class BundleSponsorListTaskTests
         await Assert.That(engine.Errors[0].Code).IsEqualTo("SC109");
         await Assert.That(engine.Errors[0].Message).Contains("PrivateSponsorMaxTermMonths");
     }
+
+    // The shared fetch. None of these reaches a platform: a result that is the project's own is
+    // used as it stands, and one that is not sends the project to its own fetch, which here has no
+    // token and so fails with SC102 before any request. That SC102 is the evidence the shared
+    // result was set aside.
+    static BundleSponsorListTask SharedFetchTask(TempDirectory dir, StubBuildEngine engine, string gitHubToken, params SharedFetchResult[] shared) =>
+        new()
+        {
+            BuildEngine = engine,
+            GitHubSponsorsAccountFromRef = "acmecorp",
+            GitHubToken = gitHubToken,
+            SharedFetch = [.. shared.Select(_ => _.ToItem())],
+            VerifierTargetsTemplatePath = BuildTemplate(dir),
+            ThePackageId = "MyOssLib",
+            OutputHashListPath = Path.Combine(dir, "SponsorHashes.txt"),
+            OutputVerifierTargetsPath = Path.Combine(dir, "MyOssLib.targets"),
+            OutputPackDatePath = Path.Combine(dir, "PackDate.txt"),
+            OutputAuthorAccountsPath = Path.Combine(dir, "AuthorAccounts.txt"),
+            OutputSeverityOverridesPath = Path.Combine(dir, "SeverityOverrides.txt"),
+            OutputMessageOverridesPath = Path.Combine(dir, "MessageOverrides.json"),
+            OutputLandingUrlPath = Path.Combine(dir, "LandingUrl.txt"),
+            OutputExemptionsPath = Path.Combine(dir, "Exemptions.json")
+        };
+
+    // The fingerprint the bundler works out for a project whose only credential is this token.
+    static string CredentialsOf(string gitHubToken) =>
+        SharedFetchResult.Fingerprint([new(gitHubToken, "a test")]);
+
+    [Test]
+    public async Task SharedFetch_ItsOwnResult_IsBundledWithoutFetching()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var shared = new SharedFetchResult("GitHubSponsors", "acmecorp", CredentialsOf("the-token"), ["bob", "alice"]);
+        var task = SharedFetchTask(dir, engine, "the-token", shared);
+
+        await Assert.That(task.Execute()).IsTrue();
+
+        await Assert.That(engine.Errors).IsEmpty();
+        var lines = await File.ReadAllLinesAsync(task.OutputHashListPath);
+        string[] expected = [SponsorHasher.Hash("GitHubSponsors", "alice"), SponsorHasher.Hash("GitHubSponsors", "bob")];
+        await Assert.That(lines).IsEquivalentTo(expected.OrderBy(_ => _, StringComparer.Ordinal));
+        await Assert.That(engine.Messages.Select(_ => _.Message))
+            .Contains("SponsorCheck: using the GitHubSponsors sponsor list of 'acmecorp' fetched once for this build.");
+    }
+
+    [Test]
+    public async Task SharedFetch_FetchedWithOtherCredentials_IsSetAside()
+    {
+        // A project that sets its token in its own file: the shared fetch never saw that token, so
+        // what it fetched was fetched as someone else.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var shared = new SharedFetchResult("GitHubSponsors", "acmecorp", CredentialsOf("another-token"), ["alice"]);
+        var task = SharedFetchTask(dir, engine, "", shared);
+
+        await Assert.That(task.Execute()).IsFalse();
+
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC102");
+        await Assert.That(engine.Messages.Select(_ => _.Message))
+            .Contains("SponsorCheck: the GitHubSponsors sponsor list of 'acmecorp' fetched once for this build was fetched with other credentials than this project's, so the project fetches its own.");
+    }
+
+    [Test]
+    public async Task SharedFetch_ForAnotherAccount_IsSetAside()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var shared = new SharedFetchResult("GitHubSponsors", "someoneelse", SharedFetchResult.Fingerprint([]), ["alice"]);
+        var task = SharedFetchTask(dir, engine, "", shared);
+
+        await Assert.That(task.Execute()).IsFalse();
+
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC102");
+    }
+
+    [Test]
+    public async Task SharedFetch_ForAnotherPlatform_IsSetAside()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var shared = new SharedFetchResult("Polar", "acmecorp", SharedFetchResult.Fingerprint([]), ["alice"]);
+        var task = SharedFetchTask(dir, engine, "", shared);
+
+        await Assert.That(task.Execute()).IsFalse();
+
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo("SC102");
+    }
+
+    [Test]
+    [Arguments("MissingCredential", "SC102")]
+    [Arguments("InvalidCredential", "SC107")]
+    [Arguments("RateLimited", "SC108")]
+    [Arguments("Platform", "SC100")]
+    public async Task SharedFetch_ItsOwnFailure_IsReportedWithTheCodeOfItsOwnFetch(string kind, string code)
+    {
+        // The project holds a token, so its own fetch would get as far as a request. It reports
+        // the shared failure instead, under the code that failure has always had.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        Exception original = kind switch
+        {
+            "MissingCredential" => new MissingCredentialException("what the shared fetch was told"),
+            "InvalidCredential" => new InvalidCredentialException("what the shared fetch was told"),
+            "RateLimited" => new RateLimitedException("what the shared fetch was told"),
+            _ => new MaintenanceFeeException("what the shared fetch was told")
+        };
+        var shared = new SharedFetchResult("GitHubSponsors", "acmecorp", CredentialsOf("the-token"), [], SharedFetchFailure.From(original));
+        var task = SharedFetchTask(dir, engine, "the-token", shared);
+
+        await Assert.That(task.Execute()).IsFalse();
+
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Code).IsEqualTo(code);
+        await Assert.That(engine.Errors[0].Message).Contains("what the shared fetch was told");
+    }
+
+    [Test]
+    public async Task SharedFetch_AFailureThatIsNotAPlatformError_IsReportedByItsMessage()
+    {
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var failure = SharedFetchFailure.From(new System.Net.Http.HttpRequestException("No such host is known."));
+        var shared = new SharedFetchResult("GitHubSponsors", "acmecorp", CredentialsOf("the-token"), [], failure);
+        var task = SharedFetchTask(dir, engine, "the-token", shared);
+
+        await Assert.That(task.Execute()).IsFalse();
+
+        await Assert.That(engine.Errors).HasSingleItem();
+        await Assert.That(engine.Errors[0].Message).IsEqualTo("No such host is known.");
+    }
+
+    [Test]
+    public async Task SharedFetch_IsNotConsultedForAnOverrideList()
+    {
+        // An override list is the author's explicit answer. A shared result for the same account
+        // must not replace it.
+        using var dir = new TempDirectory();
+        var engine = new StubBuildEngine();
+        var shared = new SharedFetchResult("GitHubSponsors", "acmecorp", SharedFetchResult.Fingerprint([]), ["mallory"]);
+        var task = SharedFetchTask(dir, engine, "", shared);
+        task.OverrideListPath = WriteOverride(dir, """[{"platform":"GitHubSponsors","account":"alice"}]""");
+
+        await Assert.That(task.Execute()).IsTrue();
+
+        var lines = await File.ReadAllLinesAsync(task.OutputHashListPath);
+        await Assert.That(lines).IsEquivalentTo(new[] {SponsorHasher.Hash("GitHubSponsors", "alice")});
+    }
 }

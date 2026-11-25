@@ -19,6 +19,8 @@ dotnet run --project src/SponsorCheck.Tests --configuration Release --no-build -
 
 Integration tests build `src` first by depending on `nugets/SponsorCheck.<version>.nupkg`, so always rebuild `src` after changing the bundler/verifier before running integration tests.
 
+One case where rebuilding is not enough: putting a packed file (`build/SponsorCheck.targets`, a verifier template) back from a backup that keeps its old timestamp, as `mv` does. The file is then older than the nupkg, pack sees nothing to do, and the package goes on holding the edited copy. That is what breaking the targets on purpose to check a test and then restoring them does. `touch` the file, or delete the nupkg, before rebuilding.
+
 `SponsorCheck.csproj` has `<GeneratePackageOnBuild>true</GeneratePackageOnBuild>`, so `dotnet build src -c Release` produces the nupkg at `nugets/`. Don't add a separate `dotnet pack` step.
 
 ## Setup wizard (SponsorCheck.Web)
@@ -39,7 +41,7 @@ This is the central design. Hold it in mind when reading any file in `SponsorChe
 **Stage 1 — Bundler (OSS-author pack time).** `BundleSponsorListTask` runs from `src/SponsorCheck/build/SponsorCheck.targets`, which is auto-imported into any project that PackageReferences `SponsorCheck`. It:
 
 1. Reads `<Platform>Account` metadata from the author's `PackageReference Include="SponsorCheck"` (or matching `PackageVersion` under CPM).
-2. Calls each enabled platform's API (or reads `<SponsorListOverride>` JSON if set) to fetch the account list.
+2. Gets each enabled platform's account list: from the fetch shared across the build (see "The platform fetch is shared across a build"), from its own call to the platform's API when there is no shared result it can use, or from the `<SponsorListOverride>` JSON if set.
 3. Writes eight files into the author's intermediate output, all packed into the produced nupkg:
    - `build/SponsorCheck.SponsorHashes.txt` — sorted, deduped `SHA256("{platform-id}:{lowercase(account)}")` hashes.
    - `build/SponsorCheck.PackDate.txt` — UTC date the package was packed (or `SponsorCheck_PackDateOverride` if set, used by integration tests).
@@ -118,6 +120,26 @@ In `BundleSponsorListTask.TokenFor`:
 2. User-secrets at key `SponsorCheck:<Platform>Token`. The UserSecretsId is read from `$(UserSecretsId)` in the **author's** csproj, not this repo.
 
 `UserSecretsReader` reads the conventional path (`%APPDATA%\Microsoft\UserSecrets\<id>\secrets.json` on Windows; `~/.microsoft/usersecrets/<id>/secrets.json` on Unix) and flattens nested JSON into colon-keyed paths.
+
+## The platform fetch is shared across a build
+
+The bundler runs in every packable project, and each used to call the platform API itself: a repo of twenty packages asked the same question twenty times per pack (a GitHub fetch measured about 1.6 s), all drawn from the one rate-limit budget SC108's note describes. Now `_SponsorCheck_BundleSponsorList` `<MSBuild>`-calls `_SponsorCheck_FetchSponsorList` **in SponsorCheck.targets itself**, passing the platform accounts as global properties, and hands what comes back to `BundleSponsorListTask` as `SharedFetch`. The target runs `FetchSponsorListTask`, which returns one item per platform.
+
+The dedupe is the same one the verifier's announce call relies on: MSBuild caches a build result per (project path, global properties, targets) in the scheduler node, so the first project's call runs the fetch and every other project is served its result, across projects and across worker processes. Packing happens on whichever node built the project, so a static or `RegisterTaskObject` could not see the others.
+
+Consequences worth knowing:
+
+- **The tokens are not passed to the call.** The `<MSBuild>` task prints every property it is handed ("Global Properties:") at detailed verbosity, wherever the value came from. So the fetch reads the tokens the way the bundle target does, from `$(GitHubToken)` and friends, which reach a build of the targets file from the environment or from the build's own global properties (a call inherits those), plus user-secrets through the `UserSecretsId` that *is* passed. (MSBuild itself prints a value it expands from the environment, at the same verbosity, and did before this; a token set in a project file is printed by nothing, and passing it would start.)
+- **A token set in a project file is the case that cannot share.** The fetch never sees it. So a result carries a fingerprint of the candidate tokens it was fetched with (`SharedFetchResult.Fingerprint`, a truncated SHA-256 over the ordered candidates), and the bundler takes a result only when its own candidates give the same one, for the same platform and account. Otherwise it fetches for itself, which is exactly what it does with no shared result at all. A mismatch therefore costs a call and can never change what is bundled; the bundler says so at low importance, because nothing else shows it.
+- **A failure is shared too, and is not reported where it happened.** `FetchSponsorListTask` never fails and never logs an error or warning: the same account asked with the same credentials fails the same way, so the failure travels back as a result and each project reports it, with the code its own fetch would have raised. `SharedFetchFailure` keeps the exception's kind for that reason — the bundler maps the type to SC102, SC107, SC108 or SC100 — and anything that was not a platform error (a dropped connection) comes back as `SharedFetchException`, logged by message as before. An exhausted rate limit is now one refused call, not one per project.
+- **The call targets the `build\` copy of the file, always.** SponsorCheck.targets also ships under `buildMultiTargeting\`, which is what a multi-targeted project imports for the outer build it packs from. `$(MSBuildThisFileFullPath)` would give the two kinds of project a fetch each (`_SponsorCheck_FetchProject`).
+- **Free text travels base64**, as the deferred diagnostic does, but for a different reason: item metadata is an escaped string to MSBuild, so an account or a platform's error text containing `%41` would come back changed.
+- `RemoveProperties` drops the globals MSBuild varies per project instance, as in the announce call. One left in splits the key and fetches again.
+- The accounts passed are the unmerged PackageReference-or-PackageVersion values. The bundler still does the real merge (and raises on a conflict), and only takes a result fetched for the account it resolved.
+- An override list is a file read, so the call is skipped for it and a shared result is never consulted.
+- The lines the fetch logs (`GitHub Sponsors: fetched N sponsors`, the private-sponsor count) now appear once per build, under SponsorCheck.targets, rather than once per project. `SponsorFetch.WithCandidateTokens` is the fetch both tasks run, so the try-each-candidate behaviour is the same on either path.
+
+Regression coverage: `AuthorPackTests.SharedFetch_SeveralPackagesInOneBuild_FetchOnce` packs the `_Shared/SharedFetch` solution (two single-targeted packages and a multi-targeted one) with no token, so the fetch fails before making a request and the suite stays off the network. It counts the line `FetchSponsorListTask` logs each time it runs (1) and the line the bundler logs when what it reports is the shared failure (3), in a detailed log. Pointing the call at `$(MSBuildThisFileFullPath)` makes the first count 2; dropping `SharedFetch` from the bundler call makes the second 0. `SharedFetch_DoesNotHandTheTokensToTheCall` passes a token through the environment and asserts it is not among the printed properties, and `SharedFetch_NotAskedForWithAnOverrideList` that an override list starts no fetch. `SharedFetchResultTests` covers the round trip through an item, the fingerprint and each failure kind; `FetchSponsorListTaskTests` that a failure is handed back and not reported; and the `BundleSponsorListTaskTests.SharedFetch_*` block that the bundler takes its own result, sets aside one fetched with other credentials or for another account or platform, and reports a shared failure under its own code. None of those reaches a platform. A successful shared fetch end to end needs the live API, so it is not in the suite: after changing this, pack a solution of several packages with a real token at `-v:normal` and count the `fetched N sponsors` lines.
 
 ## SponsorshipStart bypass
 

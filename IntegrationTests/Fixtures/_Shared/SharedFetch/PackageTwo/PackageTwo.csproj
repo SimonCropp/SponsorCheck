@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- See PackageOne.csproj. -->
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- One of three packages in SharedFetch.slnx that sponsor-check the same account. Packed
+         together without SponsorListOverride, they ask the platform once between them. -->
+    <PackageReference Include="SponsorCheck" Version="$(SponsorCheckVersion)"
+                      PrivateAssets="all"
+                      GitHubSponsorsAccount="acmecorp" />
+  </ItemGroup>
+</Project>

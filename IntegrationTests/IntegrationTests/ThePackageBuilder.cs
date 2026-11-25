@@ -176,12 +176,18 @@ public static class ThePackageBuilder
     /// Like <see cref="TryPack"/> but also returns the fresh feed dir so the caller can open the
     /// produced nupkg. <paramref name="forceBundleInPullRequest"/> defaults to true for hermeticity
     /// (so an ambient PR env var on CI doesn't disable the bundler); the PR-skip tests pass false to
-    /// exercise the actual pull-request skip.
+    /// exercise the actual pull-request skip. <paramref name="projectFile"/> names what to pack
+    /// when it is not the fixture's own csproj (a solution of several packages), relative to the
+    /// fixture directory. <paramref name="environment"/> sets variables for the pack alone, for
+    /// what has to reach it the way a CI secret does and not on the command line.
     public static async Task<(CliResult Result, string Feed)> TryPackToFeed(
         string fixtureName,
         bool useOverrideList = true,
         IReadOnlyDictionary<string, string>? extraProperties = null,
-        bool forceBundleInPullRequest = true)
+        bool forceBundleInPullRequest = true,
+        string? projectFile = null,
+        string verbosity = "minimal",
+        IReadOnlyDictionary<string, string>? environment = null)
     {
         var feed = Path.Combine(Path.GetTempPath(), "sponsorcheck-it-feed", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(feed);
@@ -223,11 +229,13 @@ public static class ThePackageBuilder
 
         var result = await DotnetCliRunner.Run(
             "pack",
-            Path.Combine(workDir, $"{fixtureName}.csproj"),
+            Path.Combine(workDir, projectFile ?? $"{fixtureName}.csproj"),
             "Release",
             properties,
             workDir,
-            packagesDir).ConfigureAwait(false);
+            packagesDir,
+            verbosity: verbosity,
+            environment: environment).ConfigureAwait(false);
         return (result, feed);
     }
 
