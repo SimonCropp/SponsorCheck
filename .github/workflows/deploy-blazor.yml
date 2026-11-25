@@ -38,7 +38,7 @@ jobs:
         run: dotnet build src/SponsorCheck.Web.Tests --configuration Release
 
       - name: Install Playwright browser
-        run: pwsh src/SponsorCheck.Web.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+        run: pwsh src/SponsorCheck.Web.Tests/bin/Release/net11.0/playwright.ps1 install --with-deps chromium
 
       - name: Run tests
         run: dotnet run --project src/SponsorCheck.Web.Tests --configuration Release --no-build -- --no-ansi --no-progress
