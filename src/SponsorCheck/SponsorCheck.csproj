@@ -18,6 +18,12 @@
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="Polyfill" PrivateAssets="all" />
+    <!-- Trims what nothing reaches out of the task assembly, which is mostly the Polyfill source
+         compiled into it. Every package that bundles SponsorCheck carries a copy of this assembly
+         for each target framework, so its size is paid by every consumer of every such package.
+         The linker cannot follow reflection: nothing here may hand JsonSerializer a type of its own
+         (see GraphQlPayload), and the IL2026 it raises for one is left as the error it is. -->
+    <PackageReference Include="Squash" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">

@@ -17,6 +17,74 @@ public class MessageOverrideFileTests
     }
 
     [Test]
+    public async Task Write_IsWhatTheSerializerProduced()
+    {
+        // The file ships in every package and is what the wizard's parser and older verifiers
+        // read, so writing it by hand must not change a byte: indentation, key order, escaping.
+        using var dir = new TempDirectory();
+        var path = Path.Combine(dir, "overrides.json");
+        var input = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["SC005"] = "You're free-riding!",
+            ["SC001"] = "Says: \"hello\"; path=C:\\foo\\bar <b>&</b> café 🎉\nsecond line"
+        };
+
+        MessageOverrideFile.Write(path, input);
+
+        var sorted = new SortedDictionary<string, string>(input, StringComparer.Ordinal);
+        var expected = System.Text.Json.JsonSerializer.Serialize(sorted, indented);
+        await Assert.That(await File.ReadAllTextAsync(path)).IsEqualTo(expected);
+    }
+
+    // What MessageOverrideFile handed the serializer before it wrote the file itself.
+    static System.Text.Json.JsonSerializerOptions indented = new()
+    {
+        WriteIndented = true
+    };
+
+    [Test]
+    public async Task Write_Empty_IsAnEmptyObject()
+    {
+        using var dir = new TempDirectory();
+        var path = Path.Combine(dir, "overrides.json");
+
+        MessageOverrideFile.Write(path, new Dictionary<string, string>());
+
+        await Assert.That(await File.ReadAllTextAsync(path)).IsEqualTo("{}");
+    }
+
+    [Test]
+    [Arguments("""{ "SC001": "valid", "SC005": 5 }""")]
+    [Arguments("""{ "SC001": "valid", "SC005": { "nested": "value" } }""")]
+    [Arguments("""[ "SC001" ]""")]
+    [Arguments("null")]
+    public async Task Read_NotAnObjectOfStrings_ReturnsEmpty(string content)
+    {
+        // All or nothing, as it was when the serializer read it: a file with one value of the
+        // wrong kind yields no overrides, not the entries that happened to be well formed.
+        using var dir = new TempDirectory();
+        var path = Path.Combine(dir, "overrides.json");
+        await File.WriteAllTextAsync(path, content);
+
+        var result = MessageOverrideFile.Read(path);
+
+        await Assert.That(result).IsEmpty();
+    }
+
+    [Test]
+    public async Task Read_ANullValue_IsSkipped()
+    {
+        using var dir = new TempDirectory();
+        var path = Path.Combine(dir, "overrides.json");
+        await File.WriteAllTextAsync(path, """{ "SC001": "valid", "SC005": null }""");
+
+        var result = MessageOverrideFile.Read(path);
+
+        await Assert.That(result.ContainsKey("SC001")).IsTrue();
+        await Assert.That(result.ContainsKey("SC005")).IsFalse();
+    }
+
+    [Test]
     public async Task Read_MissingFile_ReturnsEmpty()
     {
         var result = MessageOverrideFile.Read(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".json"));
