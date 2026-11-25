@@ -1,4 +1,3 @@
-using System.Net.Http;
 using TaskItem = Microsoft.Build.Utilities.TaskItem;
 using TaskLoggingHelper = Microsoft.Build.Utilities.TaskLoggingHelper;
 
@@ -21,7 +20,7 @@ public class SharedFetchResultTests
         await Assert.That(result.Failure).IsNull();
         await Assert.That(result.Platform).IsEqualTo("GitHubSponsors");
         await Assert.That(result.Owner).IsEqualTo("acmecorp");
-        await Assert.That(result.Accounts).IsEquivalentTo(new[] {"alice", "bob"});
+        await Assert.That(result.Accounts).IsEquivalentTo(["alice", "bob"]);
         await Assert.That(result.Credentials).IsEqualTo(SharedFetchResult.Fingerprint(tokens));
         await Assert.That(platform.Calls).IsEqualTo(1);
     }
@@ -44,7 +43,7 @@ public class SharedFetchResultTests
         var result = await SharedFetchResult.Run(platform, "acmecorp", Tokens("stale", "fresh"), Log());
 
         await Assert.That(result.Failure).IsNull();
-        await Assert.That(result.Accounts).IsEquivalentTo(new[] {"alice"});
+        await Assert.That(result.Accounts).IsEquivalentTo(["alice"]);
         await Assert.That(platform.Calls).IsEqualTo(2);
     }
 

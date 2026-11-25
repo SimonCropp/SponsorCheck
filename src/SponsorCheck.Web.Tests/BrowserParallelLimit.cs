@@ -4,7 +4,7 @@
 /// starve each other past Playwright's 30s default. Applied to every class that opens pages through
 /// <see cref="PublishedWizard"/>; the bunit tests are unaffected.
 /// </summary>
-public sealed class BrowserParallelLimit : TUnit.Core.Interfaces.IParallelLimit
+public sealed class BrowserParallelLimit : IParallelLimit
 {
     public int Limit { get; } = Math.Max(2, Environment.ProcessorCount);
 }

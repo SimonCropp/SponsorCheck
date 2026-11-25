@@ -1438,7 +1438,7 @@ public class BundleSponsorListTaskTests
     {
         using var dir = new TempDirectory();
         var engine = new StubBuildEngine();
-        var failure = SharedFetchFailure.From(new System.Net.Http.HttpRequestException("No such host is known."));
+        var failure = SharedFetchFailure.From(new HttpRequestException("No such host is known."));
         var shared = new SharedFetchResult("GitHubSponsors", "acmecorp", CredentialsOf("the-token"), [], failure);
         var task = SharedFetchTask(dir, engine, "the-token", shared);
 
@@ -1462,6 +1462,6 @@ public class BundleSponsorListTaskTests
         await Assert.That(task.Execute()).IsTrue();
 
         var lines = await File.ReadAllLinesAsync(task.OutputHashListPath);
-        await Assert.That(lines).IsEquivalentTo(new[] {SponsorHasher.Hash("GitHubSponsors", "alice")});
+        await Assert.That(lines).IsEquivalentTo([SponsorHasher.Hash("GitHubSponsors", "alice")]);
     }
 }

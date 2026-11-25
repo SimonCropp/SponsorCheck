@@ -19,6 +19,7 @@ global using SponsorCheck.Web.Components;
 global using SponsorCheck.Web.Models;
 global using SponsorCheck.Web.Services;
 global using TUnit.Core;
+global using TUnit.Core.Interfaces;
 global using VerifyTests;
 global using VerifyTests.AngleSharp;
 global using static VerifyTUnit.Verifier;

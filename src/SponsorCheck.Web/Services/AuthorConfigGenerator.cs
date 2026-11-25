@@ -142,13 +142,13 @@ public static class AuthorConfigGenerator
 
         if (model.RepoShape == RepoShape.SingleProject)
         {
-            var attributes = new List<(string Name, string Value)>
-            {
+            List<(string Name, string Value)> attributes =
+            [
                 ("Include", "SponsorCheck"),
                 ("Version", Version(model)),
-                ("PrivateAssets", "all")
-            };
-            attributes.AddRange(metadata);
+                ("PrivateAssets", "all"),
+                .. metadata
+            ];
             var reference = MsBuildXml.SelfClosingElement("PackageReference", attributes, inlineCount: 3);
             if (exemptions.Length > 0)
             {
@@ -158,12 +158,12 @@ public static class AuthorConfigGenerator
             return ("PackageReference (library .csproj)", reference);
         }
 
-        var packageVersionAttributes = new List<(string Name, string Value)>
-        {
+        List<(string Name, string Value)> packageVersionAttributes =
+        [
             ("Include", "SponsorCheck"),
-            ("Version", Version(model))
-        };
-        packageVersionAttributes.AddRange(metadata);
+            ("Version", Version(model)),
+            .. metadata
+        ];
         var packageVersion = MsBuildXml.SelfClosingElement("PackageVersion", packageVersionAttributes, inlineCount: 2);
 
         var builder = new StringBuilder();

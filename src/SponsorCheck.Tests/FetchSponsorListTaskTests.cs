@@ -56,8 +56,8 @@ public class FetchSponsorListTaskTests
         await Assert.That(task.Execute()).IsTrue();
 
         var results = SharedFetchResult.FromItems(task.Fetched);
-        await Assert.That(results.Select(_ => _.Platform)).IsEquivalentTo(new[] {"GitHubSponsors", "Polar"});
-        await Assert.That(results.Select(_ => _.Owner)).IsEquivalentTo(new[] {"acmecorp", "acme"});
+        await Assert.That(results.Select(_ => _.Platform)).IsEquivalentTo(["GitHubSponsors", "Polar"]);
+        await Assert.That(results.Select(_ => _.Owner)).IsEquivalentTo(["acmecorp", "acme"]);
     }
 
     [Test]

@@ -53,17 +53,17 @@ public class RepoContractTests
     public async Task AuthorMetadataNamesExistInBundlerTargets()
     {
         var targets = ReadSrc("SponsorCheck", "build", "SponsorCheck.targets");
-        var names = new List<string>
-        {
+        List<string> names =
+        [
             "SponsorOwner",
             "CheckTransitiveReferences",
             "SponsorLandingUrl",
             "SponsorCheckBundleInPullRequest",
             "SponsorExemption",
-            "PrivateSponsorMaxTermMonths"
-        };
-        names.AddRange(Platform.All.Select(_ => _.AuthorAccountMetadata));
-        names.AddRange(Platform.All.Select(_ => _.TokenProperty));
+            "PrivateSponsorMaxTermMonths",
+            .. Platform.All.Select(_ => _.AuthorAccountMetadata),
+            .. Platform.All.Select(_ => _.TokenProperty)
+        ];
         foreach (var info in OverrideInfo.All)
         {
             names.Add(info.SeverityMetadata);
@@ -72,7 +72,9 @@ public class RepoContractTests
 
         foreach (var name in names)
         {
-            await Assert.That(targets).Contains(name).Because($"author-side name '{name}' should exist in build/SponsorCheck.targets");
+            await Assert.That(targets)
+                .Contains(name)
+                .Because($"author-side name '{name}' should exist in build/SponsorCheck.targets");
         }
     }
 
