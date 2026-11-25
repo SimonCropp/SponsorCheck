@@ -67,13 +67,6 @@ __SC_INNER_IMPORT__
 
   <Target Name="_SponsorCheck_Verify___SC_PACKAGE_ID__"
           BeforeTargets="BeforeBuild">
-    <MSBuild Projects="@(ProjectReference)"
-             Targets="_SponsorCheck_CoversDeep___SC_PACKAGE_ID__"
-             SkipNonexistentTargets="true"
-             Condition="'@(ProjectReference)' != ''">
-      <Output TaskParameter="TargetOutputs" ItemName="_SponsorCheck_RefCovers___SC_PACKAGE_ID__" />
-    </MSBuild>
-
     <ItemGroup>
       <_SponsorCheck___SC_PACKAGE_ID___Ref Include="@(PackageReference)" Condition="'%(Identity)' == '$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)'" />
       <_SponsorCheck___SC_PACKAGE_ID___Ver Include="@(PackageVersion)"   Condition="'%(Identity)' == '$(_SponsorCheck___SC_PACKAGE_ID___ThePackageId)'" />
@@ -109,7 +102,6 @@ __SC_INNER_IMPORT__
          diagnostic back, so the announce build below receives a finished severity and importance
          and needs neither property. -->
     <__SC_TASK_NAME__
-        Condition="'@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
         DeferDiagnostic="true"
         MessageLevel="$(SponsorCheckMessageLevel)"
         WarningLevel="$(SponsorCheckWarningLevel)"
@@ -151,6 +143,16 @@ __SC_INNER_IMPORT__
       <Output TaskParameter="DiagnosticPayload" PropertyName="_SponsorCheck___SC_PACKAGE_ID___DiagnosticPayload" />
     </__SC_TASK_NAME__>
 
+    <!-- Coverage is asked about only once there is a diagnostic it could suppress, which is why the
+         task runs first — see ConsumerVerifierOwner.targets for what asking up front cost. A
+         covering reference suppresses the announcement below rather than the verification. -->
+    <MSBuild Projects="@(ProjectReference)"
+             Targets="_SponsorCheck_CoversDeep___SC_PACKAGE_ID__"
+             SkipNonexistentTargets="true"
+             Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != '' and '@(ProjectReference)' != ''">
+      <Output TaskParameter="TargetOutputs" ItemName="_SponsorCheck_RefCovers___SC_PACKAGE_ID__" />
+    </MSBuild>
+
     <!-- The verifier runs in every project that references ThePackage, and again in every target
          framework of a multi-targeted one, but a build only needs to be told its result once. So
          the run above only renders the diagnostic (DeferDiagnostic) and hands it back; announcing
@@ -186,7 +188,7 @@ __SC_INNER_IMPORT__
       <_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__ Include="MSBuildTreatWarningsAsErrors=$(MSBuildTreatWarningsAsErrors)" />
     </ItemGroup>
 
-    <MSBuild Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != ''"
+    <MSBuild Condition="'$(_SponsorCheck___SC_PACKAGE_ID___DiagnosticCode)' != '' and '@(_SponsorCheck_RefCovers___SC_PACKAGE_ID__)' == ''"
              Projects="$(MSBuildThisFileFullPath)"
              Targets="_SponsorCheck_Announce___SC_PACKAGE_ID__"
              Properties="@(_SponsorCheck_AnnounceProps___SC_PACKAGE_ID__)"

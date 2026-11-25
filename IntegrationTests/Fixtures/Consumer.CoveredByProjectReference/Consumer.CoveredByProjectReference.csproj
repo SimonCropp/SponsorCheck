@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- Per-package counterpart of Consumer.OwnerCoveredByProjectReference. No PackageReference here, so
+       there is nowhere to put a sponsor account: ThePackageTransitive flows in through Lib, its
+       verifier is imported (CheckTransitiveReferences) and renders SC001. Lib has the direct
+       reference and the metadata, so that SC001 is redundant and must not be announced. -->
+  <ItemGroup>
+    <ProjectReference Include="Lib\Lib.csproj" />
+  </ItemGroup>
+</Project>

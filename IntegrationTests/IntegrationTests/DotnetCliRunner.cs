@@ -15,6 +15,7 @@ public static class DotnetCliRunner
         string? workingDirectory = null,
         string? packagesDir = null,
         bool onBuildServer = true,
+        string verbosity = "minimal",
         CancellationToken cancellation = default)
     {
         var psi = new ProcessStartInfo("dotnet")
@@ -39,7 +40,7 @@ public static class DotnetCliRunner
         psi.ArgumentList.Add(configuration);
         psi.ArgumentList.Add("--nologo");
         psi.ArgumentList.Add("--verbosity");
-        psi.ArgumentList.Add("minimal");
+        psi.ArgumentList.Add(verbosity);
         if (properties != null)
         {
             foreach (var kv in properties)

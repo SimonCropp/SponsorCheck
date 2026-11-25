@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- A valid sponsor that also has a ProjectReference. Its own verification passes, so there is
+       nothing for coverage to suppress and the verifier must not call into Lib to ask about it. -->
+  <ItemGroup>
+    <PackageReference
+      Include="ThePackageTransitive"
+      Version="1.0.0"
+      GitHubSponsorAccount="alice" />
+    <ProjectReference Include="Lib\Lib.csproj" />
+  </ItemGroup>
+</Project>

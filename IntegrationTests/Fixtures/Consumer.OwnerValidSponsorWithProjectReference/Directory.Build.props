@@ -1,0 +1,7 @@
+<Project>
+  <!-- Owner mode, declared once for every project under this directory: the top-level project and
+       Lib both verify against it and both pass. -->
+  <PropertyGroup>
+    <acme_GitHubSponsorAccount>alice</acme_GitHubSponsorAccount>
+  </PropertyGroup>
+</Project>
