@@ -40,9 +40,11 @@ Some organizations disable classic-PAT access in their security settings. When s
 
 #### One-time sponsors
 
-One-time GitHub sponsors are bundled for **one month from the payment date**. After that window the entry drops out of the next pack — the same behaviour a monthly sponsor gets after one billing cycle of non-renewal.
+GitHub Sponsors has no yearly tier, so a sponsor who wants to pay for a year up front does it as a one-time payment. A one-time GitHub sponsor is therefore bundled for **as many months as the payment would have bought at the lowest published monthly tier**, rounded down and counted in calendar months from the payment date. Against a $10 monthly tier, $10 is one month, $25 is two and $120 is a year. When a past one-time sponsor pays again, the window runs from the latest payment. After the window the entry drops out of the next pack, the same thing that happens to a monthly sponsor who stops renewing.
 
-For this to map cleanly to "an effective month of sponsor status", set GitHub Sponsors' **"Set minimum amount"** (under [Sponsor profile → Tiers](https://github.com/sponsors)) to the **same value as the lowest monthly tier**. That way any one-time sponsorship is priced at least as much as a single month at the entry tier, so the one-month bundle window is paid for. If the minimum is lower than the monthly tier, one-time sponsors get the full month of sponsor status for less than the recurring sponsors pay — usually not the intent.
+Only the monthly tiers on the public sponsor profile set the rate. One-time tiers, amounts a sponsor typed in at checkout, and retired or draft tiers don't.
+
+Every one-time payment counts for at least one month. That is also what each payment gets when the profile publishes no monthly tier, since there is nothing to price it against. Set GitHub Sponsors' **"Set minimum amount"** (under [Sponsor profile → Tiers](https://github.com/sponsors)) to the **same value as the lowest monthly tier**. Otherwise a one-time sponsor gets that first month for less than a recurring sponsor pays, which is usually not the intent.
 
 Recurring sponsors are bundled while their sponsorship is active and dropped as soon as it lapses, independent of this window.
 

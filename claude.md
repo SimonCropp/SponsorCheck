@@ -187,6 +187,18 @@ The end month is the whole mechanism. Nothing about a private sponsorship is che
 
 Regression coverage: `GitHubSponsorsPlatformTests.FetchSponsorAccounts_ExcludesPrivateSponsorsAndReportsTheCount` / `_LapsedPrivateSponsor_CountedOnce`, `OpenCollectivePlatformTests.FetchSponsorAccounts_RequestsIsIncognitoAndReportsExcludedCount`, the `VerifySponsorshipTaskTests.PrivateSponsor_*` block (fixed clock, and every fixture claims an account absent from the hash list so a pass proves the check was skipped rather than satisfied), `AuthorPackTests.PrivateSponsorMaxTermMonths_*`, and `ConsumerBuildTests.PrivateSponsor_PublisherNarrowedCap_FailsWithSC053` (9 months out is inside the 12-month default and outside the fixture's cap of 6, so it only passes if the cap actually reached the consumer's verifier).
 
+## One-time GitHub payments are sized by amount
+
+GitHub Sponsors has no yearly tier, so a year paid up front arrives as a one-time payment. `GitHubSponsorsPlatform.PaidMonths` gives it the sponsorship's `tier.monthlyPriceInCents` (for a one-time payment, the amount paid) over the lowest published monthly tier, rounded down and never less than one. `IsValidAt` counts that many calendar months from `SponsorshipEntry.PaidAt`. Calendar months rather than 30-day blocks, which would end a paid year five days early. `MaxPaidMonths` only keeps `AddMonths` inside `DateTime`'s range. There is deliberately no shorter cap: the amount and the author's own lowest tier set the term, so a $100 payment against a $1 tier counts for 100 months. An author who finds that too long raises the tier; SponsorCheck doesn't second-guess what was paid.
+
+Things worth knowing:
+
+- **A payment is dated by `tierSelectedAt`, not `createdAt`.** A sponsor who pays again keeps the same sponsorship (one per login, checked against a live account), so `createdAt` is their first payment and `tierSelectedAt` their latest. `PaidAt` takes the later of the two because GitHub records a first payment's tier about a second before the sponsorship itself.
+- **The listing's tiers are fetched without `includeUnpublished`.** With it, the list also holds every custom amount a sponsor ever typed in at checkout (`isCustomAmount`) and retired tiers. `LowestMonthlyTier` still skips one-time and custom tiers, and counts a tier only when both flags are explicitly false.
+- **Every new field degrades to the old rule.** No tier on the sponsorship, no published monthly tier, or an error whose path runs through `tier`, `tierSelectedAt` or `sponsorsListing` (`IsWindowFieldError`, which keeps it from being fatal) leaves the payment worth one month from `createdAt`, which is what the bundler did before it read any of them. Those fields only lengthen a window, so losing them must never fail a pack that used to succeed.
+
+Regression coverage: the `GitHubSponsorsPlatformTests` block headed "A one-time payment's window scales with its amount" (fixed clock), `FetchSponsorAccounts_OneTimePayment_CountsForTheMonthsItPaidFor` end to end through a stubbed response, and `FetchSponsorAccounts_SendsTheQueryAndTheLogin`, which asserts the fields are in the request the trimmed assembly sends.
+
 ## Diagnostic code conventions
 
 `docs/VerifierDiagnosticCodes.md` and `docs/BundlerDiagnosticCodes.md` are the full reference, and `SponsorCheckLog.NameFor` holds each code's short name. The layout:
