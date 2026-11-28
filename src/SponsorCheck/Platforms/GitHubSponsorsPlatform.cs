@@ -10,10 +10,12 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
     // "active" definition for one-time payments.
     //
     // The tier, tierSelectedAt and the listing's tiers are what that window is sized and dated
-    // from. A one-time payment's tier is a one-time tier priced at what was paid. A sponsor who pays
-    // again keeps the same sponsorship, so createdAt is their first payment and tierSelectedAt their
-    // latest. The listing's tiers are left at the published ones: includeUnpublished would add every
-    // custom amount a sponsor ever chose at checkout, plus retired tiers.
+    // from. A one-time payment's tier is a one-time tier priced at what was paid, and isCustomAmount
+    // tells one the maintainer defined (a yearly tier, say) from an amount the sponsor typed in. A
+    // sponsor who pays again keeps the same sponsorship, so createdAt is their first payment and
+    // tierSelectedAt their latest. The listing's tiers are left at the published ones:
+    // includeUnpublished would add every custom amount a sponsor ever chose at checkout, plus
+    // retired tiers.
     //
     // includePrivate stays true even though private sponsors are never bundled (IsPublic drops
     // them). Asking for them is what makes the excluded count knowable, so the pack log can tell
@@ -35,7 +37,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
                 isOneTimePayment
                 createdAt
                 tierSelectedAt
-                tier { monthlyPriceInCents }
+                tier { isOneTime isCustomAmount monthlyPriceInCents }
                 privacyLevel
                 sponsorEntity {
                   __typename
@@ -58,7 +60,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
                 isOneTimePayment
                 createdAt
                 tierSelectedAt
-                tier { monthlyPriceInCents }
+                tier { isOneTime isCustomAmount monthlyPriceInCents }
                 privacyLevel
                 sponsorEntity {
                   __typename
@@ -126,7 +128,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
 
             foreach (var entry in page.UserSponsorships)
             {
-                if (!IsValidAt(entry, page.UserLowestMonthlyTierInCents, now))
+                if (!IsValidAt(entry, page.UserMonthlyTiersInCents ?? [], now))
                 {
                     continue;
                 }
@@ -142,7 +144,7 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
 
             foreach (var entry in page.OrgSponsorships)
             {
-                if (!IsValidAt(entry, page.OrgLowestMonthlyTierInCents, now))
+                if (!IsValidAt(entry, page.OrgMonthlyTiersInCents ?? [], now))
                 {
                     continue;
                 }
@@ -203,29 +205,53 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
     // Recurring sponsors count while their sponsorship is active. One-time sponsors count for
     // PaidMonths from their latest payment, in calendar months rather than 30-day blocks, so a year
     // paid up front lasts a year and not 360 days.
-    public static bool IsValidAt(SponsorshipEntry entry, int? lowestMonthlyTierInCents, DateTime now)
+    public static bool IsValidAt(SponsorshipEntry entry, IReadOnlyList<int> monthlyTiersInCents, DateTime now)
     {
         if (entry.IsOneTimePayment)
         {
-            return entry.PaidAt.AddMonths(PaidMonths(entry, lowestMonthlyTierInCents)) >= now;
+            return entry.PaidAt.AddMonths(PaidMonths(entry, monthlyTiersInCents)) >= now;
         }
 
         return entry.IsActive;
     }
 
     // GitHub Sponsors has no yearly tier, so a sponsor paying for a year up front can only do it as
-    // a one-time payment. That payment counts for as many months as it would have bought at the
-    // lowest monthly tier the maintainer publishes, rounded down: $120 against a $10 tier is a year.
+    // a one-time payment. Which tier they meant to pay at is not in the amount: with tiers priced by
+    // the sponsor's size, $1,200 is a year at $100 or twenty years at $5. Two rules, in order:
+    //
+    // 1. A payment on a one-time tier the maintainer defined, priced at exactly twelve times one of
+    //    their published monthly tiers, is that tier paid for a year. The sponsor picked it, so this
+    //    is the one case where the duration is known rather than inferred, and it is how an author
+    //    with several monthly tiers offers yearly sponsorship: a mirroring one-time tier for each.
+    // 2. Any other payment counts for as many months as it would have bought at the cheapest
+    //    published monthly tier, rounded down: $120 against a $10 tier is a year. That is the
+    //    standard a recurring sponsor is held to as well, since nothing checks which tier anyone
+    //    belongs on.
+    //
+    // Rule 1 can only shorten what rule 2 would give, never lengthen it: twelve times a tier is at
+    // least twelve times the cheapest one. So a listing that already has one-time tiers can't grow
+    // more generous because of it, whatever those tiers are for.
     //
     // One month is the floor, and it is also what a payment gets when there is no rate to price it
     // against (no published monthly tier, or no tier on the sponsorship). That was the whole rule
     // before the window scaled, and it is what the docs promise an author who sets GitHub's "Set
     // minimum amount" to their lowest monthly tier.
-    public static int PaidMonths(SponsorshipEntry entry, int? lowestMonthlyTierInCents)
+    public static int PaidMonths(SponsorshipEntry entry, IReadOnlyList<int> monthlyTiersInCents)
     {
         if (entry.TierPriceInCents is not { } price ||
-            lowestMonthlyTierInCents is not { } lowest ||
-            lowest <= 0)
+            monthlyTiersInCents.Count == 0)
+        {
+            return 1;
+        }
+
+        if (entry.OnMaintainerOneTimeTier &&
+            monthlyTiersInCents.Any(_ => (long) _ * 12 == price))
+        {
+            return 12;
+        }
+
+        var lowest = monthlyTiersInCents.Min();
+        if (lowest <= 0)
         {
             return 1;
         }
@@ -319,7 +345,8 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
         DateTime CreatedAt,
         bool IsPrivate,
         DateTime? TierSelectedAt = null,
-        int? TierPriceInCents = null)
+        int? TierPriceInCents = null,
+        bool OnMaintainerOneTimeTier = false)
     {
         // When a one-time sponsor last paid. GitHub records the tier a second or so before the
         // sponsorship it belongs to, so the later of the two is taken rather than tierSelectedAt
@@ -337,8 +364,8 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
         bool OrgHasNextPage,
         string? UserEndCursor,
         string? OrgEndCursor,
-        int? UserLowestMonthlyTierInCents = null,
-        int? OrgLowestMonthlyTierInCents = null);
+        IReadOnlyList<int>? UserMonthlyTiersInCents = null,
+        IReadOnlyList<int>? OrgMonthlyTiersInCents = null);
 
     public static PageResult ParseResponse(string json)
     {
@@ -389,9 +416,9 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
             throw new MaintenanceFeeException("GitHub GraphQL: missing 'data' in response.");
         }
 
-        var (userExists, userEntries, userNext, userCursor, userLowest) = ParseConnection(data, "user");
-        var (orgExists, orgEntries, orgNext, orgCursor, orgLowest) = ParseConnection(data, "organization");
-        return new(userExists, orgExists, userEntries, orgEntries, userNext, orgNext, userCursor, orgCursor, userLowest, orgLowest);
+        var (userExists, userEntries, userNext, userCursor, userTiers) = ParseConnection(data, "user");
+        var (orgExists, orgEntries, orgNext, orgCursor, orgTiers) = ParseConnection(data, "organization");
+        return new(userExists, orgExists, userEntries, orgEntries, userNext, orgNext, userCursor, orgCursor, userTiers, orgTiers);
     }
 
     // The tier, tierSelectedAt and the listing are only read to lengthen a one-time payment's
@@ -503,12 +530,12 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
         return name is "user" or "organization";
     }
 
-    static (bool exists, IReadOnlyList<SponsorshipEntry> entries, bool hasNext, string? cursor, int? lowestMonthlyTier) ParseConnection(JsonElement data, string key)
+    static (bool exists, IReadOnlyList<SponsorshipEntry> entries, bool hasNext, string? cursor, IReadOnlyList<int> monthlyTiers) ParseConnection(JsonElement data, string key)
     {
         if (!data.TryGetProperty(key, out var node) ||
             node.ValueKind == JsonValueKind.Null)
         {
-            return (false, [], false, null, null);
+            return (false, [], false, null, []);
         }
 
         var entries = new List<SponsorshipEntry>();
@@ -544,15 +571,15 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
             }
         }
 
-        return (true, entries, hasNext, cursor, LowestMonthlyTier(node));
+        return (true, entries, hasNext, cursor, MonthlyTiers(node));
     }
 
-    // The cheapest monthly tier the maintainer publishes, or null when there is none. One-time tiers
-    // and custom amounts are skipped: neither is a monthly rate the maintainer set, and the published
-    // list shouldn't hold custom amounts anyway. A tier counts only when both flags are explicitly
-    // false, so a renamed flag degrades to the one-month window instead of letting a one-time tier
-    // set the rate.
-    static int? LowestMonthlyTier(JsonElement node)
+    // The prices of the monthly tiers the maintainer publishes, empty when there are none. One-time
+    // tiers and custom amounts are skipped: neither is a monthly rate the maintainer set, and the
+    // published list shouldn't hold custom amounts anyway. A tier counts only when both flags are
+    // explicitly false, so a renamed flag degrades to the one-month window instead of letting a
+    // one-time tier set the rate.
+    static IReadOnlyList<int> MonthlyTiers(JsonElement node)
     {
         if (!node.TryGetProperty("sponsorsListing", out var listing) ||
             listing.ValueKind != JsonValueKind.Object ||
@@ -561,10 +588,10 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
             !tiers.TryGetProperty("nodes", out var nodes) ||
             nodes.ValueKind != JsonValueKind.Array)
         {
-            return null;
+            return [];
         }
 
-        int? lowest = null;
+        var prices = new List<int>();
         foreach (var tier in nodes.EnumerateArray())
         {
             if (tier.ValueKind != JsonValueKind.Object ||
@@ -576,14 +603,15 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
                 continue;
             }
 
-            if (lowest is null || price < lowest)
-            {
-                lowest = price;
-            }
+            prices.Add(price);
         }
 
-        return lowest;
+        return prices;
     }
+
+    static bool IsTrue(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) &&
+        value.ValueKind == JsonValueKind.True;
 
     static bool IsFalse(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) &&
@@ -651,12 +679,19 @@ public sealed class GitHubSponsorsPlatform(HttpClient? client = null) :
                         privacy.ValueKind == JsonValueKind.String &&
                         string.Equals(privacy.GetString(), "PRIVATE", StringComparison.OrdinalIgnoreCase);
 
-        // Both only lengthen a one-time payment's window, so a value that is missing or unreadable
-        // leaves the entry dated by createdAt and worth one month, as it was before they were read.
+        // None of these is required. A missing or unreadable tierSelectedAt dates the payment by
+        // createdAt, and a missing price leaves it worth one month, as it was before they were read.
+        // A tier counts as the maintainer's one-time tier only when both flags say so explicitly;
+        // otherwise the payment is priced like a custom amount, which is never shorter.
         var tierSelectedAt = ParseTimestamp(node, "tierSelectedAt");
-        var tierPrice = node.TryGetProperty("tier", out var tier) ? PriceInCents(tier) : null;
+        var hasTier = node.TryGetProperty("tier", out var tier) &&
+                      tier.ValueKind == JsonValueKind.Object;
+        var tierPrice = hasTier ? PriceInCents(tier) : null;
+        var onMaintainerOneTimeTier = hasTier &&
+                                      IsTrue(tier, "isOneTime") &&
+                                      IsFalse(tier, "isCustomAmount");
 
-        entry = new(loginValue!, isOneTime, isActive, when, isPrivate, tierSelectedAt, tierPrice);
+        entry = new(loginValue!, isOneTime, isActive, when, isPrivate, tierSelectedAt, tierPrice, onMaintainerOneTimeTier);
         return true;
     }
 }
