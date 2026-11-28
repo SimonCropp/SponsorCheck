@@ -336,7 +336,11 @@ public class GitHubSponsorsPlatformTests
         }
 
         using var body = System.Text.Json.JsonDocument.Parse(capture.LastRequestBody!);
-        await Assert.That(body.RootElement.GetProperty("query").GetString()!).Contains("sponsorshipsAsMaintainer");
+        var query = body.RootElement.GetProperty("query").GetString()!;
+        await Assert.That(query).Contains("sponsorshipsAsMaintainer");
+        // What a one-time payment's window is sized and dated from.
+        await Assert.That(query).Contains("tierSelectedAt");
+        await Assert.That(query).Contains("sponsorsListing");
         var variables = body.RootElement.GetProperty("variables");
         await Assert.That(variables.GetProperty("login").GetString()).IsEqualTo("alice-the-user");
         await Assert.That(variables.GetProperty("cursor").ValueKind).IsEqualTo(System.Text.Json.JsonValueKind.Null);
@@ -351,7 +355,7 @@ public class GitHubSponsorsPlatformTests
             IsActive: true,
             CreatedAt: new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             IsPrivate: false);
-        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, null, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
     }
 
     [Test]
@@ -366,22 +370,21 @@ public class GitHubSponsorsPlatformTests
             IsActive: false,
             CreatedAt: new(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc),
             IsPrivate: false);
-        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, null, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
     }
 
     [Test]
     public async Task IsValidAt_OneTime_WithinOneMonth_Included()
     {
-        // One-time sponsors are honoured for one month from createdAt — pairs with the OSS author
-        // setting "Set minimum amount" on the GitHub Sponsors tier so a one-time payment of at least
-        // the min monthly tier value buys an effective month of sponsor status.
+        // With no rate to scale by, a one-time payment counts for one month from when it was paid,
+        // which is also the least any one-time payment gets.
         var entry = new GitHubSponsorsPlatform.SponsorshipEntry(
             Login: "carol",
             IsOneTimePayment: true,
             IsActive: false,
             CreatedAt: new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc),
             IsPrivate: false);
-        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, null, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
     }
 
     [Test]
@@ -393,14 +396,14 @@ public class GitHubSponsorsPlatformTests
             IsActive: false,
             CreatedAt: new(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
             IsPrivate: false);
-        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, null, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
     }
 
     [Test]
     public async Task IsValidAt_OneTime_AtExactlyOneMonth_Included()
     {
-        // Boundary: createdAt + 30 days == now → still in. Excluding the boundary would silently
-        // drop a sponsor on the very last day of their effective month.
+        // Boundary: one calendar month after the payment == now → still in. Excluding the boundary
+        // would silently drop a sponsor on the very last day of their effective month.
         var createdAt = new DateTime(2026, 5, 2, 0, 0, 0, DateTimeKind.Utc);
         var entry = new GitHubSponsorsPlatform.SponsorshipEntry(
             Login: "carol",
@@ -408,7 +411,287 @@ public class GitHubSponsorsPlatformTests
             IsActive: false,
             CreatedAt: createdAt,
             IsPrivate: false);
-        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, createdAt + GitHubSponsorsPlatform.OneTimeWindow)).IsTrue();
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, null, createdAt.AddMonths(1))).IsTrue();
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, null, createdAt.AddMonths(1).AddSeconds(1))).IsFalse();
+    }
+
+    // --- A one-time payment's window scales with its amount ---
+    //
+    // GitHub Sponsors has no yearly tier, so a sponsor paying for a year up front does it as a
+    // one-time payment. It counts for the months it would have bought at the lowest published
+    // monthly tier.
+
+    static GitHubSponsorsPlatform.SponsorshipEntry OneTime(DateTime createdAt, int? priceInCents, DateTime? tierSelectedAt = null) =>
+        new(
+            Login: "carol",
+            IsOneTimePayment: true,
+            IsActive: false,
+            CreatedAt: createdAt,
+            IsPrivate: false,
+            TierSelectedAt: tierSelectedAt,
+            TierPriceInCents: priceInCents);
+
+    [Test]
+    [Arguments(1000, 1000, 1)]
+    [Arguments(2500, 1000, 2)]
+    [Arguments(12000, 1000, 12)]
+    [Arguments(12000, 100, 120)]
+    [Arguments(500, 1000, 1)]
+    public async Task PaidMonths_TheAmountOverTheLowestMonthlyTier_RoundedDown(int priceInCents, int lowestMonthlyTierInCents, int expected)
+    {
+        // The last case is a payment below the tier, which still gets the month it always did.
+        var entry = OneTime(new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), priceInCents);
+        await Assert.That(GitHubSponsorsPlatform.PaidMonths(entry, lowestMonthlyTierInCents)).IsEqualTo(expected);
+    }
+
+    [Test]
+    public async Task PaidMonths_NoPublishedMonthlyTier_IsOneMonth()
+    {
+        var entry = OneTime(new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), 12000);
+        await Assert.That(GitHubSponsorsPlatform.PaidMonths(entry, null)).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task PaidMonths_NoTierOnTheSponsorship_IsOneMonth()
+    {
+        var entry = OneTime(new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), null);
+        await Assert.That(GitHubSponsorsPlatform.PaidMonths(entry, 1000)).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task IsValidAt_OneTime_YearPaidUpFront_LastsTheCalendarYear()
+    {
+        // $120 against a $10 tier. Twelve 30-day blocks would have ended on 2026-11-26, five days
+        // short of the year that was paid for.
+        var entry = OneTime(new(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc), 12000);
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, 1000, new(2026, 11, 30, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, 1000, new(2026, 12, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, 1000, new(2026, 12, 2, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
+    }
+
+    [Test]
+    public async Task IsValidAt_OneTime_RepeatPayment_DatedByTheLatestPayment()
+    {
+        // A sponsor who pays again keeps the same sponsorship: createdAt stays at the first payment
+        // and tierSelectedAt moves to the latest. Dated by createdAt, this sponsor would have been
+        // dropped four years ago.
+        var entry = OneTime(
+            new(2022, 6, 24, 0, 0, 0, DateTimeKind.Utc),
+            1000,
+            tierSelectedAt: new(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc));
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, 1000, new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, 1000, new(2026, 6, 16, 0, 0, 0, DateTimeKind.Utc))).IsFalse();
+    }
+
+    [Test]
+    public async Task PaidAt_TierSelectedJustBeforeCreation_IsTheCreationTime()
+    {
+        // GitHub records a first payment's tier a second before the sponsorship itself.
+        var createdAt = new DateTime(2025, 11, 18, 20, 22, 58, DateTimeKind.Utc);
+        var entry = OneTime(createdAt, 1000, tierSelectedAt: createdAt.AddSeconds(-1));
+        await Assert.That(entry.PaidAt).IsEqualTo(createdAt);
+    }
+
+    [Test]
+    public async Task IsValidAt_OneTime_OutsizedPayment_IsCappedRatherThanOverflowing()
+    {
+        var entry = OneTime(new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), int.MaxValue);
+        await Assert.That(GitHubSponsorsPlatform.PaidMonths(entry, 1)).IsEqualTo(GitHubSponsorsPlatform.MaxPaidMonths);
+        await Assert.That(GitHubSponsorsPlatform.IsValidAt(entry, 1, new(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc))).IsTrue();
+    }
+
+    [Test]
+    public async Task ParseResponse_ReadsTheTierPriceAndTierSelectedAt()
+    {
+        var json = """
+        {
+          "data": {
+            "user": {
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": [
+                  {
+                    "isActive": false,
+                    "isOneTimePayment": true,
+                    "createdAt": "2022-06-24T17:49:55Z",
+                    "tierSelectedAt": "2026-06-02T18:45:38Z",
+                    "tier": { "monthlyPriceInCents": 12000 },
+                    "sponsorEntity": { "__typename": "User", "login": "carol" }
+                  },
+                  {
+                    "isActive": true,
+                    "isOneTimePayment": false,
+                    "createdAt": "2024-01-15T10:00:00Z",
+                    "sponsorEntity": { "__typename": "User", "login": "alice" }
+                  }
+                ]
+              }
+            },
+            "organization": null
+          }
+        }
+        """;
+        var page = GitHubSponsorsPlatform.ParseResponse(json);
+        var carol = page.UserSponsorships.Single(_ => _.Login == "carol");
+        await Assert.That(carol.TierPriceInCents).IsEqualTo(12000);
+        await Assert.That(carol.TierSelectedAt).IsEqualTo(new DateTime(2026, 6, 2, 18, 45, 38, DateTimeKind.Utc));
+        await Assert.That(carol.PaidAt).IsEqualTo(new DateTime(2026, 6, 2, 18, 45, 38, DateTimeKind.Utc));
+        // Neither field is required: an entry without them parses as it did before they were read.
+        var alice = page.UserSponsorships.Single(_ => _.Login == "alice");
+        await Assert.That(alice.TierPriceInCents).IsNull();
+        await Assert.That(alice.TierSelectedAt).IsNull();
+    }
+
+    [Test]
+    public async Task ParseResponse_LowestMonthlyTier_SkipsOneTimeTiersAndCustomAmounts()
+    {
+        // The last tier has lost its isOneTime flag. It is skipped rather than read as monthly, so a
+        // renamed flag falls back to the one-month window instead of letting a one-time tier set the
+        // rate.
+        var json = """
+        {
+          "data": {
+            "user": null,
+            "organization": {
+              "sponsorsListing": {
+                "tiers": {
+                  "nodes": [
+                    { "isOneTime": false, "isCustomAmount": false, "monthlyPriceInCents": 1000 },
+                    { "isOneTime": false, "isCustomAmount": false, "monthlyPriceInCents": 300 },
+                    { "isOneTime": true, "isCustomAmount": false, "monthlyPriceInCents": 100 },
+                    { "isOneTime": false, "isCustomAmount": true, "monthlyPriceInCents": 200 },
+                    { "isCustomAmount": false, "monthlyPriceInCents": 50 }
+                  ]
+                }
+              },
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": []
+              }
+            }
+          }
+        }
+        """;
+        var page = GitHubSponsorsPlatform.ParseResponse(json);
+        await Assert.That(page.OrgLowestMonthlyTierInCents).IsEqualTo(300);
+        await Assert.That(page.UserLowestMonthlyTierInCents).IsNull();
+    }
+
+    [Test]
+    public async Task ParseResponse_OnlyOneTimeTiers_LeavesTheRateUnknown()
+    {
+        var json = """
+        {
+          "data": {
+            "user": {
+              "sponsorsListing": {
+                "tiers": {
+                  "nodes": [
+                    { "isOneTime": true, "isCustomAmount": false, "monthlyPriceInCents": 2500 }
+                  ]
+                }
+              },
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": []
+              }
+            },
+            "organization": null
+          }
+        }
+        """;
+        var page = GitHubSponsorsPlatform.ParseResponse(json);
+        await Assert.That(page.UserLowestMonthlyTierInCents).IsNull();
+    }
+
+    [Test]
+    public async Task ParseResponse_RefusedWindowFields_FallBackInsteadOfFailing()
+    {
+        // The tier and the listing only lengthen a one-time payment's window. If GitHub refuses them
+        // to the viewer, the pack has to go on with the one-month window rather than fail with SC100
+        // for an author whose sponsor list read fine before these fields were asked for.
+        var json = """
+        {
+          "data": {
+            "user": {
+              "sponsorsListing": null,
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": [
+                  {
+                    "isActive": false,
+                    "isOneTimePayment": true,
+                    "createdAt": "2026-05-15T00:00:00Z",
+                    "tier": null,
+                    "sponsorEntity": { "__typename": "User", "login": "carol" }
+                  }
+                ]
+              }
+            },
+            "organization": null
+          },
+          "errors": [
+            { "type": "FORBIDDEN", "path": [ "user", "sponsorshipsAsMaintainer", "nodes", 0, "tier" ], "message": "..." },
+            { "type": "FORBIDDEN", "path": [ "user", "sponsorsListing" ], "message": "..." }
+          ]
+        }
+        """;
+        var page = GitHubSponsorsPlatform.ParseResponse(json);
+        var carol = page.UserSponsorships.Single();
+        await Assert.That(carol.TierPriceInCents).IsNull();
+        await Assert.That(page.UserLowestMonthlyTierInCents).IsNull();
+        await Assert.That(GitHubSponsorsPlatform.PaidMonths(carol, page.UserLowestMonthlyTierInCents)).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task FetchSponsorAccounts_OneTimePayment_CountsForTheMonthsItPaidFor()
+    {
+        // Both paid six months ago against a $10 tier. erin's $120 is inside its year; frank's $10
+        // ran out five months ago.
+        var paidAt = DateTime.UtcNow.AddMonths(-6);
+        var json = $$"""
+        {
+          "data": {
+            "user": {
+              "sponsorsListing": {
+                "tiers": {
+                  "nodes": [
+                    { "isOneTime": false, "isCustomAmount": false, "monthlyPriceInCents": 1000 }
+                  ]
+                }
+              },
+              "sponsorshipsAsMaintainer": {
+                "pageInfo": { "hasNextPage": false, "endCursor": null },
+                "nodes": [
+                  {
+                    "isActive": false,
+                    "isOneTimePayment": true,
+                    "createdAt": "{{paidAt:yyyy-MM-ddTHH:mm:ssZ}}",
+                    "tierSelectedAt": "{{paidAt:yyyy-MM-ddTHH:mm:ssZ}}",
+                    "tier": { "monthlyPriceInCents": 12000 },
+                    "sponsorEntity": { "__typename": "User", "login": "erin" }
+                  },
+                  {
+                    "isActive": false,
+                    "isOneTimePayment": true,
+                    "createdAt": "{{paidAt:yyyy-MM-ddTHH:mm:ssZ}}",
+                    "tierSelectedAt": "{{paidAt:yyyy-MM-ddTHH:mm:ssZ}}",
+                    "tier": { "monthlyPriceInCents": 1000 },
+                    "sponsorEntity": { "__typename": "User", "login": "frank" }
+                  }
+                ]
+              }
+            },
+            "organization": null
+          }
+        }
+        """;
+        using var client = new HttpClient(new StubHandler(json));
+        var platform = new GitHubSponsorsPlatform(client);
+        var log = new TaskLoggingHelperFor(new StubBuildEngine());
+        var sponsors = await platform.FetchSponsorAccounts("acmecorp", token: "fake", log, Cancel.None);
+        await Assert.That(sponsors).Contains("erin");
+        await Assert.That(sponsors).DoesNotContain("frank");
     }
 
     [Test]
