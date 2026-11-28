@@ -48,6 +48,16 @@ Every one-time payment counts for at least one month. That is also what each pay
 
 Recurring sponsors are bundled while their sponsorship is active and dropped as soon as it lapses, independent of this window.
 
+#### Yearly sponsors
+
+To offer yearly sponsorship on GitHub, publish a one-time tier for each monthly tier at **twelve times its price**. A payment on one of those tiers is bundled for exactly a year from the payment date.
+
+This matters most when the monthly tiers are priced by who the sponsor is. Verify charges $5, $20, $30 or $100 a month depending on company size, so its yearly tiers are $60, $240, $360 and $1,200 one-time. Without them the amount is all SponsorCheck has to go on, and it can't tell "a year at $100" from "twenty years at $5": it prices the payment at the cheapest tier, so a company paying $1,200 once would be bundled for 240 months. The tier the sponsor picks says which they meant.
+
+The match is exact. A discounted yearly tier (say $1,000 for a year at $100 a month) mirrors no monthly tier, so it is priced at the cheapest tier like any other payment. So is an amount typed in at checkout, even one that equals a yearly tier. A yearly tier never counts for longer than the same amount would otherwise, so one-time tiers meant for something else, such as a one-off "buy me a coffee", are unaffected.
+
+Renewing early starts the new year from the renewal, since GitHub keeps only the latest payment.
+
 
 ### [OpenCollective](https://opencollective.com)
 
